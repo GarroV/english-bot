@@ -31,6 +31,7 @@ export async function handleApplyEdit(message: TgMessage): Promise<void> {
   const kb = keyboard([
     [["✏️ Поправить что-то", "edit_assignment"]],
     [["📄 Скачать PDF", "download_pdf"]],
+    [["🆕 Новое задание", "new_assignment"]],
   ]);
   for (let i = 0; i < parts.length; i++) {
     if (i === parts.length - 1) {

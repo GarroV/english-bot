@@ -4,6 +4,7 @@ import {
   handleConfirm,
   handleUseCached,
   handleGenerateNew,
+  handleNewAssignment,
 } from "./handlers/generate.ts";
 import { handleEditAssignment, handleApplyEdit } from "./handlers/edit.ts";
 import { handleDownloadPdf } from "./handlers/pdf_download.ts";
@@ -49,6 +50,7 @@ async function route(update: TgUpdate): Promise<void> {
     if (data === "generate_new") return handleGenerateNew(query);
     if (data === "edit_assignment") return handleEditAssignment(query);
     if (data === "download_pdf") return handleDownloadPdf(query);
+    if (data === "new_assignment") return handleNewAssignment(query);
     return;
   }
 

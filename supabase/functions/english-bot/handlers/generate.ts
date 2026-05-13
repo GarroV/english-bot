@@ -145,11 +145,22 @@ async function generateAndSend(params: {
   await sendAssignment(params.chatId, content);
 }
 
+// Handle "🆕 Новое задание" button: reset state and prompt for a new request
+export async function handleNewAssignment(query: TgCallbackQuery): Promise<void> {
+  await answerCallbackQuery(query.id);
+  await setSession(query.from.id, "WAITING_REQUEST");
+  await sendMessage(
+    query.message.chat.id,
+    "Напиши новый запрос (*уровень, тема, возраст*):\n\nНапример: A2, еда и рестораны, подросток"
+  );
+}
+
 // Send the assignment text, splitting into chunks if it exceeds the length limit
 async function sendAssignment(chatId: number, text: string): Promise<void> {
   const kb = keyboard([
     [["✏️ Поправить что-то", "edit_assignment"]],
     [["📄 Скачать PDF", "download_pdf"]],
+    [["🆕 Новое задание", "new_assignment"]],
   ]);
   const parts = splitIfLong(text);
   for (let i = 0; i < parts.length; i++) {

@@ -12,9 +12,12 @@ import type { TgMessage } from "../lib/types.ts";
 const ADMIN_ID = Number(Deno.env.get("ADMIN_USER_ID")!);
 
 const WELCOME =
-  "Я генерирую домашние задания по английскому.\n\n" +
-  "Напиши запрос в формате:\nуровень, тема, возраст\n\n" +
-  "Например: A2, еда и рестораны, подросток";
+  "Напиши запрос — и я сделаю полное домашнее задание по английскому.\n\n" +
+  "Формат: *уровень, тема, возраст*\n\n" +
+  "Например:\n" +
+  "• A2, еда и рестораны, подросток\n" +
+  "• B1, путешествия, взрослый\n" +
+  "• C1, бизнес, студент";
 
 // Handle the /start command — registers admin, resets state for existing users,
 // or prompts new users for an invite code
