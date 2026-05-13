@@ -20,10 +20,15 @@ declare const Supabase: {
 };
 
 // Generate a vector embedding for the given text using the gte-small model
-async function embed(text: string): Promise<number[]> {
-  const session = new Supabase.ai.Session("gte-small");
-  const result = await session.run(text, { mean_pool: true, normalize: true });
-  return Array.from(result.data);
+async function embed(text: string): Promise<number[] | null> {
+  try {
+    const session = new Supabase.ai.Session("gte-small");
+    const result = await session.run(text, { mean_pool: true, normalize: true });
+    return Array.from(result.data);
+  } catch (e) {
+    console.error("embed() failed:", e);
+    return null;
+  }
 }
 
 // Check whether a Telegram user is registered in the allowlist
@@ -114,7 +119,7 @@ export async function saveAssignment(params: {
   content: string;
 }): Promise<void> {
   const embeddingInput = `${params.level} ${params.topic} ${params.ageGroup}`;
-  const embedding = await embed(embeddingInput);
+  const embedding = await embed(embeddingInput); // null if AI unavailable — saved without embedding
   await supabase.from("eb_assignments").insert({
     telegram_id: params.telegramId,
     level: params.level,
@@ -134,6 +139,7 @@ export async function findSimilarAssignment(
 ): Promise<DbAssignment | null> {
   const embeddingInput = `${level} ${topic} ${ageGroup}`;
   const embedding = await embed(embeddingInput);
+  if (!embedding) return null; // AI unavailable — skip cache, generate fresh
   const { data } = await supabase.rpc("match_assignments", {
     query_embedding: embedding,
     match_threshold: 0.85,

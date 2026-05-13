@@ -17,11 +17,18 @@ Deno.serve(async (req) => {
     return new Response("OK", { status: 200 });
   }
 
+  let chatId: number | null = null;
   try {
     const update: TgUpdate = await req.json();
+    chatId = update.message?.chat.id ?? update.callback_query?.message.chat.id ?? null;
     await route(update);
   } catch (e) {
     console.error("Unhandled error:", e);
+    if (chatId) {
+      try {
+        await sendMessage(chatId, `Произошла ошибка: ${e}`);
+      } catch (_) { /* ignore send failure */ }
+    }
   }
 
   // Always return 200 so Telegram does not retry

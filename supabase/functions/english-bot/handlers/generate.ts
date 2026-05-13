@@ -59,7 +59,12 @@ export async function handleConfirm(query: TgCallbackQuery): Promise<void> {
   }
 
   await sendMessage(chatId, "Генерирую задание, подожди 10–20 секунд...");
-  await generateAndSend({ userId, chatId, userInput, level, topic, ageGroup });
+  try {
+    await generateAndSend({ userId, chatId, userInput, level, topic, ageGroup });
+  } catch (e) {
+    console.error("generateAndSend failed:", e);
+    await sendMessage(chatId, `Ошибка при генерации задания: ${e}`);
+  }
 }
 
 // Handle "✅ Использовать это" button: load cached assignment from DB and display it
@@ -94,7 +99,12 @@ export async function handleGenerateNew(query: TgCallbackQuery): Promise<void> {
   const { level, topic, ageGroup } = parseRequest(userInput);
 
   await sendMessage(chatId, "Генерирую задание, подожди 10–20 секунд...");
-  await generateAndSend({ userId, chatId, userInput, level, topic, ageGroup });
+  try {
+    await generateAndSend({ userId, chatId, userInput, level, topic, ageGroup });
+  } catch (e) {
+    console.error("generateAndSend failed:", e);
+    await sendMessage(chatId, `Ошибка при генерации задания: ${e}`);
+  }
 }
 
 // Generate assignment via Claude, save to cache, update session, and send to chat
