@@ -15,6 +15,20 @@ import { generateAssignment } from "../lib/claude.ts";
 import { splitIfLong } from "../lib/utils.ts";
 import type { TgCallbackQuery } from "../lib/types.ts";
 
+function friendlyError(e: unknown): string {
+  const msg = String(e);
+  if (msg.includes("credit balance") || msg.includes("too low")) {
+    return "На счёте закончились кредиты Anthropic. Пополни баланс и попробуй снова.";
+  }
+  if (msg.includes("rate_limit") || msg.includes("429")) {
+    return "Слишком много запросов. Подожди минуту и попробуй снова.";
+  }
+  if (msg.includes("401") || msg.includes("authentication")) {
+    return "Ошибка авторизации API. Обратись к администратору.";
+  }
+  return "Что-то пошло не так. Попробуй ещё раз через минуту.";
+}
+
 // Parse comma-separated user input into level, topic, and age group fields
 function parseRequest(input: string): { level: string; topic: string; ageGroup: string } {
   const parts = input.split(",").map((s) => s.trim());
@@ -63,7 +77,7 @@ export async function handleConfirm(query: TgCallbackQuery): Promise<void> {
     await generateAndSend({ userId, chatId, userInput, level, topic, ageGroup });
   } catch (e) {
     console.error("generateAndSend failed:", e);
-    await sendMessage(chatId, `Ошибка при генерации задания: ${e}`);
+    await sendMessage(chatId, friendlyError(e));
   }
 }
 
@@ -103,7 +117,7 @@ export async function handleGenerateNew(query: TgCallbackQuery): Promise<void> {
     await generateAndSend({ userId, chatId, userInput, level, topic, ageGroup });
   } catch (e) {
     console.error("generateAndSend failed:", e);
-    await sendMessage(chatId, `Ошибка при генерации задания: ${e}`);
+    await sendMessage(chatId, friendlyError(e));
   }
 }
 

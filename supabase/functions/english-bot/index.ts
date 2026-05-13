@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
     console.error("Unhandled error:", e);
     if (chatId) {
       try {
-        await sendMessage(chatId, `Произошла ошибка: ${e}`);
+        await sendMessage(chatId, "Что-то пошло не так. Попробуй ещё раз через минуту.");
       } catch (_) { /* ignore send failure */ }
     }
   }
