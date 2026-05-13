@@ -58,7 +58,8 @@ export async function getSession(telegramId: number): Promise<DbSession | null> 
     .select("*")
     .eq("telegram_id", telegramId)
     .maybeSingle();
-  return data as DbSession | null;
+  if (!data) return null;
+  return { ...data, telegram_id: Number(data.telegram_id) } as DbSession;
 }
 
 // Write (upsert) the session state and context for a Telegram user
@@ -92,7 +93,7 @@ export async function getInviteCreator(code: string): Promise<number | null> {
     .select("created_by")
     .eq("code", code.toUpperCase())
     .maybeSingle();
-  return (data?.created_by as number) ?? null;
+  return data?.created_by != null ? Number(data.created_by) : null;
 }
 
 // Mark an invite code as used by setting used_by and used_at
@@ -164,5 +165,8 @@ export async function listUsers(): Promise<DbUser[]> {
     .from("eb_users")
     .select("*")
     .order("created_at", { ascending: false });
-  return (data as DbUser[]) ?? [];
+  return ((data as DbUser[]) ?? []).map((u) => ({
+    ...u,
+    telegram_id: Number(u.telegram_id),
+  }));
 }

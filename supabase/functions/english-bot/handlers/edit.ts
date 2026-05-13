@@ -6,7 +6,9 @@ import type { TgCallbackQuery, TgMessage } from "../lib/types.ts";
 
 export async function handleEditAssignment(query: TgCallbackQuery): Promise<void> {
   await answerCallbackQuery(query.id);
-  await setSession(query.from.id, "EDITING");
+  const session = await getSession(query.from.id);
+  if (session?.state !== "POST_GENERATION") return;
+  await setSession(query.from.id, "EDITING", session.context);
   await sendMessage(query.message.chat.id, "Что именно поправить? Опиши изменения:");
 }
 
@@ -25,16 +27,16 @@ export async function handleApplyEdit(message: TgMessage): Promise<void> {
   // Save to session only — edited versions are not added to the shared cache
   await setSession(userId, "POST_GENERATION", { current_assignment: edited });
 
+  const parts = splitIfLong(edited);
   const kb = keyboard([
     [["✏️ Поправить что-то", "edit_assignment"]],
     [["📄 Скачать PDF", "download_pdf"]],
   ]);
-
-  const [first, second] = splitIfLong(edited);
-  if (second !== null) {
-    await sendMessage(chatId, first);
-    await sendMessage(chatId, second, kb);
-  } else {
-    await sendMessage(chatId, first, kb);
+  for (let i = 0; i < parts.length; i++) {
+    if (i === parts.length - 1) {
+      await sendMessage(chatId, parts[i], kb);
+    } else {
+      await sendMessage(chatId, parts[i]);
+    }
   }
 }

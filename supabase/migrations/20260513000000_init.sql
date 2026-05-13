@@ -28,7 +28,7 @@ create table eb_assignments (
   age_group    text,
   request_text text,
   content      text,
-  embedding    vector(512),
+  embedding    vector(384),
   created_at   timestamptz default now()
 );
 
@@ -43,7 +43,7 @@ create table eb_invitations (
 
 -- Similarity search function
 create or replace function match_assignments(
-  query_embedding vector(512),
+  query_embedding vector(384),
   match_threshold float,
   match_count int
 )

@@ -15,18 +15,20 @@ Deno.test("makeFilename: falls back to homework", () => {
   assertEquals(makeFilename("plain text"), "homework.pdf");
 });
 
-Deno.test("splitIfLong: returns null second part when short", () => {
-  const [first, second] = splitIfLong("Short text");
-  assertEquals(first, "Short text");
-  assertEquals(second, null);
+Deno.test("splitIfLong: returns single-element array when short", () => {
+  const result = splitIfLong("Short text");
+  assertEquals(result, ["Short text"]);
 });
 
-Deno.test("splitIfLong: splits at newline when over limit", () => {
+Deno.test("splitIfLong: splits into multiple chunks when over limit", () => {
   const part1 = "a".repeat(3000);
-  const part2 = "b".repeat(2000);
-  const [first, second] = splitIfLong(part1 + "\n" + part2);
-  assertEquals(second !== null, true);
-  assertEquals(first + second, part1 + "\n" + part2);
+  const part2 = "b".repeat(3000);
+  const part3 = "c".repeat(2000);
+  const text = part1 + "\n" + part2 + "\n" + part3;
+  const parts = splitIfLong(text);
+  assertEquals(parts.length > 1, true);
+  assertEquals(parts.join(""), text);
+  assertEquals(parts.every((p) => p.length <= 4096), true);
 });
 
 Deno.test("normalizeRequest: lowercases and removes punctuation", () => {

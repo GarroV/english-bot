@@ -49,7 +49,12 @@ export async function handleConfirm(query: TgCallbackQuery): Promise<void> {
       last_request: userInput,
       cached_assignment_id: similar.id,
     });
-    await sendMessage(chatId, `Нашёл похожее задание:\n\n${preview}`, kb);
+    await editMessageText(
+      chatId,
+      query.message.message_id,
+      `Нашёл похожее задание:\n\n${preview}`,
+      kb
+    );
     return;
   }
 
@@ -116,17 +121,18 @@ async function generateAndSend(params: {
   await sendAssignment(params.chatId, content);
 }
 
-// Send the assignment text, splitting into two messages if it exceeds the length limit
+// Send the assignment text, splitting into chunks if it exceeds the length limit
 async function sendAssignment(chatId: number, text: string): Promise<void> {
   const kb = keyboard([
     [["✏️ Поправить что-то", "edit_assignment"]],
     [["📄 Скачать PDF", "download_pdf"]],
   ]);
-  const [first, second] = splitIfLong(text);
-  if (second !== null) {
-    await sendMessage(chatId, first);
-    await sendMessage(chatId, second, kb);
-  } else {
-    await sendMessage(chatId, first, kb);
+  const parts = splitIfLong(text);
+  for (let i = 0; i < parts.length; i++) {
+    if (i === parts.length - 1) {
+      await sendMessage(chatId, parts[i], kb);
+    } else {
+      await sendMessage(chatId, parts[i]);
+    }
   }
 }

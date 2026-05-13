@@ -9,14 +9,19 @@ export function makeFilename(text: string): string {
   return topicSlug ? `${level}_${topicSlug}.pdf` : `${level}.pdf`;
 }
 
-// Split a message into two parts if it exceeds Telegram's 4096-char limit
-export function splitIfLong(
-  text: string,
-  limit = 4096
-): [string, string | null] {
-  if (text.length <= limit) return [text, null];
-  const mid = text.lastIndexOf("\n", 4000);
-  return [text.slice(0, mid), text.slice(mid)];
+// Split a message into chunks all ≤ limit chars, breaking at newlines where possible
+export function splitIfLong(text: string, limit = 4096): string[] {
+  if (text.length <= limit) return [text];
+  const parts: string[] = [];
+  let remaining = text;
+  while (remaining.length > limit) {
+    const mid = remaining.lastIndexOf("\n", limit);
+    const cutAt = mid > 0 ? mid : limit;
+    parts.push(remaining.slice(0, cutAt));
+    remaining = remaining.slice(cutAt);
+  }
+  if (remaining) parts.push(remaining);
+  return parts;
 }
 
 // Lowercase and strip punctuation from a user request string for comparison

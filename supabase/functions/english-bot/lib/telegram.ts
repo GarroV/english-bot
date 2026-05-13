@@ -1,6 +1,8 @@
 import type { InlineKeyboard, InlineKeyboardButton } from "./types.ts";
 
-const BASE = `https://api.telegram.org/bot${Deno.env.get("TELEGRAM_BOT_TOKEN")}`;
+const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
+if (!token) throw new Error("TELEGRAM_BOT_TOKEN env var is not set");
+const BASE = `https://api.telegram.org/bot${token}`;
 
 async function call(method: string, body: object): Promise<void> {
   await fetch(`${BASE}/${method}`, {
