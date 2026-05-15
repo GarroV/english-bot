@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert";
-import { makeFilename, splitIfLong, normalizeRequest, generateInviteCode } from "./utils.ts";
+import { makeFilename, makeTeacherFilename, splitIfLong, normalizeRequest, generateInviteCode } from "./utils.ts";
 
 Deno.test("makeFilename: extracts level and topic", () => {
   const text = "Level: A2 · Topic: Food and Restaurants · Age group: Teenager\n\nSome text";
@@ -43,4 +43,19 @@ Deno.test("generateInviteCode: returns 6-char uppercase alphanumeric", () => {
   assertEquals(code.length, 6);
   assertEquals(code, code.toUpperCase());
   assertEquals(/^[A-Z0-9]{6}$/.test(code), true);
+});
+
+Deno.test("makeFilename: works with new Module: prefix format", () => {
+  const text = "Module: Reading · Level: B2 · Topic: Crime and Justice · Age: adult\n\nSome text";
+  assertEquals(makeFilename(text), "B2_Crime_and_Justice.pdf");
+});
+
+Deno.test("makeFilename: works with Translation module", () => {
+  const text = "Module: Translation (Texts) · Level: C1 · Topic: Politics\n\nSome text";
+  assertEquals(makeFilename(text), "C1_Politics.pdf");
+});
+
+Deno.test("makeTeacherFilename: adds _teacher suffix", () => {
+  const text = "Teacher's Guide · Module: Reading · Level: B2 · Topic: Crime and Justice";
+  assertEquals(makeTeacherFilename(text), "B2_Crime_and_Justice_teacher.pdf");
 });

@@ -41,3 +41,9 @@ export function generateInviteCode(): string {
     () => chars[Math.floor(Math.random() * chars.length)]
   ).join("");
 }
+
+// Generate teacher guide PDF filename by appending _teacher before the extension
+export function makeTeacherFilename(text: string): string {
+  const base = makeFilename(text);
+  return base.replace(".pdf", "_teacher.pdf");
+}
