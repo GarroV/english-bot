@@ -1,34 +1,35 @@
-import { sendMessage, editMessageText, answerCallbackQuery, keyboard } from "../lib/telegram.ts";
+import { sendMessage, answerCallbackQuery, editMessageText } from "../lib/telegram.ts";
 import { setSession } from "../lib/db.ts";
+import { detectModule, extractParams } from "../lib/module_detect.ts";
+import { buildClarifyMessage } from "./clarify.ts";
 import type { TgMessage, TgCallbackQuery } from "../lib/types.ts";
 
-// Handle the user's text input when they're in WAITING_REQUEST state
+// Handle free-form text in WAITING_REQUEST state: detect module, enter CLARIFYING
 export async function handleRequest(message: TgMessage): Promise<void> {
   const userInput = message.text?.trim() ?? "";
   const chatId = message.chat.id;
   const userId = message.from.id;
 
-  await setSession(userId, "CONFIRMING", { last_request: userInput });
+  const moduleType = detectModule(userInput);
+  const params = extractParams(userInput);
 
-  const kb = keyboard([
-    [["✅ Генерировать", "confirm"]],
-    [["✏️ Изменить запрос", "change_request"]],
-  ]);
+  await setSession(userId, "CLARIFYING", {
+    last_request: userInput,
+    module_type: moduleType,
+    params,
+  });
 
-  await sendMessage(
-    chatId,
-    `Запрос:\n*${userInput}*\n\nУбедитесь, что указан уровень (A1/A2/B1/B2/C1), тема и возраст ученика.\n\nВсё верно?`,
-    kb
-  );
+  const { text, kb } = buildClarifyMessage(moduleType, params);
+  await sendMessage(chatId, text, kb);
 }
 
-// Handle the "change_request" callback button to go back to WAITING_REQUEST state
+// Handle the "change_request" callback button: go back to WAITING_REQUEST
 export async function handleChangeRequest(query: TgCallbackQuery): Promise<void> {
   await answerCallbackQuery(query.id);
   await setSession(query.from.id, "WAITING_REQUEST");
   await editMessageText(
     query.message.chat.id,
     query.message.message_id,
-    "Напиши новый запрос (уровень, тема, возраст):"
+    "Напиши новый запрос:"
   );
 }
