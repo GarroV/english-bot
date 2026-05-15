@@ -1,4 +1,4 @@
-import { sendMessage } from "../lib/telegram.ts";
+import { sendMessage, setMyCommands } from "../lib/telegram.ts";
 import { createInviteCode, listUsers } from "../lib/db.ts";
 import type { TgMessage } from "../lib/types.ts";
 
@@ -18,6 +18,20 @@ export async function handleInvite(message: TgMessage): Promise<void> {
     message.chat.id,
     `Инвайт-код: \`${code}\`\n\nОднократный — передай пользователю. Они вводят его после /start.`
   );
+}
+
+// Register bot commands in the Telegram side menu (admin only, run once after deploy)
+export async function handleSetup(message: TgMessage): Promise<void> {
+  if (!isAdmin(message.from.id)) {
+    await sendMessage(message.chat.id, "Нет доступа.");
+    return;
+  }
+  await setMyCommands([
+    { command: "start", description: "Запустить бота" },
+    { command: "new", description: "Новое задание" },
+    { command: "help", description: "Как пользоваться" },
+  ]);
+  await sendMessage(message.chat.id, "Меню команд обновлено.");
 }
 
 export async function handleUsers(message: TgMessage): Promise<void> {

@@ -12,12 +12,32 @@ import type { TgMessage } from "../lib/types.ts";
 const ADMIN_ID = Number(Deno.env.get("ADMIN_USER_ID")!);
 
 const WELCOME =
-  "Напиши запрос — и я сделаю полное домашнее задание по английскому.\n\n" +
-  "Формат: *уровень, тема, возраст*\n\n" +
-  "Например:\n" +
-  "• A2, еда и рестораны, подросток\n" +
-  "• B1, путешествия, взрослый\n" +
-  "• C1, бизнес, студент";
+  "Напиши запрос в свободной форме — и я сделаю готовый учебный материал.\n\n" +
+  "Примеры:\n" +
+  "• B2, бизнес, взрослый\n" +
+  "• лексика по теме путешествия, C1\n" +
+  "• переводные тексты по публицистике, B2\n" +
+  "• переводные предложения, модальные глаголы, C1\n\n" +
+  "Бот сам определит тип задания и уточнит параметры.";
+
+const HELP =
+  "*Как пользоваться ботом*\n\n" +
+  "*Типы заданий:*\n" +
+  "• *Reading* — текст + упражнения (True/False, MCQ, Gap fill и др.)\n" +
+  "• *Vocabulary* — словарный список + упражнения без текста\n" +
+  "• *Translation (тексты)* — 4–5 связных текстов с русского на английский\n" +
+  "• *Translation (предложения)* — блоки предложений по грамматической теме\n\n" +
+  "*Как задать запрос:*\n" +
+  "Пиши в свободной форме. Уровень, тема, возраст — всё что знаешь.\n\n" +
+  "Примеры:\n" +
+  "• B2, бизнес, взрослый\n" +
+  "• лексика по теме путешествия, C1\n" +
+  "• переводные предложения, модальные глаголы, C1\n" +
+  "• финальный урок, Animal Farm, B1, подросток\n\n" +
+  "*Версия с ответами:*\n" +
+  "Для Reading и Vocabulary можно выбрать «с ответами» — получишь два PDF: студенческий и учительский.\n\n" +
+  "*/new* — начать новое задание\n" +
+  "*/help* — эта справка";
 
 // Handle the /start command — registers admin, resets state for existing users,
 // or prompts new users for an invite code
@@ -43,6 +63,18 @@ export async function handleStart(message: TgMessage): Promise<void> {
   // New user — request invite code
   await setSession(id, "REGISTERING");
   await sendMessage(chatId, "Привет! Для доступа введи инвайт-код:");
+}
+
+// Handle /help command — send usage guide
+export async function handleHelp(message: TgMessage): Promise<void> {
+  await sendMessage(message.chat.id, HELP);
+}
+
+// Handle /new command — shortcut to reset state and start a new assignment
+export async function handleNew(message: TgMessage): Promise<void> {
+  if (!(await isAllowed(message.from.id))) return;
+  await setSession(message.from.id, "WAITING_REQUEST");
+  await sendMessage(message.chat.id, WELCOME);
 }
 
 // Handle invite code submission — validates the code, registers the user, and grants access

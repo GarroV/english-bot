@@ -62,6 +62,13 @@ export async function sendDocument(
   await fetch(`${BASE}/sendDocument`, { method: "POST", body: form });
 }
 
+// Register bot commands that appear in the Telegram side menu
+export async function setMyCommands(
+  commands: { command: string; description: string }[]
+): Promise<void> {
+  await call("setMyCommands", { commands });
+}
+
 // keyboard([["✅ Use this", "use_cached"], ["🔄 New", "generate_new"]])
 // Each inner array is one row of buttons.
 export function keyboard(rows: [string, string][][]): InlineKeyboard {

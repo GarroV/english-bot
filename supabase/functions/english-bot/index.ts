@@ -1,4 +1,4 @@
-import { handleStart, handleInviteCode } from "./handlers/start.ts";
+import { handleStart, handleInviteCode, handleHelp, handleNew } from "./handlers/start.ts";
 import { handleRequest, handleChangeRequest } from "./handlers/request.ts";
 import {
   handleClarifyParam,
@@ -11,7 +11,7 @@ import {
 } from "./handlers/generate.ts";
 import { handleEditAssignment, handleApplyEdit } from "./handlers/edit.ts";
 import { handleDownloadPdf } from "./handlers/pdf_download.ts";
-import { handleInvite, handleUsers } from "./handlers/admin.ts";
+import { handleInvite, handleUsers, handleSetup } from "./handlers/admin.ts";
 import { isAllowed, getSession } from "./lib/db.ts";
 import { sendMessage } from "./lib/telegram.ts";
 import type { TgUpdate } from "./lib/types.ts";
@@ -68,8 +68,11 @@ async function route(update: TgUpdate): Promise<void> {
     const chatId = message.chat.id;
 
     if (text === "/start") return handleStart(message);
+    if (text === "/help") return handleHelp(message);
+    if (text === "/new") return handleNew(message);
     if (text === "/invite") return handleInvite(message);
     if (text === "/users") return handleUsers(message);
+    if (text === "/setup") return handleSetup(message);
 
     const session = await getSession(userId);
 
