@@ -113,7 +113,10 @@ export async function handleClarifyConfirm(query: TgCallbackQuery): Promise<void
   // Apply defaults for missing params
   if (!params.level) params.level = "B1";
   if (!params.ageGroup) params.ageGroup = "adult";
-  if (!params.version) params.version = "student";
+  // version only relevant for content modules — don't default for translation
+  if (!params.version && (moduleType === "READING_MODULE" || moduleType === "VOCABULARY_MODULE")) {
+    params.version = "student";
+  }
 
   // Translation modules: skip cache, generate directly
   const useCache =
