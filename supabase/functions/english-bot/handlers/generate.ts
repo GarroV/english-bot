@@ -8,12 +8,133 @@ import {
   getSession,
   setSession,
   saveAssignment,
-  findSimilarAssignment,
   getAssignment,
 } from "../lib/db.ts";
-import { generateAssignment } from "../lib/claude.ts";
+import { generateModuleContent, generateTeacherGuide } from "../lib/claude.ts";
 import { splitIfLong } from "../lib/utils.ts";
-import type { TgCallbackQuery } from "../lib/types.ts";
+import type { TgCallbackQuery, ModuleType, ClarifyingParams } from "../lib/types.ts";
+
+// Handle "✅ Использовать это" button: display cached assignment from DB
+export async function handleUseCached(query: TgCallbackQuery): Promise<void> {
+  await answerCallbackQuery(query.id);
+
+  const userId = query.from.id;
+  const chatId = query.message.chat.id;
+  const session = await getSession(userId);
+  const assignment = await getAssignment(session?.context.cached_assignment_id ?? "");
+
+  if (!assignment) {
+    await sendMessage(chatId, "Не нашёл задание. Генерирую новое...");
+    const userInput = session?.context.last_request ?? "";
+    const moduleType = (session?.context.module_type ?? "READING_MODULE") as ModuleType;
+    const params: ClarifyingParams = session?.context.params ?? {};
+    await generateAndSend({ userId, chatId, userInput, moduleType, params });
+    return;
+  }
+
+  await setSession(userId, "POST_GENERATION", {
+    current_assignment: assignment.content,
+    module_type: session?.context.module_type,
+    params: session?.context.params,
+  });
+  await sendAssignment(chatId, assignment.content);
+}
+
+// Handle "🔄 Сгенерировать новое" button: generate fresh, bypassing the cache
+export async function handleGenerateNew(query: TgCallbackQuery): Promise<void> {
+  await answerCallbackQuery(query.id);
+
+  const userId = query.from.id;
+  const chatId = query.message.chat.id;
+  const session = await getSession(userId);
+  const userInput = session?.context.last_request ?? "";
+  const moduleType = (session?.context.module_type ?? "READING_MODULE") as ModuleType;
+  const params: ClarifyingParams = session?.context.params ?? {};
+
+  await sendMessage(chatId, "Генерирую задание, подожди 10–30 секунд...");
+  try {
+    await generateAndSend({ userId, chatId, userInput, moduleType, params });
+  } catch (e) {
+    console.error("generateAndSend failed:", e);
+    await sendMessage(chatId, friendlyError(e));
+  }
+}
+
+// Handle "🆕 Новое задание" button: reset state and prompt for a new request
+export async function handleNewAssignment(query: TgCallbackQuery): Promise<void> {
+  await answerCallbackQuery(query.id);
+  await setSession(query.from.id, "WAITING_REQUEST");
+  await sendMessage(
+    query.message.chat.id,
+    "Напиши новый запрос — опиши задачу в свободной форме:\n\nНапример:\n• B2, бизнес, взрослый\n• лексика по теме путешествия, C1\n• переводные тексты по публицистике"
+  );
+}
+
+// Generate content, save to cache (READING/VOCABULARY only), update session, send to chat
+export async function generateAndSend(params: {
+  userId: number;
+  chatId: number;
+  userInput: string;
+  moduleType: ModuleType;
+  params: ClarifyingParams;
+}): Promise<void> {
+  const { userId, chatId, userInput, moduleType } = params;
+  const clrParams = params.params;
+
+  const studentContent = await generateModuleContent(moduleType, clrParams, userInput);
+
+  // Teacher guide: only for content modules, only when requested
+  let teacherContent: string | undefined;
+  if (
+    clrParams.version === "teacher" &&
+    (moduleType === "READING_MODULE" || moduleType === "VOCABULARY_MODULE")
+  ) {
+    teacherContent = await generateTeacherGuide(studentContent);
+  }
+
+  // Cache only READING and VOCABULARY — translation exercises are too unique
+  if (moduleType === "READING_MODULE" || moduleType === "VOCABULARY_MODULE") {
+    await saveAssignment({
+      telegramId: userId,
+      level: clrParams.level ?? "B1",
+      topic: userInput,
+      ageGroup: clrParams.ageGroup ?? "adult",
+      moduleType,
+      requestText: userInput,
+      content: studentContent,
+    });
+  }
+
+  await setSession(userId, "POST_GENERATION", {
+    current_assignment: studentContent,
+    current_assignment_teacher: teacherContent,
+    module_type: moduleType,
+    params: clrParams,
+  });
+
+  await sendAssignment(chatId, studentContent, !!teacherContent);
+}
+
+// Send the assignment with action buttons
+async function sendAssignment(
+  chatId: number,
+  text: string,
+  hasTeacher = false
+): Promise<void> {
+  const kb = keyboard([
+    [["✏️ Поправить что-то", "edit_assignment"]],
+    [[hasTeacher ? "📄 Скачать PDF (студент + учитель)" : "📄 Скачать PDF", "download_pdf"]],
+    [["🆕 Новое задание", "new_assignment"]],
+  ]);
+  const parts = splitIfLong(text);
+  for (let i = 0; i < parts.length; i++) {
+    if (i === parts.length - 1) {
+      await sendMessage(chatId, parts[i], kb);
+    } else {
+      await sendMessage(chatId, parts[i]);
+    }
+  }
+}
 
 function friendlyError(e: unknown): string {
   const msg = String(e);
@@ -27,147 +148,4 @@ function friendlyError(e: unknown): string {
     return "Ошибка авторизации API. Обратись к администратору.";
   }
   return "Что-то пошло не так. Попробуй ещё раз через минуту.";
-}
-
-// Parse comma-separated user input into level, topic, and age group fields
-function parseRequest(input: string): { level: string; topic: string; ageGroup: string } {
-  const parts = input.split(",").map((s) => s.trim());
-  return {
-    level: parts[0]?.toUpperCase() ?? "",
-    topic: parts[1] ?? "",
-    ageGroup: parts[2] ?? "",
-  };
-}
-
-// Handle "✅ Генерировать" button: check cache first, offer cached result or generate fresh
-export async function handleConfirm(query: TgCallbackQuery): Promise<void> {
-  await answerCallbackQuery(query.id);
-
-  const userId = query.from.id;
-  const chatId = query.message.chat.id;
-  const session = await getSession(userId);
-  const userInput = session?.context.last_request ?? "";
-
-  await editMessageText(chatId, query.message.message_id, "Ищу похожие задания...");
-
-  const { level, topic, ageGroup } = parseRequest(userInput);
-  const similar = await findSimilarAssignment(level, topic, ageGroup);
-
-  if (similar) {
-    const preview = similar.content.slice(0, 300) + "...";
-    const kb = keyboard([
-      [["✅ Использовать это", "use_cached"]],
-      [["🔄 Сгенерировать новое", "generate_new"]],
-    ]);
-    await setSession(userId, "CACHE_OFFER", {
-      last_request: userInput,
-      cached_assignment_id: similar.id,
-    });
-    await editMessageText(
-      chatId,
-      query.message.message_id,
-      `Нашёл похожее задание:\n\n${preview}`,
-      kb
-    );
-    return;
-  }
-
-  await sendMessage(chatId, "Генерирую задание, подожди 10–20 секунд...");
-  try {
-    await generateAndSend({ userId, chatId, userInput, level, topic, ageGroup });
-  } catch (e) {
-    console.error("generateAndSend failed:", e);
-    await sendMessage(chatId, friendlyError(e));
-  }
-}
-
-// Handle "✅ Использовать это" button: load cached assignment from DB and display it
-export async function handleUseCached(query: TgCallbackQuery): Promise<void> {
-  await answerCallbackQuery(query.id);
-
-  const userId = query.from.id;
-  const chatId = query.message.chat.id;
-  const session = await getSession(userId);
-  const assignment = await getAssignment(session?.context.cached_assignment_id ?? "");
-
-  if (!assignment) {
-    await sendMessage(chatId, "Не нашёл задание. Генерирую новое...");
-    const userInput = session?.context.last_request ?? "";
-    const { level, topic, ageGroup } = parseRequest(userInput);
-    await generateAndSend({ userId, chatId, userInput, level, topic, ageGroup });
-    return;
-  }
-
-  await setSession(userId, "POST_GENERATION", { current_assignment: assignment.content });
-  await sendAssignment(chatId, assignment.content);
-}
-
-// Handle "🔄 Сгенерировать новое" button: generate a fresh assignment ignoring the cache
-export async function handleGenerateNew(query: TgCallbackQuery): Promise<void> {
-  await answerCallbackQuery(query.id);
-
-  const userId = query.from.id;
-  const chatId = query.message.chat.id;
-  const session = await getSession(userId);
-  const userInput = session?.context.last_request ?? "";
-  const { level, topic, ageGroup } = parseRequest(userInput);
-
-  await sendMessage(chatId, "Генерирую задание, подожди 10–20 секунд...");
-  try {
-    await generateAndSend({ userId, chatId, userInput, level, topic, ageGroup });
-  } catch (e) {
-    console.error("generateAndSend failed:", e);
-    await sendMessage(chatId, friendlyError(e));
-  }
-}
-
-// Generate assignment via Claude, save to cache, update session, and send to chat
-async function generateAndSend(params: {
-  userId: number;
-  chatId: number;
-  userInput: string;
-  level: string;
-  topic: string;
-  ageGroup: string;
-}): Promise<void> {
-  const content = await generateAssignment(params.userInput);
-
-  await saveAssignment({
-    telegramId: params.userId,
-    level: params.level,
-    topic: params.topic,
-    ageGroup: params.ageGroup,
-    requestText: params.userInput,
-    content,
-  });
-
-  await setSession(params.userId, "POST_GENERATION", { current_assignment: content });
-  await sendAssignment(params.chatId, content);
-}
-
-// Handle "🆕 Новое задание" button: reset state and prompt for a new request
-export async function handleNewAssignment(query: TgCallbackQuery): Promise<void> {
-  await answerCallbackQuery(query.id);
-  await setSession(query.from.id, "WAITING_REQUEST");
-  await sendMessage(
-    query.message.chat.id,
-    "Напиши новый запрос (*уровень, тема, возраст*):\n\nНапример: A2, еда и рестораны, подросток"
-  );
-}
-
-// Send the assignment text, splitting into chunks if it exceeds the length limit
-async function sendAssignment(chatId: number, text: string): Promise<void> {
-  const kb = keyboard([
-    [["✏️ Поправить что-то", "edit_assignment"]],
-    [["📄 Скачать PDF", "download_pdf"]],
-    [["🆕 Новое задание", "new_assignment"]],
-  ]);
-  const parts = splitIfLong(text);
-  for (let i = 0; i < parts.length; i++) {
-    if (i === parts.length - 1) {
-      await sendMessage(chatId, parts[i], kb);
-    } else {
-      await sendMessage(chatId, parts[i]);
-    }
-  }
 }
