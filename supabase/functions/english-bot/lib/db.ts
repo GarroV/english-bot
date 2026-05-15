@@ -115,16 +115,18 @@ export async function saveAssignment(params: {
   level: string;
   topic: string;
   ageGroup: string;
+  moduleType: string;
   requestText: string;
   content: string;
 }): Promise<void> {
   const embeddingInput = `${params.level} ${params.topic} ${params.ageGroup}`;
-  const embedding = await embed(embeddingInput); // null if AI unavailable — saved without embedding
+  const embedding = await embed(embeddingInput);
   await supabase.from("eb_assignments").insert({
     telegram_id: params.telegramId,
     level: params.level,
     topic: params.topic,
     age_group: params.ageGroup,
+    module_type: params.moduleType,
     request_text: params.requestText,
     content: params.content,
     embedding,
