@@ -1,7 +1,19 @@
+export type ModuleType =
+  | "READING_MODULE"
+  | "VOCABULARY_MODULE"
+  | "TRANSLATION_TEXTS"
+  | "TRANSLATION_SENTENCES";
+
+export interface ClarifyingParams {
+  level?: string;      // "A2" | "B1" | "B2" | "C1" | "C2"
+  ageGroup?: string;   // "teen" | "young_adult" | "adult"
+  version?: string;    // "student" | "teacher"
+}
+
 export type State =
   | "REGISTERING"
   | "WAITING_REQUEST"
-  | "CONFIRMING"
+  | "CLARIFYING"
   | "CACHE_OFFER"
   | "POST_GENERATION"
   | "EDITING";
@@ -9,8 +21,11 @@ export type State =
 export interface SessionContext {
   last_request?: string;
   current_assignment?: string;
+  current_assignment_teacher?: string;
   cached_assignment_id?: string;
   invite_pending?: boolean;
+  module_type?: ModuleType;
+  params?: ClarifyingParams;
 }
 
 export interface DbSession {
@@ -34,6 +49,7 @@ export interface DbAssignment {
   level: string;
   topic: string;
   age_group: string;
+  module_type: string;
   request_text: string;
   content: string;
   created_at: string;
