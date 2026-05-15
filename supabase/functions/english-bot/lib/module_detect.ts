@@ -3,8 +3,8 @@ import type { ModuleType, ClarifyingParams } from "./types.ts";
 // Detect which module type best fits the user's free-form request
 export function detectModule(input: string): ModuleType {
   const s = input.toLowerCase();
-  // Translation texts: "переводные тексты", "перевод текстов", "с русского", "по публицистике"
-  if (/переводн.*текст|перевод.*текст|с русского|по публиц/.test(s)) {
+  // Translation texts: "переводные тексты", "перевод текстов", "с русского", "по жанру"
+  if (/переводн.*текст|перевод.*текст|с русского|по жанр/.test(s)) {
     return "TRANSLATION_TEXTS";
   }
   // Translation sentences: "переводные предложения", "грамматика", "модальные глаголы", "изолированные предложения"
