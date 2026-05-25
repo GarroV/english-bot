@@ -155,13 +155,9 @@ export async function handleClarifyConfirm(query: TgCallbackQuery): Promise<void
     return;
   }
 
-  // Translation modules: skip cache, generate directly
-  const useCache =
-    moduleType === "READING_MODULE" || moduleType === "VOCABULARY_MODULE";
-
-  if (useCache) {
+  if (userInput) {
     await editMessageText(chatId, query.message.message_id, "Ищу похожие задания...");
-    const similar = await findSimilarAssignment(params.level!, userInput, params.ageGroup!);
+    const similar = await findSimilarAssignment(params.level!, userInput, params.ageGroup!, moduleType);
     if (similar) {
       const preview = similar.content.slice(0, 300) + "...";
       const kb = keyboard([

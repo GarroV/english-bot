@@ -137,7 +137,8 @@ export async function saveAssignment(params: {
 export async function findSimilarAssignment(
   level: string,
   topic: string,
-  ageGroup: string
+  ageGroup: string,
+  moduleType: string
 ): Promise<DbAssignment | null> {
   const embeddingInput = `${level} ${topic} ${ageGroup}`;
   const embedding = await embed(embeddingInput);
@@ -146,6 +147,7 @@ export async function findSimilarAssignment(
     query_embedding: embedding,
     match_threshold: 0.85,
     match_count: 1,
+    filter_module_type: moduleType,
   });
   return (data?.[0] as DbAssignment) ?? null;
 }

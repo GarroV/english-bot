@@ -92,18 +92,15 @@ export async function generateAndSend(params: {
     teacherContent = await generateTeacherGuide(studentContent);
   }
 
-  // Cache only READING and VOCABULARY — translation exercises are too unique
-  if (moduleType === "READING_MODULE" || moduleType === "VOCABULARY_MODULE") {
-    await saveAssignment({
-      telegramId: userId,
-      level: clrParams.level ?? "B1",
-      topic: userInput,
-      ageGroup: clrParams.ageGroup ?? "adult",
-      moduleType,
-      requestText: userInput,
-      content: studentContent,
-    });
-  }
+  await saveAssignment({
+    telegramId: userId,
+    level: clrParams.level ?? "B1",
+    topic: userInput,
+    ageGroup: clrParams.ageGroup ?? "adult",
+    moduleType,
+    requestText: userInput,
+    content: studentContent,
+  });
 
   await setSession(userId, "POST_GENERATION", {
     current_assignment: studentContent,
