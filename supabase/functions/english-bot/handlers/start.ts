@@ -1,4 +1,4 @@
-import { sendMessage } from "../lib/telegram.ts";
+import { sendMessage, mainMenu } from "../lib/telegram.ts";
 import {
   isAllowed,
   registerUser,
@@ -49,14 +49,14 @@ export async function handleStart(message: TgMessage): Promise<void> {
   if (id === ADMIN_ID) {
     await registerUser(id, username, first_name);
     await setSession(id, "WAITING_REQUEST");
-    await sendMessage(chatId, `Добро пожаловать! ${WELCOME}`);
+    await sendMessage(chatId, `Добро пожаловать! ${WELCOME}`, mainMenu());
     return;
   }
 
   // Already registered
   if (await isAllowed(id)) {
     await setSession(id, "WAITING_REQUEST");
-    await sendMessage(chatId, WELCOME);
+    await sendMessage(chatId, WELCOME, mainMenu());
     return;
   }
 
@@ -67,14 +67,14 @@ export async function handleStart(message: TgMessage): Promise<void> {
 
 // Handle /help command — send usage guide
 export async function handleHelp(message: TgMessage): Promise<void> {
-  await sendMessage(message.chat.id, HELP);
+  await sendMessage(message.chat.id, HELP, mainMenu());
 }
 
 // Handle /new command — shortcut to reset state and start a new assignment
 export async function handleNew(message: TgMessage): Promise<void> {
   if (!(await isAllowed(message.from.id))) return;
   await setSession(message.from.id, "WAITING_REQUEST");
-  await sendMessage(message.chat.id, WELCOME);
+  await sendMessage(message.chat.id, WELCOME, mainMenu());
 }
 
 // Handle invite code submission — validates the code, registers the user, and grants access
@@ -92,5 +92,5 @@ export async function handleInviteCode(message: TgMessage): Promise<void> {
   await registerUser(id, username, first_name, invitedBy ?? undefined);
   await useInvite(code, id);
   await setSession(id, "WAITING_REQUEST");
-  await sendMessage(chatId, `Доступ открыт! ${WELCOME}`);
+  await sendMessage(chatId, `Доступ открыт! ${WELCOME}`, mainMenu());
 }

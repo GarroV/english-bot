@@ -3,6 +3,8 @@ import { handleRequest, handleChangeRequest } from "./handlers/request.ts";
 import {
   handleClarifyParam,
   handleClarifyConfirm,
+  handleNewFromMenu,
+  handleTopicInput,
 } from "./handlers/clarify.ts";
 import {
   handleUseCached,
@@ -47,7 +49,12 @@ async function route(update: TgUpdate): Promise<void> {
     const { data } = query;
 
     // Parameter selection buttons in CLARIFYING state
-    if (data.startsWith("clr_level_") || data.startsWith("clr_age_") || data.startsWith("clr_ver_")) {
+    if (
+      data.startsWith("clr_type_") ||
+      data.startsWith("clr_level_") ||
+      data.startsWith("clr_age_") ||
+      data.startsWith("clr_ver_")
+    ) {
       return handleClarifyParam(query);
     }
     if (data === "clr_confirm") return handleClarifyConfirm(query);
@@ -67,9 +74,10 @@ async function route(update: TgUpdate): Promise<void> {
     const userId = message.from.id;
     const chatId = message.chat.id;
 
-    if (text === "/start") return handleStart(message);
-    if (text === "/help") return handleHelp(message);
+    if (text === "/start" || text === "▶️ Старт") return handleStart(message);
+    if (text === "/help" || text === "❓ Справка") return handleHelp(message);
     if (text === "/new") return handleNew(message);
+    if (text === "📝 Сформировать задание") return handleNewFromMenu(message);
     if (text === "/invite") return handleInvite(message);
     if (text === "/users") return handleUsers(message);
     if (text === "/setup") return handleSetup(message);
@@ -86,6 +94,7 @@ async function route(update: TgUpdate): Promise<void> {
 
     const state = session?.state ?? "WAITING_REQUEST";
     if (state === "WAITING_REQUEST") return handleRequest(message);
+    if (state === "WAITING_TOPIC") return handleTopicInput(message);
     if (state === "EDITING") return handleApplyEdit(message);
   }
 }

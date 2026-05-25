@@ -14,9 +14,15 @@ export type State =
   | "REGISTERING"
   | "WAITING_REQUEST"
   | "CLARIFYING"
+  | "WAITING_TOPIC"
   | "CACHE_OFFER"
   | "POST_GENERATION"
   | "EDITING";
+
+export interface ReplyKeyboardMarkup {
+  keyboard: { text: string }[][];
+  resize_keyboard?: boolean;
+}
 
 export interface SessionContext {
   last_request?: string;
