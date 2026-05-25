@@ -169,6 +169,33 @@ export async function createInviteCode(createdBy: number): Promise<string> {
   return code;
 }
 
+const SAVE_DELAY_MS = 5 * 60 * 1000; // 5 minutes
+
+// If a pending_save exists and 5+ minutes have passed, flush it to eb_assignments and clear the flag.
+// Rows saved here have no embedding — they appear in history but not in vector cache search.
+export async function maybeSavePending(telegramId: number, context: SessionContext): Promise<void> {
+  const p = context.pending_save;
+  if (!p) return;
+
+  const elapsed = Date.now() - new Date(p.generated_at).getTime();
+  if (elapsed < SAVE_DELAY_MS) return;
+
+  await supabase.from("eb_assignments").insert({
+    telegram_id: telegramId,
+    level: p.level,
+    topic: p.topic,
+    age_group: p.age_group,
+    module_type: p.module_type,
+    request_text: p.request_text,
+    content: p.content,
+    embedding: null,
+  });
+
+  const updatedContext: SessionContext = { ...context };
+  delete updatedContext.pending_save;
+  await supabase.from("eb_sessions").update({ context: updatedContext }).eq("telegram_id", telegramId);
+}
+
 // Return all users ordered by registration date, newest first
 export async function listUsers(): Promise<DbUser[]> {
   const { data } = await supabase

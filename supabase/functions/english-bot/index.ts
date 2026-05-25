@@ -14,7 +14,7 @@ import {
 import { handleEditAssignment, handleApplyEdit } from "./handlers/edit.ts";
 import { handleDownloadPdf } from "./handlers/pdf_download.ts";
 import { handleInvite, handleUsers, handleSetup } from "./handlers/admin.ts";
-import { isAllowed, getSession } from "./lib/db.ts";
+import { isAllowed, getSession, maybeSavePending } from "./lib/db.ts";
 import { sendMessage } from "./lib/telegram.ts";
 import type { TgUpdate } from "./lib/types.ts";
 
@@ -42,6 +42,15 @@ Deno.serve(async (req) => {
 
 // Route an incoming Telegram update to the correct handler
 async function route(update: TgUpdate): Promise<void> {
+  // Flush any pending assignment save if 5+ minutes have passed
+  const routeUserId = update.message?.from.id ?? update.callback_query?.from.id;
+  if (routeUserId) {
+    const session = await getSession(routeUserId);
+    if (session?.context.pending_save) {
+      await maybeSavePending(routeUserId, session.context);
+    }
+  }
+
   if (update.callback_query) {
     const query = update.callback_query;
     if (!(await isAllowed(query.from.id))) return;

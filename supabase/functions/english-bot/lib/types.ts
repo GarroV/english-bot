@@ -32,6 +32,15 @@ export interface SessionContext {
   invite_pending?: boolean;
   module_type?: ModuleType;
   params?: ClarifyingParams;
+  pending_save?: {
+    level: string;
+    topic: string;
+    age_group: string;
+    module_type: string;
+    request_text: string;
+    content: string;
+    generated_at: string;
+  };
 }
 
 export interface DbSession {

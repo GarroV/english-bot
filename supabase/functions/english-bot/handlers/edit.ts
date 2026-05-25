@@ -8,7 +8,10 @@ export async function handleEditAssignment(query: TgCallbackQuery): Promise<void
   await answerCallbackQuery(query.id);
   const session = await getSession(query.from.id);
   if (session?.state !== "POST_GENERATION") return;
-  await setSession(query.from.id, "EDITING", session.context);
+  // User is editing — discard pending save, this assignment won't go to cache
+  const context = { ...session.context };
+  delete context.pending_save;
+  await setSession(query.from.id, "EDITING", context);
   await sendMessage(query.message.chat.id, "Что именно поправить? Опиши изменения:");
 }
 

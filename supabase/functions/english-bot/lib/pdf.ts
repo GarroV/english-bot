@@ -1,9 +1,22 @@
-import { PDFDocument, StandardFonts } from "npm:pdf-lib";
+import { PDFDocument } from "npm:pdf-lib";
+
+// PT Sans supports both Latin and Cyrillic; fetched once and cached for the lifetime of the instance
+const FONT_URL = "https://fonts.gstatic.com/s/ptsans/v17/jizaRExUiTo99u79D0KEwA.ttf";
+let cachedFontBytes: Uint8Array | null = null;
+
+async function getFontBytes(): Promise<Uint8Array> {
+  if (!cachedFontBytes) {
+    const res = await fetch(FONT_URL);
+    cachedFontBytes = new Uint8Array(await res.arrayBuffer());
+  }
+  return cachedFontBytes;
+}
 
 // Generate an A4 PDF document from assignment text and return raw bytes
 export async function generatePdf(text: string): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
-  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const fontBytes = await getFontBytes();
+  const font = await doc.embedFont(fontBytes);
 
   const fontSize = 11;
   const lineHeight = 14;

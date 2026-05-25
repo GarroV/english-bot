@@ -7,7 +7,6 @@ import {
 import {
   getSession,
   setSession,
-  saveAssignment,
   getAssignment,
 } from "../lib/db.ts";
 import { generateModuleContent, generateTeacherGuide } from "../lib/claude.ts";
@@ -92,21 +91,20 @@ export async function generateAndSend(params: {
     teacherContent = await generateTeacherGuide(studentContent);
   }
 
-  await saveAssignment({
-    telegramId: userId,
-    level: clrParams.level ?? "B1",
-    topic: userInput,
-    ageGroup: clrParams.ageGroup ?? "adult",
-    moduleType,
-    requestText: userInput,
-    content: studentContent,
-  });
-
   await setSession(userId, "POST_GENERATION", {
     current_assignment: studentContent,
     current_assignment_teacher: teacherContent,
     module_type: moduleType,
     params: clrParams,
+    pending_save: {
+      level: clrParams.level ?? "B1",
+      topic: userInput,
+      age_group: clrParams.ageGroup ?? "adult",
+      module_type: moduleType,
+      request_text: userInput,
+      content: studentContent,
+      generated_at: new Date().toISOString(),
+    },
   });
 
   await sendAssignment(chatId, studentContent, !!teacherContent);
