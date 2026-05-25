@@ -8,10 +8,7 @@ export async function handleEditAssignment(query: TgCallbackQuery): Promise<void
   await answerCallbackQuery(query.id);
   const session = await getSession(query.from.id);
   if (session?.state !== "POST_GENERATION") return;
-  // User is editing — discard pending save, this assignment won't go to cache
-  const context = { ...session.context };
-  delete context.pending_save;
-  await setSession(query.from.id, "EDITING", context);
+  await setSession(query.from.id, "EDITING", session.context);
   await sendMessage(query.message.chat.id, "Что именно поправить? Опиши изменения:");
 }
 
@@ -27,8 +24,11 @@ export async function handleApplyEdit(message: TgMessage): Promise<void> {
 
   const edited = await applyEdit(original, editRequest);
 
-  // Save to session only — edited versions are not added to the shared cache
-  await setSession(userId, "POST_GENERATION", { current_assignment: edited });
+  await setSession(userId, "POST_GENERATION", {
+    ...session.context,
+    current_assignment: edited,
+    current_assignment_teacher: undefined,
+  });
 
   const parts = splitIfLong(edited);
   const kb = keyboard([

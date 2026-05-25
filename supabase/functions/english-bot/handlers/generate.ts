@@ -96,15 +96,6 @@ export async function generateAndSend(params: {
     current_assignment_teacher: teacherContent,
     module_type: moduleType,
     params: clrParams,
-    pending_save: {
-      level: clrParams.level ?? "B1",
-      topic: userInput,
-      age_group: clrParams.ageGroup ?? "adult",
-      module_type: moduleType,
-      request_text: userInput,
-      content: studentContent,
-      generated_at: new Date().toISOString(),
-    },
   });
 
   await sendAssignment(chatId, studentContent, !!teacherContent);
