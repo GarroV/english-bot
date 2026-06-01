@@ -15,6 +15,9 @@ async function getFontBytes(): Promise<Uint8Array> {
 // Generate an A4 PDF document from assignment text and return raw bytes
 export async function generatePdf(text: string): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
+  // Dynamic import avoids CJS startup crash in Deno; .default handles CJS interop
+  const fontkitLib = await import("npm:@pdf-lib/fontkit");
+  doc.registerFontkit((fontkitLib as any).default ?? fontkitLib);
   const fontBytes = await getFontBytes();
   const font = await doc.embedFont(fontBytes);
 

@@ -3,7 +3,6 @@ import { handleRequest, handleChangeRequest } from "./handlers/request.ts";
 import {
   handleClarifyParam,
   handleClarifyConfirm,
-  handleNewFromMenu,
   handleTopicInput,
 } from "./handlers/clarify.ts";
 import {
@@ -74,10 +73,9 @@ async function route(update: TgUpdate): Promise<void> {
     const userId = message.from.id;
     const chatId = message.chat.id;
 
-    if (text === "/start" || text === "▶️ Старт") return handleStart(message);
-    if (text === "/help" || text === "❓ Справка") return handleHelp(message);
+    if (text === "/start") return handleStart(message);
+    if (text === "/help") return handleHelp(message);
     if (text === "/new") return handleNew(message);
-    if (text === "📝 Сформировать задание") return handleNewFromMenu(message);
     if (text === "/invite") return handleInvite(message);
     if (text === "/users") return handleUsers(message);
     if (text === "/setup") return handleSetup(message);

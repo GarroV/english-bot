@@ -19,9 +19,8 @@ export type State =
   | "POST_GENERATION"
   | "EDITING";
 
-export interface ReplyKeyboardMarkup {
-  keyboard: { text: string }[][];
-  resize_keyboard?: boolean;
+export interface ReplyKeyboardRemove {
+  remove_keyboard: true;
 }
 
 export interface SessionContext {

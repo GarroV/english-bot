@@ -1,5 +1,5 @@
 import { answerCallbackQuery, editMessageText, sendMessage, keyboard } from "../lib/telegram.ts";
-import { getSession, setSession, findSimilarAssignment, isAllowed } from "../lib/db.ts";
+import { getSession, setSession, findSimilarAssignment } from "../lib/db.ts";
 import type { TgCallbackQuery, TgMessage, ModuleType, ClarifyingParams, InlineKeyboard } from "../lib/types.ts";
 
 // Human-readable module names for display
@@ -198,24 +198,6 @@ function friendlyError(e: unknown): string {
     return "Ошибка авторизации API. Обратись к администратору.";
   }
   return "Что-то пошло не так. Попробуй ещё раз через минуту.";
-}
-
-// Handle "📝 Сформировать задание" menu button: open clarify keyboard directly
-export async function handleNewFromMenu(message: TgMessage): Promise<void> {
-  const userId = message.from.id;
-  const chatId = message.chat.id;
-
-  if (!(await isAllowed(userId))) return;
-
-  const defaultModule: ModuleType = "READING_MODULE";
-  await setSession(userId, "CLARIFYING", {
-    last_request: "",
-    module_type: defaultModule,
-    params: {},
-  });
-
-  const { text, kb } = buildClarifyMessage(defaultModule, {});
-  await sendMessage(chatId, text, kb);
 }
 
 // Handle topic input in WAITING_TOPIC state: generate with stored params

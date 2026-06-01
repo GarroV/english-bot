@@ -1,4 +1,4 @@
-import type { InlineKeyboard, InlineKeyboardButton, ReplyKeyboardMarkup } from "./types.ts";
+import type { InlineKeyboard, InlineKeyboardButton, ReplyKeyboardRemove } from "./types.ts";
 
 const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
 if (!token) throw new Error("TELEGRAM_BOT_TOKEN env var is not set");
@@ -15,7 +15,7 @@ async function call(method: string, body: object): Promise<void> {
 export async function sendMessage(
   chatId: number,
   text: string,
-  replyMarkup?: InlineKeyboard | ReplyKeyboardMarkup
+  replyMarkup?: InlineKeyboard | ReplyKeyboardRemove
 ): Promise<void> {
   await call("sendMessage", {
     chat_id: chatId,
@@ -69,15 +69,9 @@ export async function setMyCommands(
   await call("setMyCommands", { commands });
 }
 
-// Persistent reply keyboard shown at the bottom of the screen
-export function mainMenu(): ReplyKeyboardMarkup {
-  return {
-    keyboard: [
-      [{ text: "▶️ Старт" }, { text: "❓ Справка" }],
-      [{ text: "📝 Сформировать задание" }],
-    ],
-    resize_keyboard: true,
-  };
+// Removes the persistent reply keyboard from the user's screen
+export function removeKeyboard(): ReplyKeyboardRemove {
+  return { remove_keyboard: true };
 }
 
 // keyboard([["✅ Use this", "use_cached"], ["🔄 New", "generate_new"]])
