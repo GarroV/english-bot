@@ -4,6 +4,7 @@ import {
   handleClarifyParam,
   handleClarifyConfirm,
   handleTopicInput,
+  handleVerbInput,
 } from "./handlers/clarify.ts";
 import {
   handleUseCached,
@@ -93,6 +94,7 @@ async function route(update: TgUpdate): Promise<void> {
     const state = session?.state ?? "WAITING_REQUEST";
     if (state === "WAITING_REQUEST") return handleRequest(message);
     if (state === "WAITING_TOPIC") return handleTopicInput(message);
+    if (state === "WAITING_VERB") return handleVerbInput(message);
     if (state === "EDITING") return handleApplyEdit(message);
   }
 }
