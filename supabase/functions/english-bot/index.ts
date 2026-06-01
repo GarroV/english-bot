@@ -74,8 +74,8 @@ async function route(update: TgUpdate): Promise<void> {
     const chatId = message.chat.id;
 
     if (text === "/start") return handleStart(message);
-    if (text === "/help") return handleHelp(message);
-    if (text === "/new") return handleNew(message);
+    if (text === "/help" || text === "❓ Справка") return handleHelp(message);
+    if (text === "/new" || text === "📝 Новое задание") return handleNew(message);
     if (text === "/invite") return handleInvite(message);
     if (text === "/users") return handleUsers(message);
     if (text === "/setup") return handleSetup(message);
