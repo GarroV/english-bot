@@ -120,6 +120,29 @@ const TRANSLATION_SENTENCES_PROMPT = `Ты опытный преподавате
 - Никаких ответов
 - Никаких разделителей ---`;
 
+const VERB_SENTENCES_PROMPT = `Ты опытный преподаватель английского языка. Создай упражнение на перевод предложений.
+
+Запрос: {INPUT}
+Глагол(ы): {VERB}
+Уровень: {LEVEL}
+
+Структура:
+1. Первая строка: Module: Verb Sentences · Level: {LEVEL} · Verb: {VERB}
+2. Заголовок: Переведите, используя {VERB}
+3. 20 пронумерованных предложений на русском языке
+
+Требования к предложениям:
+- Каждое предложение требует использования указанного глагола
+- Охватывают разные значения и контексты (возможность, разрешение, обязательность и т.д.)
+- Постепенно усложняются от 1 к 20
+- Уровень лексики и синтаксиса соответствует {LEVEL}
+
+Правила (строго):
+- Только русские предложения — никаких переводов, никаких ответов
+- Никаких подсказок в скобках
+- Никаких объяснений грамматики
+- Никаких разделителей ---`;
+
 const TEACHER_GUIDE_PROMPT = `Вот студенческое задание по английскому:
 
 {STUDENT_CONTENT}
@@ -162,18 +185,21 @@ function buildPrompt(
 ): string {
   const level = params.level ?? "B1";
   const age = ageLabel(params.ageGroup);
+  const verb = params.targetVerb ?? "";
 
   const templates: Record<ModuleType, string> = {
     READING_MODULE: READING_PROMPT,
     VOCABULARY_MODULE: VOCABULARY_PROMPT,
     TRANSLATION_TEXTS: TRANSLATION_TEXTS_PROMPT,
     TRANSLATION_SENTENCES: TRANSLATION_SENTENCES_PROMPT,
+    VERB_SENTENCES: VERB_SENTENCES_PROMPT,
   };
 
   return templates[moduleType]
     .replace(/{INPUT}/g, userInput)
     .replace(/{LEVEL}/g, level)
-    .replace(/{AGE}/g, age);
+    .replace(/{AGE}/g, age)
+    .replace(/{VERB}/g, verb);
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
