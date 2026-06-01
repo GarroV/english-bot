@@ -7,7 +7,7 @@
 - **LLM:** Anthropic claude-sonnet-4-20250514 (`lib/claude.ts`)
 - **БД:** Supabase Postgres + pgvector (`lib/db.ts`)
 - **Тесты:** `deno test supabase/functions/english-bot/lib/ --allow-env`
-- **Деплой:** `supabase functions deploy english-bot --no-verify-jwt`
+- **Деплой:** `supabase functions deploy english-bot`
 
 ## Стиль кода
 
@@ -51,11 +51,18 @@
 - При обнаружении нового технического долга — добавить в раздел "Технический долг"
 - Новые идеи добавлять в подходящий раздел по приоритету
 
-### README.md
+### docs/README.md
 
 Обновлять при изменении команд бота, env-переменных, шагов деплоя.
 
 ---
+
+## После каждого изменения кода
+
+1. Закоммитить все изменения
+2. Задеплоить: `supabase functions deploy english-bot`
+
+Не считать задачу выполненной пока не задеплоено.
 
 ## Миграции БД
 
