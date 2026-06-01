@@ -1,6 +1,6 @@
 import { sendMessage, answerCallbackQuery, editMessageText } from "../lib/telegram.ts";
 import { setSession } from "../lib/db.ts";
-import { detectModule, extractParams } from "../lib/module_detect.ts";
+import { detectModule, extractParams, extractVerb } from "../lib/module_detect.ts";
 import { buildClarifyMessage } from "./clarify.ts";
 import type { TgMessage, TgCallbackQuery } from "../lib/types.ts";
 
@@ -12,6 +12,11 @@ export async function handleRequest(message: TgMessage): Promise<void> {
 
   const moduleType = detectModule(userInput);
   const params = extractParams(userInput);
+
+  if (moduleType === "VERB_SENTENCES") {
+    const verb = extractVerb(userInput);
+    if (verb) params.targetVerb = verb;
+  }
 
   await setSession(userId, "CLARIFYING", {
     last_request: userInput,
