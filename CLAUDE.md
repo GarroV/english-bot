@@ -7,7 +7,7 @@
 - **LLM:** Anthropic claude-sonnet-4-20250514 (`lib/claude.ts`)
 - **БД:** Supabase Postgres + pgvector (`lib/db.ts`)
 - **Тесты:** `deno test supabase/functions/english-bot/lib/ --allow-env`
-- **Деплой:** `supabase functions deploy english-bot`
+- **Деплой:** `supabase functions deploy english-bot --no-verify-jwt`
 
 ## Стиль кода
 
@@ -60,7 +60,7 @@
 ## После каждого изменения кода
 
 1. Закоммитить все изменения
-2. Задеплоить: `supabase functions deploy english-bot`
+2. Задеплоить: `supabase functions deploy english-bot --no-verify-jwt`
 
 Не считать задачу выполненной пока не задеплоено.
 
