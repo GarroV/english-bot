@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert";
-import { detectModule, extractParams } from "./module_detect.ts";
+import { detectModule, extractParams, extractVerb } from "./module_detect.ts";
 
 Deno.test("detectModule: translation texts keywords", () => {
   assertEquals(detectModule("нужны переводные тексты B2"), "TRANSLATION_TEXTS");
@@ -43,4 +43,26 @@ Deno.test("extractParams: returns undefined for unknown fields", () => {
   const p = extractParams("перевод предложений");
   assertEquals(p.level, undefined);
   assertEquals(p.ageGroup, undefined);
+});
+
+Deno.test("detectModule: verb sentences keyword", () => {
+  assertEquals(detectModule("задание на глаголы must и have to"), "VERB_SENTENCES");
+  assertEquals(detectModule("упражнение на глагол can, B1"), "VERB_SENTENCES");
+  assertEquals(detectModule("задание на глаголы should, C1, подросток"), "VERB_SENTENCES");
+});
+
+Deno.test("detectModule: verb sentences does not catch translation sentences", () => {
+  assertEquals(detectModule("переводные предложения по модальным глаголам"), "TRANSLATION_SENTENCES");
+});
+
+Deno.test("extractVerb: finds verb after глагол", () => {
+  assertEquals(extractVerb("задание на глаголы must и have to"), "must и have to");
+  assertEquals(extractVerb("задание на глагол can, B1"), "can");
+  assertEquals(extractVerb("упражнение на глаголы should / ought to"), "should / ought to");
+});
+
+Deno.test("extractVerb: returns empty string when no verb found", () => {
+  assertEquals(extractVerb("задание на глаголы"), "");
+  assertEquals(extractVerb("задание на глаголы, B2"), "");
+  assertEquals(extractVerb("reading B2"), "");
 });
