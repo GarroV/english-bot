@@ -1,8 +1,7 @@
 import { handleStart, handleInviteCode, handleHelp, handleNew } from "./handlers/start.ts";
 import { handleRequest, handleChangeRequest } from "./handlers/request.ts";
 import {
-  handleClarifyParam,
-  handleClarifyConfirm,
+  handleWizardStep,
   handleTopicInput,
   handleVerbInput,
 } from "./handlers/clarify.ts";
@@ -49,15 +48,7 @@ async function route(update: TgUpdate): Promise<void> {
     const { data } = query;
 
     // Parameter selection buttons in CLARIFYING state
-    if (
-      data.startsWith("clr_type_") ||
-      data.startsWith("clr_level_") ||
-      data.startsWith("clr_age_") ||
-      data.startsWith("clr_ver_")
-    ) {
-      return handleClarifyParam(query);
-    }
-    if (data === "clr_confirm") return handleClarifyConfirm(query);
+    if (data.startsWith("wiz_")) return handleWizardStep(query);
 
     if (data === "change_request") return handleChangeRequest(query);
     if (data === "use_cached") return handleUseCached(query);
