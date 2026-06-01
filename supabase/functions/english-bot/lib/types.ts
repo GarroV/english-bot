@@ -39,6 +39,7 @@ export interface SessionContext {
   invite_pending?: boolean;
   module_type?: ModuleType;
   params?: ClarifyingParams;
+  wizard_step?: "type" | "version" | "level" | "age";
 }
 
 export interface DbSession {
