@@ -2,12 +2,14 @@ export type ModuleType =
   | "READING_MODULE"
   | "VOCABULARY_MODULE"
   | "TRANSLATION_TEXTS"
-  | "TRANSLATION_SENTENCES";
+  | "TRANSLATION_SENTENCES"
+  | "VERB_SENTENCES";
 
 export interface ClarifyingParams {
   level?: string;      // "A2" | "B1" | "B2" | "C1" | "C2"
   ageGroup?: string;   // "teen" | "young_adult" | "adult"
   version?: string;    // "student" | "teacher"
+  targetVerb?: string; // e.g. "must / have to"
 }
 
 export type State =
@@ -15,6 +17,7 @@ export type State =
   | "WAITING_REQUEST"
   | "CLARIFYING"
   | "WAITING_TOPIC"
+  | "WAITING_VERB"
   | "CACHE_OFFER"
   | "POST_GENERATION"
   | "EDITING";
