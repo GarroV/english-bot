@@ -1,5 +1,5 @@
 import { answerCallbackQuery, editMessageText, sendMessage, keyboard } from "../lib/telegram.ts";
-import { getSession, setSession, findSimilarAssignment } from "../lib/db.ts";
+import { getSession, setSession } from "../lib/db.ts";
 import type { TgCallbackQuery, TgMessage, ModuleType, ClarifyingParams, InlineKeyboard } from "../lib/types.ts";
 
 // Human-readable module names for display
@@ -7,211 +7,147 @@ const MODULE_LABELS: Record<ModuleType, string> = {
   READING_MODULE: "Reading",
   VOCABULARY_MODULE: "Vocabulary",
   TRANSLATION_TEXTS: "Translation (тексты)",
-  TRANSLATION_SENTENCES: "Translation (предложения)",
+  TRANSLATION_SENTENCES: "Перевод (предложения)",
   VERB_SENTENCES: "Глаголы (предложения)",
 };
 
-// Levels available for selection
-const LEVELS = ["A2", "B1", "B2", "C1", "C2"];
-
-// Module type options (2 rows of 2 for readability)
-const MODULE_TYPE_OPTIONS: [string, string][] = [
-  ["Reading", "READING_MODULE"],
-  ["Vocabulary", "VOCABULARY_MODULE"],
-  ["Перевод (тексты)", "TRANSLATION_TEXTS"],
-  ["Перевод (пред.)", "TRANSLATION_SENTENCES"],
-  ["Глаголы (пред.)", "VERB_SENTENCES"],
-];
-
-// Age options reused in buildClarifyMessage and text rendering
-const AGE_OPTIONS: [string, string][] = [
-  ["подросток", "teen"],
-  ["молодой взрослый", "young_adult"],
-  ["взрослый", "adult"],
-];
-
-// Build the clarification message text and keyboard reflecting current param state.
-// Checkmark (✓) marks already-selected values.
-// "Генерировать" button is always shown so user can proceed with defaults.
-export function buildClarifyMessage(
+// Build a single wizard step keyboard and summary text.
+// Each step renders only the choices relevant to that step.
+export function buildWizardMessage(
+  step: "type" | "version" | "level" | "age",
   moduleType: ModuleType,
   params: ClarifyingParams
 ): { text: string; kb: InlineKeyboard } {
-  const rows: [string, string][][] = [];
-
-  // Module type rows (2×2 + 1)
-  rows.push(
-    MODULE_TYPE_OPTIONS.slice(0, 2).map(([label, val]) => [
-      `${moduleType === val ? "✓ " : ""}${label}`,
-      `clr_type_${val}`,
-    ])
-  );
-  rows.push(
-    MODULE_TYPE_OPTIONS.slice(2, 4).map(([label, val]) => [
-      `${moduleType === val ? "✓ " : ""}${label}`,
-      `clr_type_${val}`,
-    ])
-  );
-  rows.push(
-    MODULE_TYPE_OPTIONS.slice(4).map(([label, val]) => [
-      `${moduleType === val ? "✓ " : ""}${label}`,
-      `clr_type_${val}`,
-    ])
-  );
-
-  // Level row
-  rows.push(
-    LEVELS.map((l) => [`${params.level === l ? "✓ " : ""}${l}`, `clr_level_${l}`])
-  );
-
-  // Age row
-  rows.push(
-    AGE_OPTIONS.map(([label, val]) => [
-      `${params.ageGroup === val ? "✓ " : ""}${label}`,
-      `clr_age_${val}`,
-    ])
-  );
-
-  // Version row — only for content modules (not translation or verb)
-  if (moduleType === "READING_MODULE" || moduleType === "VOCABULARY_MODULE") {
-    const versionOptions: [string, string][] = [
-      ["студенческая", "student"],
-      ["с ответами", "teacher"],
+  if (step === "type") {
+    const mark = (t: ModuleType) => moduleType === t ? "✓ " : "";
+    const rows: [string, string][][] = [
+      [
+        [`${mark("READING_MODULE")}Reading`, "wiz_type_READING_MODULE"],
+        [`${mark("VOCABULARY_MODULE")}Vocabulary`, "wiz_type_VOCABULARY_MODULE"],
+      ],
+      [
+        [`${mark("TRANSLATION_TEXTS")}Перевод (тексты)`, "wiz_type_TRANSLATION_TEXTS"],
+        [`${mark("TRANSLATION_SENTENCES")}Перевод (пред.)`, "wiz_type_TRANSLATION_SENTENCES"],
+      ],
+      [
+        [`${mark("VERB_SENTENCES")}Глаголы (пред.)`, "wiz_type_VERB_SENTENCES"],
+      ],
     ];
-    rows.push(
-      versionOptions.map(([label, val]) => [
-        `${params.version === val ? "✓ " : ""}${label}`,
-        `clr_ver_${val}`,
-      ])
-    );
+    return { text: "Выбери тип задания:", kb: keyboard(rows) };
   }
 
-  // Generate button
-  rows.push([["✅ Генерировать", "clr_confirm"]]);
+  const typeLabel = MODULE_LABELS[moduleType];
 
-  const levelLine = params.level ? ` · Уровень: ${params.level}` : "";
-  const ageLine = params.ageGroup
-    ? ` · ${AGE_OPTIONS.find(([, v]) => v === params.ageGroup)?.[0] ?? ""}`
-    : "";
-  const verbLine = moduleType === "VERB_SENTENCES" && params.targetVerb
-    ? ` · Глагол: ${params.targetVerb}`
-    : "";
-  const text = `Тип: *${MODULE_LABELS[moduleType]}*${levelLine}${ageLine}${verbLine}\n\nВыбери параметры:`;
+  if (step === "version") {
+    const rows: [string, string][][] = [[
+      [`${params.version === "student" ? "✓ " : ""}Без ответов`, "wiz_ver_student"],
+      [`${params.version === "teacher" ? "✓ " : ""}С ответами для учителя`, "wiz_ver_teacher"],
+    ]];
+    return { text: `✓ ${typeLabel}\n\nВерсия:`, kb: keyboard(rows) };
+  }
 
-  return { text, kb: keyboard(rows) };
+  const verLabel = params.version === "student"
+    ? " · Без ответов"
+    : params.version === "teacher"
+    ? " · С ответами для учителя"
+    : "";
+
+  if (step === "level") {
+    const rows: [string, string][][] = [[
+      ...["A2", "B1", "B2", "C1", "C2"].map((l): [string, string] => [
+        `${params.level === l ? "✓ " : ""}${l}`,
+        `wiz_level_${l}`,
+      ]),
+    ]];
+    return { text: `✓ ${typeLabel}${verLabel}\n\nУровень:`, kb: keyboard(rows) };
+  }
+
+  // step === "age"
+  const lvlLabel = params.level ? ` · ${params.level}` : "";
+  const ageOptions: [string, string][] = [
+    ["подросток", "teen"],
+    ["молодой взрослый", "young_adult"],
+    ["взрослый", "adult"],
+  ];
+  const rows: [string, string][][] = [[
+    ...ageOptions.map(([lbl, val]): [string, string] => [
+      `${params.ageGroup === val ? "✓ " : ""}${lbl}`,
+      `wiz_age_${val}`,
+    ]),
+  ]];
+  return { text: `✓ ${typeLabel}${verLabel}${lvlLabel}\n\nНаправленность:`, kb: keyboard(rows) };
 }
 
-// Handle clr_level_*, clr_age_*, clr_ver_* button taps: update params and re-render message
-export async function handleClarifyParam(query: TgCallbackQuery): Promise<void> {
+// Handle all wiz_* callback taps and advance the wizard one step at a time.
+// On the final step (age), fires generation immediately — no confirm button.
+export async function handleWizardStep(query: TgCallbackQuery): Promise<void> {
   await answerCallbackQuery(query.id);
 
   const userId = query.from.id;
   const chatId = query.message.chat.id;
   const msgId = query.message.message_id;
-  const data = query.data; // e.g. "clr_level_B2"
+  const data = query.data;
 
   const session = await getSession(userId);
   if (!session || session.state !== "CLARIFYING") return;
 
-  const moduleType = session.context.module_type!;
   const params: ClarifyingParams = { ...(session.context.params ?? {}) };
+  let moduleType = (session.context.module_type ?? "READING_MODULE") as ModuleType;
 
-  let newModuleType = moduleType;
-  if (data.startsWith("clr_type_")) {
-    newModuleType = data.replace("clr_type_", "") as ModuleType;
-    // Reset version when switching to translation types or verb sentences
-    if (newModuleType === "TRANSLATION_TEXTS" || newModuleType === "TRANSLATION_SENTENCES" || newModuleType === "VERB_SENTENCES") {
-      delete params.version;
-    }
-    // Reset targetVerb when switching away from VERB_SENTENCES
-    if (newModuleType !== "VERB_SENTENCES") {
-      delete params.targetVerb;
-    }
-  } else if (data.startsWith("clr_level_")) {
-    params.level = data.replace("clr_level_", "");
-  } else if (data.startsWith("clr_age_")) {
-    params.ageGroup = data.replace("clr_age_", "");
-  } else if (data.startsWith("clr_ver_")) {
-    params.version = data.replace("clr_ver_", "");
-  }
-
-  await setSession(userId, "CLARIFYING", { ...session.context, module_type: newModuleType, params });
-
-  const { text, kb } = buildClarifyMessage(newModuleType, params);
-  await editMessageText(chatId, msgId, text, kb);
-}
-
-// Handle "✅ Генерировать" button: proceed to generation with current params
-export async function handleClarifyConfirm(query: TgCallbackQuery): Promise<void> {
-  await answerCallbackQuery(query.id);
-
-  const userId = query.from.id;
-  const chatId = query.message.chat.id;
-
-  const session = await getSession(userId);
-  if (!session || session.state !== "CLARIFYING") return;
-
-  const moduleType = session.context.module_type!;
-  const params: ClarifyingParams = { ...(session.context.params ?? {}) };
-  const userInput = session.context.last_request ?? "";
-
-  // Apply defaults for missing params
-  if (!params.level) params.level = "B1";
-  if (!params.ageGroup) params.ageGroup = "adult";
-  // version only relevant for content modules — don't default for translation
-  if (!params.version && (moduleType === "READING_MODULE" || moduleType === "VOCABULARY_MODULE")) {
-    params.version = "student";
-  }
-
-  // Verb sentences: ask for verb if not provided
-  if (moduleType === "VERB_SENTENCES" && !params.targetVerb) {
-    await setSession(userId, "WAITING_VERB", { ...session.context, params });
-    await editMessageText(
-      chatId,
-      query.message.message_id,
-      "Какой глагол? (например: must / have to)"
-    );
+  if (data.startsWith("wiz_type_")) {
+    moduleType = data.replace("wiz_type_", "") as ModuleType;
+    delete params.version;
+    delete params.targetVerb;
+    const nextStep = (moduleType === "READING_MODULE" || moduleType === "VOCABULARY_MODULE")
+      ? "version" as const
+      : "level" as const;
+    await setSession(userId, "CLARIFYING", { ...session.context, module_type: moduleType, params, wizard_step: nextStep });
+    const { text, kb } = buildWizardMessage(nextStep, moduleType, params);
+    await editMessageText(chatId, msgId, text, kb);
     return;
   }
 
-  // Menu-initiated flow: no topic yet — ask before generating
-  if (!userInput) {
-    await setSession(userId, "WAITING_TOPIC", { ...session.context, params });
-    await editMessageText(chatId, query.message.message_id, "Напиши тему задания:");
+  if (data.startsWith("wiz_ver_")) {
+    params.version = data.replace("wiz_ver_", "");
+    await setSession(userId, "CLARIFYING", { ...session.context, module_type: moduleType, params, wizard_step: "level" });
+    const { text, kb } = buildWizardMessage("level", moduleType, params);
+    await editMessageText(chatId, msgId, text, kb);
     return;
   }
 
-  if (userInput) {
-    await editMessageText(chatId, query.message.message_id, "Ищу похожие задания...");
-    const similar = await findSimilarAssignment(params.level!, userInput, params.ageGroup!, moduleType);
-    if (similar) {
-      const preview = similar.content.slice(0, 300) + "...";
-      const kb = keyboard([
-        [["✅ Использовать это", "use_cached"]],
-        [["🔄 Сгенерировать новое", "generate_new"]],
-      ]);
-      await setSession(userId, "CACHE_OFFER", {
-        last_request: userInput,
-        module_type: moduleType,
-        params,
-        cached_assignment_id: similar.id,
-      });
-      await editMessageText(chatId, query.message.message_id, `Нашёл похожее задание:\n\n${preview}`, kb);
+  if (data.startsWith("wiz_level_")) {
+    params.level = data.replace("wiz_level_", "");
+    await setSession(userId, "CLARIFYING", { ...session.context, module_type: moduleType, params, wizard_step: "age" });
+    const { text, kb } = buildWizardMessage("age", moduleType, params);
+    await editMessageText(chatId, msgId, text, kb);
+    return;
+  }
+
+  if (data.startsWith("wiz_age_")) {
+    params.ageGroup = data.replace("wiz_age_", "");
+    if (!params.level) params.level = "B1";
+    if (!params.version && (moduleType === "READING_MODULE" || moduleType === "VOCABULARY_MODULE")) {
+      params.version = "student";
+    }
+    const userInput = session.context.last_request ?? "";
+
+    if (moduleType === "VERB_SENTENCES" && !params.targetVerb) {
+      await setSession(userId, "WAITING_VERB", { ...session.context, module_type: moduleType, params });
+      await editMessageText(chatId, msgId, "Какой глагол? (например: must / have to)");
       return;
     }
-  }
 
-  await sendMessage(chatId, "Генерирую задание, подожди 10–30 секунд...");
-  const { generateAndSend } = await import("./generate.ts");
-  try {
-    await generateAndSend({ userId, chatId, userInput, moduleType, params });
-  } catch (e) {
-    console.error("generateAndSend failed:", e);
-    await sendMessage(chatId, friendlyError(e));
+    await editMessageText(chatId, msgId, "Генерирую задание, подожди 10–30 секунд...");
+    const { generateAndSend } = await import("./generate.ts");
+    try {
+      await generateAndSend({ userId, chatId, userInput, moduleType, params });
+    } catch (e) {
+      console.error("handleWizardStep failed:", e);
+      await sendMessage(chatId, friendlyError(e));
+    }
   }
 }
 
-// Map API errors to user-friendly Russian messages
 function friendlyError(e: unknown): string {
   const msg = String(e);
   if (msg.includes("credit balance") || msg.includes("too low")) {
