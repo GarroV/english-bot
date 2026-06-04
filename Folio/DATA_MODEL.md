@@ -1,0 +1,246 @@
+# Folio — Data Model
+
+> Последнее обновление: 2026-06-04
+> Статус: Проектирование (разработка не начата)
+
+---
+
+## Принципы
+
+- Каждая таблица имеет `workspace_id` + RLS
+- Soft-delete через `archived_at` (не DELETE)
+- `created_at` / `updated_at` на всех таблицах
+- UUID как PK везде
+
+---
+
+## Таблицы
+
+### workspaces
+```sql
+id            uuid PK
+name          text
+owner_id      uuid FK → users.id
+created_at    timestamptz
+updated_at    timestamptz
+```
+
+### users
+```sql
+id            uuid PK
+workspace_id  uuid FK → workspaces.id
+role          enum('super_admin', 'tutor', 'student')
+name          text
+email         text UNIQUE
+telegram_id   bigint UNIQUE nullable
+timezone      text DEFAULT 'Europe/Moscow'
+language      enum('ru', 'en') DEFAULT 'ru'
+created_at    timestamptz
+updated_at    timestamptz
+archived_at   timestamptz nullable
+```
+
+### auth_methods
+```sql
+id            uuid PK
+user_id       uuid FK → users.id
+provider      enum('email', 'telegram')
+provider_uid  text
+created_at    timestamptz
+```
+
+### invite_tokens
+```sql
+id            uuid PK
+workspace_id  uuid FK → workspaces.id
+email         text
+role          enum('tutor', 'student')
+token         text UNIQUE
+expires_at    timestamptz
+used_at       timestamptz nullable
+created_by    uuid FK → users.id
+created_at    timestamptz
+```
+
+### students (расширенный профиль ученика)
+```sql
+id              uuid PK
+workspace_id    uuid FK → workspaces.id
+user_id         uuid FK → users.id nullable  -- null если ещё не принял инвайт
+name            text
+email           text
+telegram_id     bigint nullable
+default_rate    numeric(10,2)               -- ставка за урок по умолчанию
+notes           text nullable               -- заметки репетитора
+archived_at     timestamptz nullable
+created_at      timestamptz
+updated_at      timestamptz
+```
+
+### lessons
+```sql
+id              uuid PK
+workspace_id    uuid FK → workspaces.id
+type            enum('solo', 'group')
+scheduled_at    timestamptz
+duration_min    int DEFAULT 60
+status          enum('scheduled', 'completed', 'cancelled', 'rescheduled')
+location_type   enum('online', 'offline')
+notes           text nullable
+created_at      timestamptz
+updated_at      timestamptz
+```
+
+### lesson_students (many-to-many: урок ↔ ученик)
+```sql
+id              uuid PK
+lesson_id       uuid FK → lessons.id
+student_id      uuid FK → students.id
+rate_override   numeric(10,2) nullable      -- переопределяет default_rate
+amount_charged  numeric(10,2) nullable      -- рассчитывается при status=completed
+created_at      timestamptz
+```
+
+### lesson_journal_entries
+```sql
+id              uuid PK
+workspace_id    uuid FK → workspaces.id
+lesson_id       uuid FK → lessons.id
+student_id      uuid FK → students.id
+topic           text
+level           enum('A1','A2','B1','B2','C1','C2')
+comment         text nullable
+progress_score  int nullable                -- 1-5, субъективная оценка репетитора
+created_by      uuid FK → users.id
+created_at      timestamptz
+```
+
+### student_payments
+```sql
+id              uuid PK
+workspace_id    uuid FK → workspaces.id
+student_id      uuid FK → students.id
+amount          numeric(10,2)
+type            enum('charge', 'payment')   -- charge=начислено, payment=оплачено
+lesson_id       uuid FK → lessons.id nullable
+note            text nullable
+created_by      uuid FK → users.id
+created_at      timestamptz
+```
+
+### homework_templates
+```sql
+id              uuid PK
+workspace_id    uuid FK → workspaces.id
+topic           text
+level           enum('A1','A2','B1','B2','C1','C2')
+type            enum('grammar','vocabulary','reading','writing','mixed')
+difficulty      int                         -- 1-5
+content         text                        -- сгенерированный текст задания
+source          enum('bot','manual')
+bot_cache_key   text nullable               -- ключ для кэш-хита в english-bot
+created_at      timestamptz
+updated_at      timestamptz
+```
+
+### homework_assignments
+```sql
+id              uuid PK
+workspace_id    uuid FK → workspaces.id
+template_id     uuid FK → homework_templates.id
+student_id      uuid FK → students.id
+assigned_by     uuid FK → users.id
+assigned_at     timestamptz
+due_date        date nullable
+status          enum('assigned','submitted','reviewed')
+note            text nullable
+created_at      timestamptz
+updated_at      timestamptz
+```
+
+### achievements
+```sql
+id              uuid PK
+workspace_id    uuid FK → workspaces.id
+student_id      uuid FK → students.id
+title           text                        -- генерируется OpenAI
+emoji           text
+description     text
+source_type     enum('homework','journal')
+source_id       uuid                        -- homework_assignment.id или journal_entry.id
+created_at      timestamptz
+```
+
+### template_prompts
+```sql
+id              uuid PK
+workspace_id    uuid FK → workspaces.id
+name            text
+prompt_text     text
+version         int DEFAULT 1
+is_active       bool DEFAULT true
+created_by      uuid FK → users.id
+created_at      timestamptz
+updated_at      timestamptz
+```
+
+### notifications
+```sql
+id              uuid PK
+workspace_id    uuid FK → workspaces.id
+user_id         uuid FK → users.id
+channel         enum('telegram','email')
+type            text                        -- 'lesson_reminder', 'homework_assigned', etc
+payload         jsonb
+status          enum('pending','sent','failed')
+sent_at         timestamptz nullable
+created_at      timestamptz
+```
+
+---
+
+## Вычисляемые данные (Views)
+
+### student_balance_view
+```sql
+-- Для каждого ученика: сумма charge - сумма payment = остаток
+SELECT
+  student_id,
+  workspace_id,
+  SUM(CASE WHEN type = 'charge' THEN amount ELSE -amount END) as balance
+FROM student_payments
+GROUP BY student_id, workspace_id
+```
+
+### workspace_stats_view
+```sql
+-- Агрегаты для статистики репетитора
+-- Количество активных учеников, уроков по месяцам, сумм и т.д.
+-- Реализация при разработке модуля Statistics
+```
+
+---
+
+## RLS политики (шаблон)
+
+```sql
+-- Каждая таблица: пользователь видит только свой workspace
+ALTER TABLE lessons ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "workspace_isolation" ON lessons
+  USING (workspace_id = (
+    SELECT workspace_id FROM users WHERE id = auth.uid()
+  ));
+```
+
+---
+
+## Статистика после архивации ученика
+
+При `archived_at IS NOT NULL`:
+- Персональные данные: `name`, `email`, `telegram_id` → обнуляются или псевдонимизируются
+- `student_payments` — сохраняются (суммы для статистики)
+- `lesson_journal_entries` — сохраняются (темы для статистики)
+- `achievements` — сохраняются
+- `homework_assignments` — сохраняются
+- `students` запись — остаётся с `archived_at`, без PII
