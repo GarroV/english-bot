@@ -12,6 +12,7 @@ import {
 } from "./handlers/generate.ts";
 import { handleEditAssignment, handleApplyEdit } from "./handlers/edit.ts";
 import { handleDownloadPdf } from "./handlers/pdf_download.ts";
+import { handleHistory, handleHistoryDownload } from "./handlers/history.ts";
 import { handleInvite, handleUsers, handleSetup } from "./handlers/admin.ts";
 import { isAllowed, getSession } from "./lib/db.ts";
 import { sendMessage } from "./lib/telegram.ts";
@@ -49,6 +50,7 @@ async function route(update: TgUpdate): Promise<void> {
 
     // Parameter selection buttons in CLARIFYING state
     if (data.startsWith("wiz_")) return handleWizardStep(query);
+    if (data.startsWith("hist_pdf_")) return handleHistoryDownload(query);
 
     if (data === "change_request") return handleChangeRequest(query);
     if (data === "use_cached") return handleUseCached(query);
@@ -68,6 +70,7 @@ async function route(update: TgUpdate): Promise<void> {
     if (text === "/start") return handleStart(message);
     if (text === "/help" || text === "❓ Справка") return handleHelp(message);
     if (text === "/new" || text === "📝 Новое задание") return handleNew(message);
+    if (text === "/history" || text === "📋 История") return handleHistory(message);
     if (text === "/invite") return handleInvite(message);
     if (text === "/users") return handleUsers(message);
     if (text === "/setup") return handleSetup(message);

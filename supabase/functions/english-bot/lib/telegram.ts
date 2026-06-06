@@ -74,6 +74,7 @@ export function mainMenu(): ReplyKeyboardMarkup {
   return {
     keyboard: [
       [{ text: "📝 Новое задание" }, { text: "❓ Справка" }],
+      [{ text: "📋 История" }],
     ],
     resize_keyboard: true,
   };

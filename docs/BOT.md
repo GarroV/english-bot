@@ -36,6 +36,7 @@ supabase/functions/english-bot/
     ├── generate.ts             — generateAndSend, кэш, handleUseCached, handleGenerateNew
     ├── edit.ts                 — EDITING: применить правки через Claude
     ├── pdf_download.ts         — отправка PDF(ов) + сохранение задания в БД
+    ├── history.ts              — /history: список последних 5 заданий + повторное скачивание PDF
     └── admin.ts                — /invite, /users, /setup (только ADMIN_USER_ID)
 ```
 

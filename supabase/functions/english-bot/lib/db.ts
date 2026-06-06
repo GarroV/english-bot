@@ -169,6 +169,17 @@ export async function createInviteCode(createdBy: number): Promise<string> {
   return code;
 }
 
+// Fetch the last N assignments for a user, newest first
+export async function getUserAssignments(telegramId: number, limit = 5): Promise<DbAssignment[]> {
+  const { data } = await supabase
+    .from("eb_assignments")
+    .select("id, telegram_id, level, topic, age_group, module_type, request_text, created_at")
+    .eq("telegram_id", telegramId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return (data as DbAssignment[]) ?? [];
+}
+
 // Return all users ordered by registration date, newest first
 export async function listUsers(): Promise<DbUser[]> {
   const { data } = await supabase
