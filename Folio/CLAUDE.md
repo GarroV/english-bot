@@ -1,7 +1,12 @@
+@AGENTS.md
+
 # Folio — CLAUDE.md
 
 > Инструкции для Claude Code. Читать перед каждой задачей.
 > Эти правила не обсуждаются и не нарушаются.
+
+> Folio — расширение english-bot: общий репозиторий (`english_bot`), общий Supabase-проект (`btlglelwxazdxfqdmcti`).
+> Архитектурные доки: `docs/MASTER_PROJECT.md`, `docs/DATA_MODEL.md`, `docs/ROADMAP.md`, ADR в `docs/00*.md`.
 
 ---
 

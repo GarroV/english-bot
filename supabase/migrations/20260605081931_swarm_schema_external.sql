@@ -1,0 +1,11 @@
+-- Placeholder: this migration was applied directly to the remote project
+-- (btlglelwxazdxfqdmcti) outside of this repo's migration history, likely
+-- from another machine/session. It created the schema for "Swarm"
+-- (a separate, unrelated batch content-generation product):
+-- workspaces, users, invites, workspace_limits, batches, batch_items,
+-- brandbook, assets, activity_feed, generation_log — all empty (0 rows).
+--
+-- This file exists only to keep `supabase migration list` / `db push` in
+-- sync with the remote migration history table. It intentionally does
+-- nothing — re-running it must be a no-op.
+select 1;

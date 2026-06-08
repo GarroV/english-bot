@@ -1,18 +1,18 @@
 # Folio — Roadmap
 
-> Последнее обновление: 2026-06-04
+> Последнее обновление: 2026-06-08
 
 ---
 
 ## MVP — Запуск для первого репетитора
 
 ### M1: Фундамент
-- [ ] Инициализация Next.js проекта (App Router, TypeScript, Tailwind, shadcn/ui)
-- [ ] Supabase проект (отдельный от Swarm/english-bot)
-- [ ] Базовые миграции: workspaces, users, auth_methods, invite_tokens
-- [ ] RLS политики на все таблицы
-- [ ] i18n setup (next-intl, ru/en)
-- [ ] CLAUDE.md, DATA_MODEL.md, ARCHITECTURE.md в репо
+- [x] Инициализация Next.js проекта (App Router, TypeScript, Tailwind, shadcn/ui) — `folio/`
+- [x] ~~Supabase проект (отдельный от Swarm/english-bot)~~ Решено: используем существующий проект `btlglelwxazdxfqdmcti` (общий с english-bot), таблицы Folio с префиксом `folio_` (см. [[002-multitenancy]])
+- [x] Базовые миграции: folio_workspaces, folio_users, folio_auth_methods, folio_invite_tokens (`20260608120000_folio_init.sql`)
+- [x] RLS политики на все таблицы (через `folio_current_workspace_id()`)
+- [x] i18n setup (next-intl, ru/en)
+- [x] CLAUDE.md, DATA_MODEL.md, ARCHITECTURE.md в репо
 
 ### M2: Auth
 - [ ] Email magic link (Supabase Auth)

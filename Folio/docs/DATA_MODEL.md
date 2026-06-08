@@ -1,60 +1,68 @@
 # Folio — Data Model
 
-> Последнее обновление: 2026-06-04
-> Статус: Проектирование (разработка не начата)
+> Последнее обновление: 2026-06-08
+> Статус: M1 (Фундамент) — таблицы workspaces/users/auth_methods/invite_tokens созданы и задеплоены
 
 ---
 
 ## Принципы
 
-- Каждая таблица имеет `workspace_id` + RLS
+- Один Supabase-проект с english-bot (`btlglelwxazdxfqdmcti`); таблицы Folio именуются с префиксом `folio_`, чтобы не пересекаться с `eb_*` (english-bot) и схемой Swarm
+- Каждая таблица имеет `workspace_id` + RLS (через `folio_current_workspace_id()` — security definer функция, исключающая рекурсию RLS)
 - Soft-delete через `archived_at` (не DELETE)
 - `created_at` / `updated_at` на всех таблицах
-- UUID как PK везде
+- UUID как PK везде; `folio_users.id` = `auth.users.id` (Supabase Auth)
+
+## Применённые миграции
+
+- `20260608120000_folio_init.sql` — `folio_workspaces`, `folio_users`, `folio_auth_methods`, `folio_invite_tokens` + enums (`folio_user_role`, `folio_language`, `folio_auth_provider`, `folio_invite_role`) + RLS isolation policies + функция `folio_current_workspace_id()`
 
 ---
 
 ## Таблицы
 
-### workspaces
+> Таблицы M1 названы с префиксом `folio_` (см. принципы выше) — реальные имена в БД: `folio_workspaces`, `folio_users`, `folio_auth_methods`, `folio_invite_tokens`. Ниже — их актуальная схема (✅ реализовано в `20260608120000_folio_init.sql`).
+
+### folio_workspaces ✅
 ```sql
 id            uuid PK
 name          text
-owner_id      uuid FK → users.id
+owner_id      uuid FK → folio_users.id (nullable, добавлен после создания folio_users — циклическая FK)
 created_at    timestamptz
 updated_at    timestamptz
 ```
 
-### users
+### folio_users ✅
 ```sql
-id            uuid PK
-workspace_id  uuid FK → workspaces.id
-role          enum('super_admin', 'tutor', 'student')
+id            uuid PK references auth.users(id)  -- совпадает с Supabase Auth user id
+workspace_id  uuid FK → folio_workspaces.id
+role          folio_user_role enum('super_admin', 'tutor', 'student')
 name          text
 email         text UNIQUE
 telegram_id   bigint UNIQUE nullable
 timezone      text DEFAULT 'Europe/Moscow'
-language      enum('ru', 'en') DEFAULT 'ru'
+language      folio_language enum('ru', 'en') DEFAULT 'ru'
 created_at    timestamptz
 updated_at    timestamptz
 archived_at   timestamptz nullable
 ```
 
-### auth_methods
+### folio_auth_methods ✅
 ```sql
 id            uuid PK
-user_id       uuid FK → users.id
-provider      enum('email', 'telegram')
+user_id       uuid FK → folio_users.id
+provider      folio_auth_provider enum('email', 'telegram')
 provider_uid  text
 created_at    timestamptz
+unique(provider, provider_uid)
 ```
 
-### invite_tokens
+### folio_invite_tokens ✅
 ```sql
 id            uuid PK
-workspace_id  uuid FK → workspaces.id
+workspace_id  uuid FK → folio_workspaces.id
 email         text
-role          enum('tutor', 'student')
+role          folio_invite_role enum('tutor', 'student')
 token         text UNIQUE
 expires_at    timestamptz
 used_at       timestamptz nullable
@@ -223,15 +231,26 @@ GROUP BY student_id, workspace_id
 
 ## RLS политики (шаблон)
 
-```sql
--- Каждая таблица: пользователь видит только свой workspace
-ALTER TABLE lessons ENABLE ROW LEVEL SECURITY;
+Прямой подзапрос `SELECT workspace_id FROM folio_users WHERE id = auth.uid()` в политике на саму `folio_users` вызывает рекурсию RLS. Поэтому используется `security definer` функция `folio_current_workspace_id()`, которая обходит RLS при чтении `folio_users`:
 
-CREATE POLICY "workspace_isolation" ON lessons
-  USING (workspace_id = (
-    SELECT workspace_id FROM users WHERE id = auth.uid()
-  ));
+```sql
+create or replace function folio_current_workspace_id()
+returns uuid
+language sql security definer stable
+set search_path = public
+as $$
+  select workspace_id from folio_users where id = auth.uid()
+$$;
+
+-- Каждая таблица: пользователь видит только свой workspace
+ALTER TABLE folio_lessons ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "workspace_isolation" ON folio_lessons
+  FOR ALL
+  USING (workspace_id = folio_current_workspace_id());
 ```
+
+Эта функция и политики для `folio_workspaces`/`folio_users`/`folio_auth_methods`/`folio_invite_tokens` уже в `20260608120000_folio_init.sql`. Все новые таблицы Folio следуют этому шаблону.
 
 ---
 
