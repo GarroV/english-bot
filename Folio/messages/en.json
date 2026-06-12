@@ -2,5 +2,14 @@
   "HomePage": {
     "title": "Folio",
     "subtitle": "Platform for tutors: students, schedule, homework"
-  }
+  },
+  "Login": {
+    "title": "Sign in to Folio",
+    "subtitle": "Sign in with Telegram",
+    "button": "Sign in with Telegram",
+    "waiting": "Confirm the login in Telegram…",
+    "expired": "The link expired, try again",
+    "error": "Could not sign in. Try again"
+  },
+  "Dashboard": { "title": "Dashboard", "role": "Role" }
 }
