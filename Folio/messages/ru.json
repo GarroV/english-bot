@@ -15,5 +15,15 @@
   "Dashboard": {
     "title": "Панель",
     "role": "Роль"
+  },
+  "Students": {
+    "title": "Ученики", "add": "Добавить ученика", "empty": "Учеников пока нет",
+    "name": "Имя", "email": "Email", "telegram": "Telegram ID", "rate": "Ставка за урок",
+    "notes": "Заметки", "created": "Добавлен", "actions": "Действия", "edit": "Изменить",
+    "archive": "В архив", "restore": "Вернуть", "save": "Сохранить", "cancel": "Отмена",
+    "newStudent": "Новый ученик", "editStudent": "Изменить ученика",
+    "showArchived": "Показать архив", "showActive": "Активные", "archivedBadge": "в архиве",
+    "saved": "Сохранено", "saveError": "Не удалось сохранить",
+    "archivedToast": "Ученик в архиве", "restoredToast": "Ученик возвращён"
   }
 }

@@ -15,5 +15,15 @@
   "Dashboard": {
     "title": "Dashboard",
     "role": "Role"
+  },
+  "Students": {
+    "title": "Students", "add": "Add student", "empty": "No students yet",
+    "name": "Name", "email": "Email", "telegram": "Telegram ID", "rate": "Lesson rate",
+    "notes": "Notes", "created": "Added", "actions": "Actions", "edit": "Edit",
+    "archive": "Archive", "restore": "Restore", "save": "Save", "cancel": "Cancel",
+    "newStudent": "New student", "editStudent": "Edit student",
+    "showArchived": "Show archived", "showActive": "Active", "archivedBadge": "archived",
+    "saved": "Saved", "saveError": "Could not save",
+    "archivedToast": "Student archived", "restoredToast": "Student restored"
   }
 }
