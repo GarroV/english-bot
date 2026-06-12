@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-06-12
+
+### feat: Bot Bridge — подтверждение входа в Folio
+
+`/start` теперь обрабатывает deep-link `folio_login_<token>`: бот разбирает payload (новый `lib/folio_login.ts`, функция `parseLoginPayload`) и подтверждает токен веб-логина Folio через новую `confirmFolioLogin` в `lib/db.ts`. Токен сверяется с `telegram_id` отправителя (юзер резолвится через `folio_auth_methods`) и помечается `confirmed` в таблице `folio_login_tokens`. Обычное поведение `/start` (регистрация по инвайт-коду / приветствие) не меняется, если в payload нет `folio_login_`.
+
+---
+
 ## 2026-06-06
 
 ### feat: история заданий (/history)

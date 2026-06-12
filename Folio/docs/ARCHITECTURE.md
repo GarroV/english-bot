@@ -68,3 +68,39 @@ english-bot остаётся самостоятельной Deno Edge Function. 
 код напрямую — взаимодействие идёт через общие таблицы БД (`homework_templates`,
 `template_prompts`), которые читает/пишет бот. Контракт между ними фиксируется
 отдельно при разработке соответствующего модуля (M5+).
+
+Исключение для M2a: бот участвует в auth-флоу, подтверждая токены входа в
+таблице `folio_login_tokens` (см. ниже).
+
+---
+
+## Telegram-login (M2a)
+
+Вход в Folio — через bot deep-link + одноразовый токен, переиспользуя english-bot
+(а не Telegram Login Widget, который требует публичный HTTPS-домен на боте). Это
+работает на localhost без туннелей и доменов. Решение зафиксировано в
+[[003-telegram-auth]], таблица токенов — в [[DATA_MODEL]] (`folio_login_tokens`).
+
+Флоу:
+
+1. Страница `/[locale]/login` минтит токен: `POST /api/auth/telegram/start` → запись
+   `pending` в `folio_login_tokens`.
+2. Открывается `https://t.me/garro_oracle_bot?start=folio_login_<token>`; страница
+   опрашивает `GET /api/auth/telegram/status`.
+3. english-bot ловит `/start folio_login_<token>`, резолвит folio-юзера по `telegram_id`
+   (через `folio_auth_methods`) и помечает токен `confirmed`.
+4. На `confirmed` страница вызывает `POST /api/auth/telegram/session` → роут
+   потребляет токен (`consumed`) и выпускает сессию Supabase.
+
+**Минтинг сессии** (на сервере Folio): `supabase.auth.admin.generateLink({type:'magiclink', email})`
+→ `verifyOtp({token_hash, type:'email'})`. Magic link и email-OTP делят реализацию,
+поэтому verify-тип — `'email'`. Auth-куки пишет `@supabase/ssr`.
+
+**Защита роутов**: `proxy.ts` (middleware в Next 16) делает только ОПТИМИСТИЧНУЮ
+проверку наличия cookie `sb-*-auth-token` и редиректит неавторизованных на
+`/[locale]/login`. Реальная верификация — в server-компоненте дашборда через
+`supabase.auth.getUser()` (per Next 16 docs).
+
+**Bootstrap**: первый super_admin захардкожен seed-миграцией (telegram_id 744230399) —
+ВРЕМЕННОЕ решение, заменить нормальным онбордингом. Отложено в M2a: email/magic-link
+как пользовательский метод, инвайты, n8n, Login Widget.

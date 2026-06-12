@@ -27,10 +27,11 @@ supabase/functions/english-bot/
 │   ├── pdf.ts                  — генерация PDF через pdf-lib (A4, PT Sans, поддержка кириллицы)
 │   ├── utils.ts                — makeFilename, makeTeacherFilename, splitIfLong, generateInviteCode, normalizeRequest
 │   ├── module_detect.ts        — detectModule() и extractParams() из свободного текста пользователя
+│   ├── folio_login.ts          — parseLoginPayload(): разбор deep-link `folio_login_<token>` для входа в Folio
 │   ├── utils.test.ts           — тесты utils
 │   └── module_detect.test.ts   — тесты детекции модулей
 └── handlers/
-    ├── start.ts                — /start (регистрация + инвайт-код), /help, /new
+    ├── start.ts                — /start (регистрация + инвайт-код), /help, /new; ветвится на payload `folio_login_` → confirmFolioLogin
     ├── request.ts              — WAITING_REQUEST: detectModule → CLARIFYING
     ├── clarify.ts              — экран параметров, buildClarifyMessage, handleTopicInput
     ├── generate.ts             — generateAndSend, кэш, handleUseCached, handleGenerateNew
@@ -59,6 +60,7 @@ EDITING          — ждёт текст с правками к заданию
 ```
 /start (новый)   → REGISTERING
 /start (admin/known) → WAITING_REQUEST
+/start folio_login_<token> → подтверждает токен входа Folio (confirmFolioLogin), затем обычный путь /start
 ввод инвайт-кода → WAITING_REQUEST
 
 текст в WAITING_REQUEST → CLARIFYING
@@ -132,6 +134,7 @@ EDITING          — ждёт текст с правками к заданию
 | `eb_sessions` | Текущая сессия пользователя (state + context JSON) |
 | `eb_assignments` | Кэш сгенерированных заданий с pgvector embedding (vector 384) |
 | `eb_invitations` | Инвайт-коды (code, created_by, used_by, used_at) |
+| `folio_login_tokens` | Токены входа в Folio (общая с Folio); бот пишет подтверждение (`confirmed`) при deep-link `folio_login_<token>` |
 
 **Кэш**: embedding = `level + topic + ageGroup` через `gte-small` (Supabase AI). Поиск через `match_assignments` RPC — косинусное сходство, порог 0.85, фильтр по `module_type`. Задание попадает в кэш только при скачивании PDF (пользователь одобрил).
 

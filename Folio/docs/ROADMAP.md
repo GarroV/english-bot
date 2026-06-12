@@ -15,11 +15,12 @@
 - [x] CLAUDE.md, DATA_MODEL.md, ARCHITECTURE.md в репо
 
 ### M2: Auth
-- [ ] Email magic link (Supabase Auth)
-- [ ] Инвайт-флоу: репетитор создаёт ученика → письмо → активация
-- [ ] Super Admin создаёт репетитора вручную
-- [ ] Telegram Login Widget (привязка к аккаунту)
-- [ ] Роли и middleware (защита роутов)
+> M2a (2026-06-12): Telegram-login ядро + seed super_admin + защита роутов. Email/инвайты/Login Widget — позже.
+- [ ] Email magic link (Supabase Auth) (отложено в M2a)
+- [ ] Инвайт-флоу: репетитор создаёт ученика → письмо → активация (отложено в M2a)
+- [x] Super Admin создан (seed-bootstrap, telegram_id 744230399 — временно)
+- [x] Telegram login (bot deep-link + одноразовый токен; не Login Widget)
+- [x] Роли и middleware (защита роутов через `proxy.ts` + `getUser()`)
 
 ### M3: Students
 - [ ] Список учеников в админке репетитора

@@ -16,6 +16,8 @@
 ## Применённые миграции
 
 - `20260608120000_folio_init.sql` — `folio_workspaces`, `folio_users`, `folio_auth_methods`, `folio_invite_tokens` + enums (`folio_user_role`, `folio_language`, `folio_auth_provider`, `folio_invite_role`) + RLS isolation policies + функция `folio_current_workspace_id()`
+- `20260612144854_folio_login_tokens.sql` — таблица `folio_login_tokens` (pre-auth токены входа через Telegram) + индекс по `token` + deny-all RLS (только service-role)
+- `20260612150019_folio_seed_super_admin.sql` — seed первого super_admin (workspace «Folio», telegram_id 744230399, email v.garro@dodobrands.io) — ВРЕМЕННЫЙ bootstrap
 
 ---
 
@@ -69,6 +71,22 @@ used_at       timestamptz nullable
 created_by    uuid FK → users.id
 created_at    timestamptz
 ```
+
+### folio_login_tokens ✅
+```sql
+id              uuid PK
+token           text UNIQUE
+status          text CHECK (status IN ('pending','confirmed','consumed')) DEFAULT 'pending'
+telegram_id     bigint
+folio_user_id   uuid FK → folio_users.id ON DELETE CASCADE
+created_at      timestamptz
+confirmed_at    timestamptz
+consumed_at     timestamptz
+expires_at      timestamptz
+-- index on (token)
+```
+
+> **deny-all RLS** — только service-role (english-bot + серверные роуты Folio); pre-auth таблица; TTL ~5 мин; single-use. RLS включён, но политик НЕТ (любой anon/authenticated доступ запрещён). Жизненный цикл: `pending` (создан страницей `/login`) → `confirmed` (бот поймал `/start folio_login_<token>` и сверил telegram_id) → `consumed` (серверный роут выпустил сессию). См. [[003-telegram-auth]].
 
 ### students (расширенный профиль ученика)
 ```sql
