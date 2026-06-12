@@ -1,7 +1,8 @@
 {
   "HomePage": {
     "title": "Folio",
-    "subtitle": "Platform for tutors: students, schedule, homework"
+    "subtitle": "Platform for tutors: students, schedule, homework",
+    "cta": "Sign in"
   },
   "Login": {
     "title": "Sign in to Folio",
@@ -11,5 +12,8 @@
     "expired": "The link expired, try again",
     "error": "Could not sign in. Try again"
   },
-  "Dashboard": { "title": "Dashboard", "role": "Role" }
+  "Dashboard": {
+    "title": "Dashboard",
+    "role": "Role"
+  }
 }
