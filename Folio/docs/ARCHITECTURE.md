@@ -104,3 +104,26 @@ english-bot остаётся самостоятельной Deno Edge Function. 
 **Bootstrap**: первый super_admin захардкожен seed-миграцией (telegram_id 744230399) —
 ВРЕМЕННОЕ решение, заменить нормальным онбордингом. Отложено в M2a: email/magic-link
 как пользовательский метод, инвайты, n8n, Login Widget.
+
+---
+
+## Students module (M3)
+
+Workspace-scoped CRUD ростера учеников репетитора: список, создание, редактирование,
+мягкая архивация/восстановление. Роут `/[locale]/students`.
+
+- **Серверный слой** `lib/students/`:
+  - `schema.ts` — zod `studentInputSchema` (name обязателен; email/telegramId/defaultRate/notes опциональны).
+  - `queries.ts` — `listStudents(includeArchived)`.
+  - `actions.ts` — `createStudent` / `updateStudent` / `archiveStudent` / `restoreStudent`
+    (`"use server"`). `workspace_id` берётся из строки `folio_users` сессионного юзера,
+    **никогда** из клиента; запись идёт через request-scoped серверный клиент, чтобы
+    применялась RLS.
+- **UI** (`(app)/students/`): `page.tsx` (server, auth-guard через `getUser`, читает `?archived`),
+  `StudentsTable.tsx` (client, shadcn Table + фильтр архива + row actions),
+  `StudentForm.tsx` (client, shadcn Dialog, create/edit, sonner toasts). `<Toaster/>`
+  смонтирован в `[locale]/layout.tsx`.
+- **Архивация** — мягкая (`archived_at`, восстановимо). PII-скраб и логин/инвайты ученика
+  отложены.
+
+Таблица и RLS — в [[DATA_MODEL]] (`folio_students`).

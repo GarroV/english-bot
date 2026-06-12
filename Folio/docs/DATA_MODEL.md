@@ -18,6 +18,7 @@
 - `20260608120000_folio_init.sql` — `folio_workspaces`, `folio_users`, `folio_auth_methods`, `folio_invite_tokens` + enums (`folio_user_role`, `folio_language`, `folio_auth_provider`, `folio_invite_role`) + RLS isolation policies + функция `folio_current_workspace_id()`
 - `20260612144854_folio_login_tokens.sql` — таблица `folio_login_tokens` (pre-auth токены входа через Telegram) + индекс по `token` + deny-all RLS (только service-role)
 - `20260612150019_folio_seed_super_admin.sql` — seed первого super_admin (workspace «Folio», telegram_id 744230399, email v.garro@dodobrands.io) — ВРЕМЕННЫЙ bootstrap
+- `20260612181221_folio_students.sql` — таблица `folio_students` (ростер учеников репетитора) + индекс по `workspace_id` + workspace RLS
 
 ---
 
@@ -88,20 +89,25 @@ expires_at      timestamptz
 
 > **deny-all RLS** — только service-role (english-bot + серверные роуты Folio); pre-auth таблица; TTL ~5 мин; single-use. RLS включён, но политик НЕТ (любой anon/authenticated доступ запрещён). Жизненный цикл: `pending` (создан страницей `/login`) → `confirmed` (бот поймал `/start folio_login_<token>` и сверил telegram_id) → `consumed` (серверный роут выпустил сессию). См. [[003-telegram-auth]].
 
-### students (расширенный профиль ученика)
+### folio_students ✅
 ```sql
 id              uuid PK
-workspace_id    uuid FK → workspaces.id
-user_id         uuid FK → users.id nullable  -- null если ещё не принял инвайт
-name            text
-email           text
+workspace_id    uuid not null FK → folio_workspaces(id) ON DELETE CASCADE
+user_id         uuid FK → folio_users(id) nullable   -- будущая привязка аккаунта ученика; в M3 не используется
+name            text not null
+email           text nullable
 telegram_id     bigint nullable
-default_rate    numeric(10,2)               -- ставка за урок по умолчанию
-notes           text nullable               -- заметки репетитора
-archived_at     timestamptz nullable
+default_rate    numeric(10,2) nullable               -- ставка за урок по умолчанию (RUB)
+notes           text nullable                        -- заметки репетитора
+archived_at     timestamptz nullable                 -- soft archive (восстановимо)
 created_at      timestamptz
 updated_at      timestamptz
+-- index on (workspace_id)
 ```
+
+> Реализовано в `20260612181221_folio_students.sql`. Workspace RLS: политика `workspace_isolation` `FOR ALL` с `USING` **и** `WITH CHECK` по `workspace_id = folio_current_workspace_id()` (WITH CHECK нужен, чтобы INSERT тоже был scoped). Мягкая архивация через `archived_at` (без PII-скраба в M3). `user_id` nullable — задел под будущую привязку аккаунта ученика. См. [[ARCHITECTURE]].
+
+> ⚠️ Старый черновик `### students` (без префикса `folio_`) ниже **устарел** — заменён реализованной таблицей `folio_students ✅` выше. Черновики `lessons`, `lesson_students` и т.д. (без префикса) остаются проектными до реализации соответствующих M.
 
 ### lessons
 ```sql
