@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
 import {
@@ -53,7 +53,24 @@ export function StudentForm({ mode, student, labels }: {
     notes: student?.notes ?? "",
   });
 
+  // The component instance is reused across router.refresh(); re-sync the form from the
+  // latest student prop each time the dialog opens so edits never show stale values.
+  useEffect(() => {
+    if (!open || !student) return;
+    setForm({
+      name: student.name,
+      email: student.email ?? "",
+      telegram: student.telegram_id != null ? String(student.telegram_id) : "",
+      rate: student.default_rate != null ? String(student.default_rate) : "",
+      notes: student.notes ?? "",
+    });
+  }, [open, student]);
+
   async function submit() {
+    if (mode === "edit" && !student) {
+      toast.error(`${labels.saveError}: student missing`);
+      return;
+    }
     setPending(true);
     const input = toInput(form);
     const res = mode === "create"

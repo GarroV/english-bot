@@ -50,7 +50,7 @@ export async function updateStudent(id: string, input: StudentInput): Promise<Ac
   if (!user) return { ok: false, error: "not authenticated" };
 
   const v = parsed.data;
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("folio_students")
     .update({
       name: v.name,
@@ -60,8 +60,10 @@ export async function updateStudent(id: string, input: StudentInput): Promise<Ac
       notes: v.notes ?? null,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
   if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: "not found" };
   return { ok: true };
 }
 
@@ -71,11 +73,13 @@ export async function archiveStudent(id: string): Promise<ActionResult> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "not authenticated" };
   const now = new Date().toISOString();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("folio_students")
     .update({ archived_at: now, updated_at: now })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
   if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: "not found" };
   return { ok: true };
 }
 
@@ -83,10 +87,12 @@ export async function restoreStudent(id: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "not authenticated" };
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("folio_students")
     .update({ archived_at: null, updated_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
   if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: "not found" };
   return { ok: true };
 }
