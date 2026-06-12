@@ -59,11 +59,14 @@ export function StudentsTable({ students, includeArchived, labels }: {
       </div>
 
       {students.length === 0 ? (
-        <p className="text-sm text-zinc-500">{labels.empty}</p>
+        <p className="rounded-2xl border border-border bg-card p-10 text-center text-sm text-muted-foreground shadow-sm">
+          {labels.empty}
+        </p>
       ) : (
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-secondary/50">
               <TableHead>{labels.name}</TableHead>
               <TableHead>{labels.email}</TableHead>
               <TableHead>{labels.telegram}</TableHead>
@@ -102,6 +105,7 @@ export function StudentsTable({ students, includeArchived, labels }: {
             })}
           </TableBody>
         </Table>
+        </div>
       )}
     </div>
   );

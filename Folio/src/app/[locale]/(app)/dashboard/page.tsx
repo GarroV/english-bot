@@ -18,11 +18,14 @@ export default async function DashboardPage() {
 
   const t = await getTranslations("Dashboard");
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-2 p-8">
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="text-zinc-600 dark:text-zinc-400">
-        {t("role")}: {profile?.role ?? "—"} ({profile?.name ?? "—"})
-      </p>
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-8">
+      <h1 className="text-2xl font-extrabold tracking-tight">{t("title")}</h1>
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <p className="text-sm font-medium text-muted-foreground">{t("role")}</p>
+        <p className="mt-1 text-lg font-bold">
+          {profile?.role ?? "—"} · {profile?.name ?? "—"}
+        </p>
+      </div>
     </main>
   );
 }

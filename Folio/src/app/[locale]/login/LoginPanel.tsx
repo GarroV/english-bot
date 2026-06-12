@@ -72,11 +72,11 @@ export function LoginPanel({ labels }: { labels: Labels }) {
       <button
         onClick={start}
         disabled={phase === "waiting"}
-        className="rounded-md bg-sky-600 px-5 py-2.5 font-medium text-white transition hover:bg-sky-500 disabled:opacity-60"
+        className="w-full rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-60"
       >
         {labels.button}
       </button>
-      {phase === "waiting" && <p className="text-sm text-zinc-500">{labels.waiting}</p>}
+      {phase === "waiting" && <p className="text-sm text-muted-foreground">{labels.waiting}</p>}
       {phase === "expired" && <p className="text-sm text-amber-600">{labels.expired}</p>}
       {phase === "error" && <p className="text-sm text-red-600">{labels.error}</p>}
     </div>
