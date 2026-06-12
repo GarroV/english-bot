@@ -191,3 +191,41 @@ export async function listUsers(): Promise<DbUser[]> {
     telegram_id: Number(u.telegram_id),
   }));
 }
+
+// Confirm a Folio login token for a Telegram user. Returns the outcome for the bot reply.
+export async function confirmFolioLogin(
+  token: string,
+  telegramId: number,
+): Promise<"confirmed" | "not_linked" | "invalid"> {
+  // 1) token must exist, be pending, and not expired
+  const { data: tok } = await supabase
+    .from("folio_login_tokens")
+    .select("id, status, expires_at")
+    .eq("token", token)
+    .maybeSingle();
+  if (!tok || tok.status !== "pending" || Date.parse(tok.expires_at) <= Date.now()) {
+    return "invalid";
+  }
+
+  // 2) resolve the folio user by telegram auth method
+  const { data: method } = await supabase
+    .from("folio_auth_methods")
+    .select("user_id")
+    .eq("provider", "telegram")
+    .eq("provider_uid", String(telegramId))
+    .maybeSingle();
+  if (!method) return "not_linked";
+
+  // 3) confirm
+  const { error } = await supabase
+    .from("folio_login_tokens")
+    .update({
+      status: "confirmed",
+      telegram_id: telegramId,
+      folio_user_id: method.user_id,
+      confirmed_at: new Date().toISOString(),
+    })
+    .eq("token", token)
+    .eq("status", "pending");
+  return error ? "invalid" : "confirmed";
+}

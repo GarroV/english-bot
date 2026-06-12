@@ -6,7 +6,9 @@ import {
   validateInvite,
   useInvite,
   getInviteCreator,
+  confirmFolioLogin,
 } from "../lib/db.ts";
+import { parseLoginPayload } from "../lib/folio_login.ts";
 import type { TgMessage } from "../lib/types.ts";
 
 const ADMIN_ID = Number(Deno.env.get("ADMIN_USER_ID")!);
@@ -70,6 +72,20 @@ const HELP =
 export async function handleStart(message: TgMessage): Promise<void> {
   const { id, first_name, username } = message.from;
   const chatId = message.chat.id;
+
+  // Folio web login: "/start folio_login_<token>" — confirm the token for this Telegram user
+  const loginToken = parseLoginPayload(message.text ?? "");
+  if (loginToken) {
+    const result = await confirmFolioLogin(loginToken, id);
+    const reply =
+      result === "confirmed"
+        ? "✅ Вход в Folio подтверждён. Вернись на сайт."
+        : result === "not_linked"
+          ? "Этот Telegram не привязан к Folio."
+          : "Ссылка устарела. Открой вход в Folio заново.";
+    await sendMessage(chatId, reply);
+    return;
+  }
 
   // Admin bypasses invite requirement
   if (id === ADMIN_ID) {
