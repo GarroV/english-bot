@@ -5,7 +5,8 @@ import { mintSessionForUser } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: NextRequest) {
-  const { token } = await request.json().catch(() => ({ token: null }));
+  const body = (await request.json().catch(() => null)) as { token?: unknown } | null;
+  const token = typeof body?.token === "string" ? body.token : null;
   if (!token) return NextResponse.json({ error: "missing token" }, { status: 400 });
 
   const userId = await consumeLoginToken(token);
