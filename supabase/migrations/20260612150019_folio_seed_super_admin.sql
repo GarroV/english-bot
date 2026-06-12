@@ -8,14 +8,20 @@ declare
   v_email   text := 'v.garro@dodobrands.io';
   v_tg      bigint := 744230399;
 begin
-  -- 1) auth user (passwordless; email confirmed so magic-link/verifyOtp works)
+  -- 1) auth user (passwordless; email confirmed so magic-link/verifyOtp works).
+  -- The token columns MUST be '' not NULL — GoTrue scans them into non-nullable
+  -- Go strings and otherwise fails with "Database error finding user".
   insert into auth.users (
     instance_id, id, aud, role, email, email_confirmed_at,
-    created_at, updated_at, raw_app_meta_data, raw_user_meta_data
+    created_at, updated_at, raw_app_meta_data, raw_user_meta_data,
+    confirmation_token, recovery_token, email_change,
+    email_change_token_new, email_change_token_current,
+    phone_change, phone_change_token, reauthentication_token
   ) values (
     '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated',
     v_email, now(), now(), now(),
-    '{"provider":"email","providers":["email"]}', '{}'
+    '{"provider":"email","providers":["email"]}', '{}',
+    '', '', '', '', '', '', '', ''
   ) on conflict (id) do nothing;
 
   -- 2) workspace
