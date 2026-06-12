@@ -67,7 +67,7 @@ async function route(update: TgUpdate): Promise<void> {
     const userId = message.from.id;
     const chatId = message.chat.id;
 
-    if (text === "/start") return handleStart(message);
+    if (text === "/start" || text.startsWith("/start ")) return handleStart(message);
     if (text === "/help" || text === "❓ Справка") return handleHelp(message);
     if (text === "/new" || text === "📝 Новое задание") return handleNew(message);
     if (text === "/history" || text === "📋 История") return handleHistory(message);
