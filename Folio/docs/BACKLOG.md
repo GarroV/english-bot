@@ -50,4 +50,5 @@
 - [ ] Timezone: полная поддержка (сейчас Moscow-only)
 - [ ] Audit log: кто и что менял в системе
 - [ ] Rate limiting на Edge Functions
+- [ ] Rate limiting на auth-роутах `/api/auth/telegram/{start,status}` — сейчас без троттлинга (создание токенов / поллинг). Не критично пока одно-арендный bootstrap, но обязательно до публичного запуска (security-review M2a, 2026-06-12)
 - [ ] Backup стратегия для Supabase

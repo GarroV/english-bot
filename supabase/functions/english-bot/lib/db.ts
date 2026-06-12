@@ -226,6 +226,7 @@ export async function confirmFolioLogin(
       confirmed_at: new Date().toISOString(),
     })
     .eq("token", token)
-    .eq("status", "pending");
+    .eq("status", "pending")
+    .gt("expires_at", new Date().toISOString());
   return error ? "invalid" : "confirmed";
 }

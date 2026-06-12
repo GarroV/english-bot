@@ -48,12 +48,15 @@ export async function consumeLoginToken(token: string): Promise<string | null> {
   if (error) throw new Error(`consumeLoginToken read failed: ${error.message}`);
   if (!data || !isRedeemable(data, Date.now())) return null;
 
-  // Guard against double-consume via a conditional update on consumed_at IS NULL.
+  // Guard against double-consume (consumed_at IS NULL) and the read→update expiry
+  // window (status still confirmed, not yet expired) — all enforced atomically in SQL.
   const { data: updated, error: updErr } = await admin
     .from(TABLE)
     .update({ status: "consumed", consumed_at: new Date().toISOString() })
     .eq("token", token)
+    .eq("status", "confirmed")
     .is("consumed_at", null)
+    .gt("expires_at", new Date().toISOString())
     .select("folio_user_id")
     .maybeSingle();
   if (updErr) throw new Error(`consumeLoginToken update failed: ${updErr.message}`);

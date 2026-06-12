@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 
 interface Labels { button: string; waiting: string; expired: string; error: string; }
@@ -13,32 +13,58 @@ export function LoginPanel({ labels }: { labels: Labels }) {
   const [phase, setPhase] = useState<Phase>("idle");
   const router = useRouter();
   const polls = useRef(0);
+  const cancelled = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Stop the polling loop and drop any pending timer when the panel unmounts.
+  useEffect(() => {
+    cancelled.current = false;
+    return () => {
+      cancelled.current = true;
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, []);
 
   const poll = useCallback(async (token: string) => {
+    if (cancelled.current) return;
     polls.current += 1;
     if (polls.current > MAX_POLLS) { setPhase("expired"); return; }
 
-    const res = await fetch(`/api/auth/telegram/status?token=${encodeURIComponent(token)}`);
-    const { status } = await res.json();
-    if (status === "confirmed") {
-      const s = await fetch("/api/auth/telegram/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-      });
-      if (s.ok) { router.push("/dashboard"); return; }
-      setPhase("error"); return;
+    try {
+      const res = await fetch(`/api/auth/telegram/status?token=${encodeURIComponent(token)}`);
+      if (!res.ok) { timer.current = setTimeout(() => poll(token), POLL_MS); return; }
+      const { status } = await res.json();
+
+      if (status === "confirmed") {
+        const s = await fetch("/api/auth/telegram/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
+        if (cancelled.current) return;
+        if (s.ok) { router.push("/dashboard"); return; }
+        setPhase("error");
+        return;
+      }
+      timer.current = setTimeout(() => poll(token), POLL_MS);
+    } catch {
+      if (!cancelled.current) setPhase("error");
     }
-    setTimeout(() => poll(token), POLL_MS);
   }, [router]);
 
   const start = useCallback(async () => {
     setPhase("waiting");
     polls.current = 0;
-    const res = await fetch("/api/auth/telegram/start", { method: "POST" });
-    const { token, deepLink } = await res.json();
-    window.open(deepLink, "_blank");
-    poll(token);
+    try {
+      const res = await fetch("/api/auth/telegram/start", { method: "POST" });
+      if (!res.ok) { setPhase("error"); return; }
+      const { token, deepLink } = await res.json();
+      if (!token || !deepLink) { setPhase("error"); return; }
+      window.open(deepLink, "_blank");
+      poll(token);
+    } catch {
+      setPhase("error");
+    }
   }, [poll]);
 
   return (

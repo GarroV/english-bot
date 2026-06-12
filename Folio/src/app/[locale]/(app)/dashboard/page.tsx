@@ -5,12 +5,15 @@ import { createClient } from "@/lib/supabase/server";
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect({ href: "/login", locale: "ru" });
+  if (!user) {
+    redirect({ href: "/login", locale: "ru" });
+    return null;
+  }
 
   const { data: profile } = await supabase
     .from("folio_users")
     .select("role, name")
-    .eq("id", user!.id)
+    .eq("id", user.id)
     .maybeSingle();
 
   const t = await getTranslations("Dashboard");
