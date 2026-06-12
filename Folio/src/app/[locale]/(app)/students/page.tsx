@@ -33,7 +33,7 @@ export default async function StudentsPage({
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-8">
-      <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+      <h1 className="text-4xl font-bold">{t("title")}</h1>
       <StudentsTable students={students} includeArchived={includeArchived} labels={labels} />
     </main>
   );

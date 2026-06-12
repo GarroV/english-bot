@@ -9,7 +9,7 @@ export default function LoginPage() {
         <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent">
           <span className="h-4 w-4 rounded-full bg-primary" aria-hidden />
         </div>
-        <h1 className="text-2xl font-extrabold tracking-tight">{t("title")}</h1>
+        <h1 className="text-3xl font-bold">{t("title")}</h1>
         <p className="mt-2 text-muted-foreground">{t("subtitle")}</p>
         <div className="mt-6">
           <LoginPanel
