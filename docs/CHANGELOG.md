@@ -6,6 +6,10 @@
 
 ## 2026-06-12
 
+### fix: роутинг `/start` с payload
+
+`index.ts` матчил команду строго `text === "/start"`, поэтому deep-link `/start folio_login_<token>` не доходил до `handleStart` и логин Folio молча не срабатывал. Теперь роутер принимает и `text.startsWith("/start ")`. Симптом: бот отвечал обычным приветствием, токен в `folio_login_tokens` оставался `pending`.
+
 ### feat: Bot Bridge — подтверждение входа в Folio
 
 `/start` теперь обрабатывает deep-link `folio_login_<token>`: бот разбирает payload (новый `lib/folio_login.ts`, функция `parseLoginPayload`) и подтверждает токен веб-логина Folio через новую `confirmFolioLogin` в `lib/db.ts`. Токен сверяется с `telegram_id` отправителя (юзер резолвится через `folio_auth_methods`) и помечается `confirmed` в таблице `folio_login_tokens`. Обычное поведение `/start` (регистрация по инвайт-коду / приветствие) не меняется, если в payload нет `folio_login_`.
