@@ -24,7 +24,9 @@ interface LessonRow {
   status: "scheduled" | "completed" | "cancelled";
   location_type: "online" | "offline";
   notes: string | null;
-  folio_lesson_students: { folio_students: StudentOption | null }[] | null;
+  // PostgREST embeds a to-one relation as an object, but supabase-js infers an array;
+  // accept either shape and normalize in the map below.
+  folio_lesson_students: { folio_students: StudentOption | StudentOption[] | null }[] | null;
 }
 
 // Lessons whose scheduled_at is within [fromISO, toISO), with each lesson's students.
@@ -49,8 +51,10 @@ export async function listLessonsInRange(fromISO: string, toISO: string): Promis
     location_type: row.location_type,
     notes: row.notes,
     students: (row.folio_lesson_students ?? [])
-      .map((ls) => ls.folio_students)
-      .filter((s): s is StudentOption => s !== null),
+      .flatMap((ls) => {
+        const fs = ls.folio_students;
+        return Array.isArray(fs) ? fs : fs ? [fs] : [];
+      }),
   }));
 }
 
