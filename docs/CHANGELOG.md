@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-06-13
+
+### refactor: движок генерации в _shared
+
+Код генерации (промпты + `generateModuleContent` / `generateTeacherGuide` / `applyEdit`) вынесен из `lib/claude.ts` в `supabase/functions/_shared/generate.ts`. Теперь `lib/claude.ts` — тонкий ре-экспорт из `_shared`; поведение бота не изменилось, бот передеплоен. Новая Edge Function `folio-generate` выставляет тот же движок по HTTP для веб-Folio — оба потребителя гоняют идентичный движок, без дрейфа промптов.
+
+---
+
 ## 2026-06-12
 
 ### fix: роутинг `/start` с payload

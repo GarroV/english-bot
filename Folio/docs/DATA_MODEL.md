@@ -20,6 +20,7 @@
 - `20260612150019_folio_seed_super_admin.sql` — seed первого super_admin (workspace «Folio», telegram_id 744230399, email v.garro@dodobrands.io) — ВРЕМЕННЫЙ bootstrap
 - `20260612181221_folio_students.sql` — таблица `folio_students` (ростер учеников репетитора) + индекс по `workspace_id` + workspace RLS
 - `20260612192152_folio_lessons.sql` — таблицы `folio_lessons` + `folio_lesson_students` (M4 Schedule) + enums (`folio_lesson_type`, `folio_lesson_status`, `folio_location_type`) + индексы + RLS (`folio_lessons` workspace-scoped; `folio_lesson_students` — parent-scoped через `folio_lessons`)
+- `20260613213941_folio_homework_templates.sql` — таблица `folio_homework_templates` (M7a генерация домашек) + индекс по `workspace_id` + workspace RLS
 
 ---
 
@@ -141,6 +142,24 @@ unique(lesson_id, student_id)
 
 > Реализовано в `20260612192152_folio_lessons.sql`. Join-таблица урок ↔ ученик; `unique(lesson_id, student_id)` исключает дубли в ростере. `rate_override` / `amount_charged` — задел под M5 (Billing). RLS `workspace_isolation` `FOR ALL` **через родителя** (у таблицы нет своего `workspace_id`): `lesson_id in (select id from folio_lessons where workspace_id = folio_current_workspace_id())`.
 
+### folio_homework_templates ✅
+```sql
+id              uuid PK
+workspace_id    uuid not null FK → folio_workspaces(id) ON DELETE CASCADE  -- RLS anchor
+module_type     text CHECK (module_type IN ('READING_MODULE','VOCABULARY_MODULE','TRANSLATION_TEXTS','TRANSLATION_SENTENCES','VERB_SENTENCES'))
+level           text
+age_group       text
+topic           text not null
+content         text not null               -- сгенерированный текст задания
+source          text DEFAULT 'web' CHECK (source IN ('web','bot'))
+created_by      uuid FK → folio_users(id)
+created_at      timestamptz
+updated_at      timestamptz
+-- index on (workspace_id)
+```
+
+> Реализовано в `20260613213941_folio_homework_templates.sql` (M7a). Шаблон сгенерированной домашки. `module_type` ограничен теми же 5 типами, что и движок генерации (`READING_MODULE` / `VOCABULARY_MODULE` / `TRANSLATION_TEXTS` / `TRANSLATION_SENTENCES` / `VERB_SENTENCES`). `source` различает, откуда пришёл шаблон: `'web'` (форма генерации в веб-Folio, дефолт) или `'bot'` (english-bot). Workspace RLS: политика `workspace_isolation` `FOR ALL` с `USING` **и** `WITH CHECK` по `workspace_id = folio_current_workspace_id()`. См. [[ARCHITECTURE]].
+
 ### lesson_journal_entries
 ```sql
 id              uuid PK
@@ -169,6 +188,7 @@ created_at      timestamptz
 ```
 
 ### homework_templates
+> ⚠️ Старый черновик (без префикса `folio_`) — **частично реализован / заменён** таблицей `folio_homework_templates ✅` выше (M7a). В реализации: `module_type` (5 типов движка генерации) вместо `type`/`difficulty`, `source` ∈ (`web`,`bot`), без `bot_cache_key` (кэширование генерации отложено). Черновик ниже оставлен для истории проектных идей.
 ```sql
 id              uuid PK
 workspace_id    uuid FK → workspaces.id

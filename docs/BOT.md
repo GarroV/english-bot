@@ -22,7 +22,7 @@ supabase/functions/english-bot/
 ├── lib/
 │   ├── types.ts                — все TypeScript-типы (State, ModuleType, TgUpdate и др.)
 │   ├── telegram.ts             — обёртки Telegram API (sendMessage, editMessageText, keyboard, mainMenu)
-│   ├── claude.ts               — промпты и вызовы Anthropic API (generateModuleContent, generateTeacherGuide, applyEdit)
+│   ├── claude.ts               — тонкий ре-экспорт движка генерации из `_shared/generate.ts` (см. примечание ниже)
 │   ├── db.ts                   — Supabase-запросы (сессии, пользователи, задания, инвайты)
 │   ├── pdf.ts                  — генерация PDF через pdf-lib (A4, PT Sans, поддержка кириллицы)
 │   ├── utils.ts                — makeFilename, makeTeacherFilename, splitIfLong, generateInviteCode, normalizeRequest
@@ -40,6 +40,8 @@ supabase/functions/english-bot/
     ├── history.ts              — /history: список последних 5 заданий + повторное скачивание PDF
     └── admin.ts                — /invite, /users, /setup (только ADMIN_USER_ID)
 ```
+
+> **Движок генерации (shared с Folio):** промпты + `generateModuleContent` / `generateTeacherGuide` / `applyEdit` вынесены в `supabase/functions/_shared/generate.ts` (Deno + Anthropic). `lib/claude.ts` — тонкий ре-экспорт из `_shared`. Тот же движок выставлен по HTTP для веб-Folio через Edge Function `folio-generate` — оба потребителя гоняют идентичный код, без дрейфа промптов.
 
 ---
 

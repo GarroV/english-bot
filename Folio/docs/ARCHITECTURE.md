@@ -154,3 +154,38 @@ Workspace-scoped CRUD ростера учеников репетитора: сп
   через `folio_lessons`.
 
 Таблицы и RLS — в [[DATA_MODEL]] (`folio_lessons`, `folio_lesson_students`).
+
+---
+
+## Homework generation (M7a)
+
+Генерация домашних заданий теперь доступна и в веб-Folio, и в боте — на **одном
+движке**, без дрейфа промптов. Решение о равносилии веб ↔ бот зафиксировано в
+[[project-web-bot-parity]].
+
+- **Общий движок** `supabase/functions/_shared/generate.ts` — промпты +
+  `generateModuleContent` / `generateTeacherGuide` / `applyEdit` (Deno + Anthropic).
+  Раньше этот код жил в `lib/claude.ts` бота; теперь `lib/claude.ts` — тонкий
+  ре-экспорт из `_shared`. Бот импортирует движок напрямую.
+- **HTTP-обёртка** `supabase/functions/folio-generate/index.ts` — Edge Function,
+  выставляет тот же движок по HTTP для веба. Закрыта секретом (заголовок
+  `x-folio-secret` сверяется с `FOLIO_GENERATE_SECRET`), деплоится
+  `--no-verify-jwt`, переиспользует `ANTHROPIC_KEY`. Оба потребителя (бот через
+  импорт, веб через `folio-generate`) гоняют идентичный движок.
+- **Веб-слой** `lib/homework/`:
+  - `schema.ts` — zod `homeworkInputSchema` + `MODULE_TYPES` (`verb` обязателен
+    для `VERB_SENTENCES`).
+  - `generate.ts` — `callGenerate`: `fetch` к `folio-generate` с секретом.
+  - `queries.ts` — `listTemplates`.
+  - `actions.ts` (`"use server"`) — `generateHomework` (превью, auth-gated) и
+    `saveTemplate` (workspace + автор берутся из сессии, **никогда** из клиента).
+- **UI** (`(app)/homework/`): `page.tsx` + `HomeworkGenerator.tsx` — форма
+  (тип задания / тема / уровень / аудитория / [глагол]) → генерация → превью →
+  «Сохранить шаблон»; плюс список шаблонов. В сайдбар добавлен пункт «Домашки».
+- **Хранилище** — `folio_homework_templates` (workspace RLS, `source` ∈ web/bot).
+
+Отложено в следующие срезы: назначение шаблона ученику
+(`folio_homework_assignments`) + доставка (Telegram/email/PDF); teacher-guide /
+правки / PDF в вебе; Template Editor (промпты в БД); кэширование генерации; стриминг.
+
+Таблица и RLS — в [[DATA_MODEL]] (`folio_homework_templates`).
