@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { LessonDialog, type LessonDialogState } from "./LessonDialog";
+import { completeLesson, updateLesson } from "@/lib/lessons/actions";
 import { toDatetimeLocal, toDateParam } from "@/lib/lessons/week";
 import type { LessonWithStudents, StudentOption } from "@/lib/lessons/queries";
 
@@ -30,6 +32,7 @@ export function ScheduleBoard({
 }) {
   const router = useRouter();
   const [dialog, setDialog] = useState<LessonDialogState | null>(null);
+  const [busy, setBusy] = useState(false);
   const weekStart = new Date(weekStartISO);
 
   const dayDates = Array.from({ length: 7 }, (_, i) => {
@@ -55,6 +58,49 @@ export function ScheduleBoard({
   function openEdit(lesson: LessonWithStudents) {
     setDialog({ mode: "edit", datetimeLocal: toDatetimeLocal(new Date(lesson.scheduled_at)), lesson });
   }
+
+  // One-click "completed" straight from the card (no dialog).
+  async function quickComplete(id: string) {
+    setBusy(true);
+    try {
+      const res = await completeLesson(id);
+      if (res.ok) { toast.success(labels.dialog.saved); router.refresh(); }
+      else toast.error(`${labels.dialog.saveError}: ${res.error ?? ""}`);
+    } catch {
+      toast.error(labels.dialog.saveError);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Drag a lesson onto a day column to reschedule it (snaps to the hour at the drop Y).
+  async function handleDrop(e: React.DragEvent<HTMLDivElement>, dayIdx: number, lesson: LessonWithStudents | undefined) {
+    e.preventDefault();
+    if (!lesson) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const offset = e.clientY - rect.top;
+    const hour = Math.min(DAY_END - 1, Math.max(DAY_START, DAY_START + Math.floor(offset / HOUR_PX)));
+    const target = new Date(weekStart);
+    target.setDate(weekStart.getDate() + dayIdx);
+    target.setHours(hour, 0, 0, 0);
+    setBusy(true);
+    try {
+      const res = await updateLesson(lesson.id, {
+        scheduledAt: target.toISOString(),
+        durationMin: lesson.duration_min,
+        locationType: lesson.location_type,
+        notes: lesson.notes ?? undefined,
+      });
+      if (res.ok) { toast.success(labels.dialog.saved); router.refresh(); }
+      else toast.error(`${labels.dialog.saveError}: ${res.error ?? ""}`);
+    } catch {
+      toast.error(labels.dialog.saveError);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const byId = new Map(lessons.map((l) => [l.id, l]));
 
   return (
     <div className="flex flex-col gap-4">
@@ -94,7 +140,9 @@ export function ScheduleBoard({
           {dayDates.map((_, dayIdx) => {
             const dayLessons = lessons.filter((l) => localDayIndex(new Date(l.scheduled_at)) === dayIdx);
             return (
-              <div key={dayIdx} className="relative border-l border-border">
+              <div key={dayIdx} className="relative border-l border-border"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => handleDrop(e, dayIdx, byId.get(e.dataTransfer.getData("lessonId")))}>
                 {HOURS.map((h) => (
                   <button key={h} type="button" onClick={() => openCreate(dayIdx, h)}
                     className="block w-full border-b border-border transition-colors hover:bg-secondary/50"
@@ -114,8 +162,11 @@ export function ScheduleBoard({
                     const completed = l.status === "completed";
                     const title = l.type === "group" ? `${labels.group} (${l.students.length})` : (l.students[0]?.name ?? "—");
                     return (
-                      <button key={l.id} type="button" onClick={() => openEdit(l)}
-                        className={`pointer-events-auto absolute left-1 right-1 overflow-hidden rounded-lg border px-2 py-1 text-left text-xs shadow-sm transition ${
+                      <div key={l.id}
+                        draggable={!busy && !cancelled}
+                        onDragStart={(e) => e.dataTransfer.setData("lessonId", l.id)}
+                        onClick={() => openEdit(l)}
+                        className={`pointer-events-auto absolute left-1 right-1 cursor-pointer overflow-hidden rounded-lg border px-2 py-1 text-left text-xs shadow-sm transition ${
                           cancelled
                             ? "border-border bg-muted text-muted-foreground line-through"
                             : completed
@@ -123,13 +174,21 @@ export function ScheduleBoard({
                               : "border-primary/30 bg-accent text-accent-foreground"
                         }`}
                         style={{ top, height }}>
+                        {!cancelled && !completed && (
+                          <button type="button" aria-label={labels.dialog.complete} title={labels.dialog.complete}
+                            disabled={busy}
+                            onClick={(e) => { e.stopPropagation(); quickComplete(l.id); }}
+                            className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-md border border-primary/40 bg-card text-primary transition hover:bg-primary hover:text-primary-foreground">
+                            ✓
+                          </button>
+                        )}
                         <span className="font-semibold">
                           {start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                           {completed ? " ✓" : ""}
                         </span>
                         <br />
                         {title}
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
