@@ -127,3 +127,30 @@ Workspace-scoped CRUD ростера учеников репетитора: сп
   отложены.
 
 Таблица и RLS — в [[DATA_MODEL]] (`folio_students`).
+
+---
+
+## Schedule module (M4)
+
+Недельный календарь занятий. Роут `/[locale]/schedule` (`(app)/schedule/`).
+
+- **Сетка** — собственная CSS-вёрстка без библиотеки: 7 колонок-дней (Пн–Вс) × строки-часы
+  07:00–22:00. Клик по пустому слоту — создание занятия, клик по занятию — карточка
+  редактирования/действий. Время — браузерно-локальное (per-user TZ отложен).
+- **Серверный слой** `lib/lessons/`:
+  - `schema.ts` — zod `lessonInputSchema` + `lessonTypeFor` (вывод типа из ростера).
+  - `week.ts` — `startOfWeek` / `weekRange` / `toDatetimeLocal` / `fromDatetimeLocal` /
+    `mondayFromParam` / `toDateParam` (навигация по неделям, конверсия `datetime-local`).
+  - `queries.ts` — `listLessonsInRange`, `listActiveStudents`.
+  - `actions.ts` (`"use server"`) — `createLesson` (вставляет урок + ростер, откатывает
+    урок если вставка ростера упала), `updateLesson`, `cancelLesson`, `completeLesson`.
+    `workspace_id` берётся из сессии, **никогда** из клиента.
+- **UI**: `ScheduleBoard.tsx` (client, сетка-неделя) + `LessonDialog.tsx`
+  (create / edit / cancel / complete). В сайдбар добавлен пункт «Расписание».
+- **Тип занятия выводится** из размера ростера (1 ученик → solo, 2+ → group).
+- Отметка «состоялось» только ставит `status='completed'` — триггеры биллинга (M5) /
+  журнала (M6) добавятся позже.
+- **RLS**: `folio_lessons` workspace-scoped; `folio_lesson_students` — parent-scoped
+  через `folio_lessons`.
+
+Таблицы и RLS — в [[DATA_MODEL]] (`folio_lessons`, `folio_lesson_students`).

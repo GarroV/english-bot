@@ -19,6 +19,7 @@
 - `20260612144854_folio_login_tokens.sql` — таблица `folio_login_tokens` (pre-auth токены входа через Telegram) + индекс по `token` + deny-all RLS (только service-role)
 - `20260612150019_folio_seed_super_admin.sql` — seed первого super_admin (workspace «Folio», telegram_id 744230399, email v.garro@dodobrands.io) — ВРЕМЕННЫЙ bootstrap
 - `20260612181221_folio_students.sql` — таблица `folio_students` (ростер учеников репетитора) + индекс по `workspace_id` + workspace RLS
+- `20260612192152_folio_lessons.sql` — таблицы `folio_lessons` + `folio_lesson_students` (M4 Schedule) + enums (`folio_lesson_type`, `folio_lesson_status`, `folio_location_type`) + индексы + RLS (`folio_lessons` workspace-scoped; `folio_lesson_students` — parent-scoped через `folio_lessons`)
 
 ---
 
@@ -107,31 +108,38 @@ updated_at      timestamptz
 
 > Реализовано в `20260612181221_folio_students.sql`. Workspace RLS: политика `workspace_isolation` `FOR ALL` с `USING` **и** `WITH CHECK` по `workspace_id = folio_current_workspace_id()` (WITH CHECK нужен, чтобы INSERT тоже был scoped). Мягкая архивация через `archived_at` (без PII-скраба в M3). `user_id` nullable — задел под будущую привязку аккаунта ученика. См. [[ARCHITECTURE]].
 
-> ⚠️ Старый черновик `### students` (без префикса `folio_`) ниже **устарел** — заменён реализованной таблицей `folio_students ✅` выше. Черновики `lessons`, `lesson_students` и т.д. (без префикса) остаются проектными до реализации соответствующих M.
+> ⚠️ Старый черновик `### students` (без префикса `folio_`) ниже **устарел** — заменён реализованной таблицей `folio_students ✅` выше. Черновики `lessons` / `lesson_students` (без префикса) **устарели** — заменены реализованными `folio_lessons ✅` / `folio_lesson_students ✅` ниже (M4). Остальные черновики (без префикса) остаются проектными до реализации соответствующих M.
 
-### lessons
+### folio_lessons ✅
 ```sql
 id              uuid PK
-workspace_id    uuid FK → workspaces.id
-type            enum('solo', 'group')
+workspace_id    uuid not null FK → folio_workspaces(id) ON DELETE CASCADE  -- RLS anchor
+type            folio_lesson_type enum('solo', 'group')
 scheduled_at    timestamptz
 duration_min    int DEFAULT 60
-status          enum('scheduled', 'completed', 'cancelled', 'rescheduled')
-location_type   enum('online', 'offline')
+status          folio_lesson_status enum('scheduled','completed','cancelled') DEFAULT 'scheduled'
+location_type   folio_location_type enum('online','offline') DEFAULT 'online'
 notes           text nullable
 created_at      timestamptz
 updated_at      timestamptz
+-- index on (workspace_id, scheduled_at)
 ```
 
-### lesson_students (many-to-many: урок ↔ ученик)
+> Реализовано в `20260612192152_folio_lessons.sql`. `type` **выводится** из размера ростера (1 ученик → `solo`, 2+ → `group`) — не задаётся вручную. Workspace RLS: политика `workspace_isolation` `FOR ALL` с `USING` **и** `WITH CHECK` по `workspace_id = folio_current_workspace_id()`. Перенос = `UPDATE scheduled_at` (статус остаётся `scheduled`). Отметка «состоялось» только ставит `status='completed'` — хуки биллинга (M5) / журнала (M6) добавятся позже. См. [[ARCHITECTURE]].
+
+### folio_lesson_students ✅
 ```sql
 id              uuid PK
-lesson_id       uuid FK → lessons.id
-student_id      uuid FK → students.id
-rate_override   numeric(10,2) nullable      -- переопределяет default_rate
-amount_charged  numeric(10,2) nullable      -- рассчитывается при status=completed
+lesson_id       uuid FK → folio_lessons(id) ON DELETE CASCADE
+student_id      uuid FK → folio_students(id) ON DELETE CASCADE
+rate_override   numeric(10,2) nullable      -- M5: переопределяет default_rate
+amount_charged  numeric(10,2) nullable      -- M5: рассчитывается при status=completed
 created_at      timestamptz
+unique(lesson_id, student_id)
+-- index on (lesson_id)
 ```
+
+> Реализовано в `20260612192152_folio_lessons.sql`. Join-таблица урок ↔ ученик; `unique(lesson_id, student_id)` исключает дубли в ростере. `rate_override` / `amount_charged` — задел под M5 (Billing). RLS `workspace_isolation` `FOR ALL` **через родителя** (у таблицы нет своего `workspace_id`): `lesson_id in (select id from folio_lessons where workspace_id = folio_current_workspace_id())`.
 
 ### lesson_journal_entries
 ```sql
