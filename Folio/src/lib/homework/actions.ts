@@ -27,6 +27,7 @@ export async function saveTemplate(input: HomeworkInput, content: string): Promi
   const parsed = homeworkInputSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "invalid input" };
   if (!content.trim()) return { ok: false, error: "empty content" };
+  if (content.length > 100_000) return { ok: false, error: "content too large" };
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "not authenticated" };

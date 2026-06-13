@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { generateHomework, saveTemplate } from "@/lib/homework/actions";
-import { MODULE_TYPES, type HomeworkInput } from "@/lib/homework/schema";
+import { MODULE_TYPES, LEVELS, AGE_GROUPS, type HomeworkInput } from "@/lib/homework/schema";
 
 interface Labels {
   type: string; topic: string; level: string; age: string; verb: string;
@@ -17,8 +17,6 @@ interface Labels {
   typeTranslationSentences: string; typeVerb: string;
   ageTeen: string; ageYoung: string; ageAdult: string;
 }
-
-const LEVELS = ["A2", "B1", "B2", "C1", "C2"];
 
 export function HomeworkGenerator({ labels }: { labels: Labels }) {
   const router = useRouter();
@@ -37,10 +35,13 @@ export function HomeworkGenerator({ labels }: { labels: Labels }) {
 
   const [moduleType, setModuleType] = useState<(typeof MODULE_TYPES)[number]>("READING_MODULE");
   const [topic, setTopic] = useState("");
-  const [level, setLevel] = useState("B1");
-  const [ageGroup, setAgeGroup] = useState("adult");
+  const [level, setLevel] = useState<(typeof LEVELS)[number]>("B1");
+  const [ageGroup, setAgeGroup] = useState<(typeof AGE_GROUPS)[number]>("adult");
   const [verb, setVerb] = useState("");
   const [content, setContent] = useState("");
+  // Snapshot of the input used for the previewed content, so save stores matching metadata
+  // even if the user edits the fields afterwards.
+  const [generatedInput, setGeneratedInput] = useState<HomeworkInput | null>(null);
   const [pending, setPending] = useState(false);
 
   function currentInput(): HomeworkInput {
@@ -54,8 +55,9 @@ export function HomeworkGenerator({ labels }: { labels: Labels }) {
     setPending(true);
     setContent("");
     try {
-      const res = await generateHomework(currentInput());
-      if (res.ok) setContent(res.content);
+      const input = currentInput();
+      const res = await generateHomework(input);
+      if (res.ok) { setContent(res.content); setGeneratedInput(input); }
       else toast.error(`${labels.saveError}: ${res.error}`);
     } catch {
       toast.error(labels.saveError);
@@ -65,10 +67,11 @@ export function HomeworkGenerator({ labels }: { labels: Labels }) {
   }
 
   async function onSave() {
+    if (!generatedInput) return;
     setPending(true);
     try {
-      const res = await saveTemplate(currentInput(), content);
-      if (res.ok) { toast.success(labels.saved); setContent(""); setTopic(""); router.refresh(); }
+      const res = await saveTemplate(generatedInput, content);
+      if (res.ok) { toast.success(labels.saved); setContent(""); setGeneratedInput(null); setTopic(""); router.refresh(); }
       else toast.error(`${labels.saveError}: ${res.error}`);
     } catch {
       toast.error(labels.saveError);
@@ -93,13 +96,13 @@ export function HomeworkGenerator({ labels }: { labels: Labels }) {
         </div>
         <div className="flex flex-col gap-1">
           <Label htmlFor="hw-level">{labels.level}</Label>
-          <select id="hw-level" className={selectCls} value={level} onChange={(e) => setLevel(e.target.value)}>
+          <select id="hw-level" className={selectCls} value={level} onChange={(e) => setLevel(e.target.value as (typeof LEVELS)[number])}>
             {LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
           </select>
         </div>
         <div className="flex flex-col gap-1">
           <Label htmlFor="hw-age">{labels.age}</Label>
-          <select id="hw-age" className={selectCls} value={ageGroup} onChange={(e) => setAgeGroup(e.target.value)}>
+          <select id="hw-age" className={selectCls} value={ageGroup} onChange={(e) => setAgeGroup(e.target.value as (typeof AGE_GROUPS)[number])}>
             {ages.map((a) => <option key={a.v} value={a.v}>{a.label}</option>)}
           </select>
         </div>
