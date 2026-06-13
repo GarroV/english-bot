@@ -5,13 +5,13 @@ import { useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { LessonDialog, type LessonDialogState } from "./LessonDialog";
-import { completeLesson, updateLesson } from "@/lib/lessons/actions";
+import { completeLesson, reopenLesson, updateLesson } from "@/lib/lessons/actions";
 import { toDatetimeLocal, toDateParam } from "@/lib/lessons/week";
 import type { LessonWithStudents, StudentOption } from "@/lib/lessons/queries";
 
 const DAY_START = 7;
 const DAY_END = 22;
-const HOUR_PX = 56;
+const HOUR_PX = 76;
 const HOURS = Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_START + i);
 const DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
@@ -59,11 +59,13 @@ export function ScheduleBoard({
     setDialog({ mode: "edit", datetimeLocal: toDatetimeLocal(new Date(lesson.scheduled_at)), lesson });
   }
 
-  // One-click "completed" straight from the card (no dialog).
-  async function quickComplete(id: string) {
+  // Toggle "состоялось" straight from the card checkbox (no dialog): scheduled <-> completed.
+  async function toggleComplete(lesson: LessonWithStudents) {
     setBusy(true);
     try {
-      const res = await completeLesson(id);
+      const res = lesson.status === "completed"
+        ? await reopenLesson(lesson.id)
+        : await completeLesson(lesson.id);
       if (res.ok) { toast.success(labels.dialog.saved); router.refresh(); }
       else toast.error(`${labels.dialog.saveError}: ${res.error ?? ""}`);
     } catch {
@@ -156,8 +158,8 @@ export function ScheduleBoard({
                     let top = (minutes / 60) * HOUR_PX;
                     let height = (l.duration_min / 60) * HOUR_PX - 2;
                     if (top < 0) { height += top; top = 0; } // trim the part before DAY_START
-                    top = Math.min(top, totalPx - 16);
-                    height = Math.max(16, Math.min(height, totalPx - top));
+                    top = Math.min(top, totalPx - 36);
+                    height = Math.max(36, Math.min(height, totalPx - top));
                     const cancelled = l.status === "cancelled";
                     const completed = l.status === "completed";
                     const title = l.type === "group" ? `${labels.group} (${l.students.length})` : (l.students[0]?.name ?? "—");
@@ -166,7 +168,7 @@ export function ScheduleBoard({
                         draggable={!busy && !cancelled}
                         onDragStart={(e) => e.dataTransfer.setData("lessonId", l.id)}
                         onClick={() => openEdit(l)}
-                        className={`pointer-events-auto absolute left-1 right-1 cursor-pointer overflow-hidden rounded-lg border px-2 py-1 text-left text-xs shadow-sm transition ${
+                        className={`pointer-events-auto absolute left-1 right-1 cursor-pointer overflow-hidden rounded-xl border px-3 py-2 text-left text-sm shadow-sm transition ${
                           cancelled
                             ? "border-border bg-muted text-muted-foreground line-through"
                             : completed
@@ -174,20 +176,23 @@ export function ScheduleBoard({
                               : "border-primary/30 bg-accent text-accent-foreground"
                         }`}
                         style={{ top, height }}>
-                        {!cancelled && !completed && (
-                          <button type="button" aria-label={labels.dialog.complete} title={labels.dialog.complete}
+                        {!cancelled && (
+                          <button type="button" role="checkbox" aria-checked={completed}
+                            aria-label={labels.dialog.complete} title={labels.dialog.complete}
                             disabled={busy}
-                            onClick={(e) => { e.stopPropagation(); quickComplete(l.id); }}
-                            className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-md border border-primary/40 bg-card text-primary transition hover:bg-primary hover:text-primary-foreground">
+                            onClick={(e) => { e.stopPropagation(); toggleComplete(l); }}
+                            className={`absolute right-2 top-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border text-sm transition ${
+                              completed
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-primary/50 bg-card text-transparent hover:text-primary/60"
+                            }`}>
                             ✓
                           </button>
                         )}
-                        <span className="font-semibold">
+                        <div className="pr-8 font-semibold">
                           {start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                          {completed ? " ✓" : ""}
-                        </span>
-                        <br />
-                        {title}
+                        </div>
+                        <div className="truncate pr-8">{title}</div>
                       </div>
                     );
                   })}

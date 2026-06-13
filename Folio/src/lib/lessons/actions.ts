@@ -78,7 +78,7 @@ export async function updateLesson(
   return { ok: true };
 }
 
-async function setStatus(id: string, status: "completed" | "cancelled"): Promise<ActionResult> {
+async function setStatus(id: string, status: "scheduled" | "completed" | "cancelled"): Promise<ActionResult> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "not authenticated" };
@@ -94,6 +94,11 @@ async function setStatus(id: string, status: "completed" | "cancelled"): Promise
 
 export async function completeLesson(id: string): Promise<ActionResult> {
   return setStatus(id, "completed");
+}
+
+// Revert a completed lesson back to scheduled (un-check the "состоялось" box).
+export async function reopenLesson(id: string): Promise<ActionResult> {
+  return setStatus(id, "scheduled");
 }
 
 export async function cancelLesson(id: string): Promise<ActionResult> {
