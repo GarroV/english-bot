@@ -104,8 +104,12 @@ export function ScheduleBoard({
                   {dayLessons.map((l) => {
                     const start = new Date(l.scheduled_at);
                     const minutes = start.getHours() * 60 + start.getMinutes() - DAY_START * 60;
-                    const top = Math.max(0, (minutes / 60) * HOUR_PX);
-                    const height = Math.max(20, (l.duration_min / 60) * HOUR_PX - 2);
+                    const totalPx = HOURS.length * HOUR_PX;
+                    let top = (minutes / 60) * HOUR_PX;
+                    let height = (l.duration_min / 60) * HOUR_PX - 2;
+                    if (top < 0) { height += top; top = 0; } // trim the part before DAY_START
+                    top = Math.min(top, totalPx - 16);
+                    height = Math.max(16, Math.min(height, totalPx - top));
                     const cancelled = l.status === "cancelled";
                     const completed = l.status === "completed";
                     const title = l.type === "group" ? `${labels.group} (${l.students.length})` : (l.students[0]?.name ?? "—");

@@ -44,7 +44,11 @@ export async function createLesson(input: LessonInput): Promise<ActionResult> {
   const rows = v.studentIds.map((sid) => ({ lesson_id: lesson.id, student_id: sid }));
   const { error: rosterErr } = await supabase.from("folio_lesson_students").insert(rows);
   if (rosterErr) {
-    await supabase.from("folio_lessons").delete().eq("id", lesson.id);
+    const { error: cleanupErr } = await supabase.from("folio_lessons").delete().eq("id", lesson.id);
+    if (cleanupErr) {
+      // Two sequential failures: the lesson row is now orphaned (no students). Surface it.
+      console.error(`createLesson: roster insert failed AND cleanup failed for lesson ${lesson.id}: ${cleanupErr.message}`);
+    }
     return { ok: false, error: rosterErr.message };
   }
   return { ok: true };

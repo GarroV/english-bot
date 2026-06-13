@@ -1,11 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { lessonInputSchema, lessonTypeFor } from "../schema";
 
+const S1 = "11111111-1111-4111-8111-111111111111";
+const S2 = "22222222-2222-4222-9222-222222222222";
 const valid = {
   scheduledAt: "2026-06-15T10:00:00.000Z",
   durationMin: 60,
   locationType: "online" as const,
-  studentIds: ["s1"],
+  studentIds: [S1],
 };
 
 describe("lessonInputSchema", () => {
@@ -13,7 +15,10 @@ describe("lessonInputSchema", () => {
     expect(lessonInputSchema.safeParse(valid).success).toBe(true);
   });
   it("accepts multiple students (group)", () => {
-    expect(lessonInputSchema.safeParse({ ...valid, studentIds: ["s1", "s2"] }).success).toBe(true);
+    expect(lessonInputSchema.safeParse({ ...valid, studentIds: [S1, S2] }).success).toBe(true);
+  });
+  it("rejects non-uuid student ids", () => {
+    expect(lessonInputSchema.safeParse({ ...valid, studentIds: ["nope"] }).success).toBe(false);
   });
   it("rejects empty studentIds", () => {
     expect(lessonInputSchema.safeParse({ ...valid, studentIds: [] }).success).toBe(false);

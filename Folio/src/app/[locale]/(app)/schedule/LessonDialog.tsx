@@ -52,6 +52,9 @@ export function LessonDialog({
     setLocation(state.lesson?.location_type ?? "online");
     setNotes(state.lesson?.notes ?? "");
     setPicked(state.lesson ? state.lesson.students.map((s) => s.id) : []);
+  } else if (!open && seededFor !== null) {
+    // Reset on close so reopening the same slot re-seeds instead of showing stale state.
+    setSeededFor(null);
   }
 
   function togglePicked(id: string) {
@@ -60,37 +63,44 @@ export function LessonDialog({
 
   async function submit() {
     if (!state) return;
+    if (state.mode === "create" && picked.length === 0) { toast.error(labels.pickStudents); return; }
     setPending(true);
-    let res;
-    if (state.mode === "create") {
-      if (picked.length === 0) { setPending(false); toast.error(labels.pickStudents); return; }
-      res = await createLesson({
-        scheduledAt: fromDatetimeLocal(datetime),
-        durationMin: Number(duration),
-        locationType: location,
-        studentIds: picked,
-        notes: notes.trim() || undefined,
-      });
-    } else {
-      res = await updateLesson(state.lesson!.id, {
-        scheduledAt: fromDatetimeLocal(datetime),
-        durationMin: Number(duration),
-        locationType: location,
-        notes: notes.trim() || undefined,
-      });
+    try {
+      const res = state.mode === "create"
+        ? await createLesson({
+            scheduledAt: fromDatetimeLocal(datetime),
+            durationMin: Number(duration),
+            locationType: location,
+            studentIds: picked,
+            notes: notes.trim() || undefined,
+          })
+        : await updateLesson(state.lesson!.id, {
+            scheduledAt: fromDatetimeLocal(datetime),
+            durationMin: Number(duration),
+            locationType: location,
+            notes: notes.trim() || undefined,
+          });
+      if (res.ok) { toast.success(labels.saved); onClose(); router.refresh(); }
+      else toast.error(`${labels.saveError}: ${res.error}`);
+    } catch {
+      toast.error(labels.saveError);
+    } finally {
+      setPending(false);
     }
-    setPending(false);
-    if (res.ok) { toast.success(labels.saved); onClose(); router.refresh(); }
-    else toast.error(`${labels.saveError}: ${res.error}`);
   }
 
   async function runAction(fn: (id: string) => Promise<{ ok: boolean; error?: string }>) {
     if (!state?.lesson) return;
     setPending(true);
-    const res = await fn(state.lesson.id);
-    setPending(false);
-    if (res.ok) { toast.success(labels.saved); onClose(); router.refresh(); }
-    else toast.error(`${labels.saveError}: ${res.error ?? ""}`);
+    try {
+      const res = await fn(state.lesson.id);
+      if (res.ok) { toast.success(labels.saved); onClose(); router.refresh(); }
+      else toast.error(`${labels.saveError}: ${res.error ?? ""}`);
+    } catch {
+      toast.error(labels.saveError);
+    } finally {
+      setPending(false);
+    }
   }
 
   return (

@@ -4,7 +4,7 @@ export const lessonInputSchema = z.object({
   scheduledAt: z.string().datetime(),
   durationMin: z.number().int().min(1).max(600),
   locationType: z.enum(["online", "offline"]),
-  studentIds: z.array(z.string().min(1)).min(1),
+  studentIds: z.array(z.string().uuid()).min(1),
   notes: z.string().trim().optional(),
 });
 
