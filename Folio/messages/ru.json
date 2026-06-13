@@ -50,9 +50,19 @@
     "group": "Группа", "noStudents": "Сначала добавьте учеников",
     "saved": "Сохранено", "saveError": "Не удалось сохранить", "pickStudents": "Выберите хотя бы одного ученика"
   },
+  "Homework": {
+    "title": "Домашки", "type": "Тип задания", "topic": "Тема", "level": "Уровень", "age": "Аудитория",
+    "verb": "Глагол", "generate": "Сгенерировать", "generating": "Генерирую…", "result": "Результат",
+    "saveTemplate": "Сохранить шаблон", "saved": "Шаблон сохранён", "saveError": "Не удалось",
+    "empty": "Шаблонов пока нет", "templates": "Шаблоны",
+    "typeReading": "Reading", "typeVocabulary": "Vocabulary", "typeTranslationTexts": "Перевод (тексты)",
+    "typeTranslationSentences": "Перевод (предложения)", "typeVerb": "Глаголы",
+    "ageTeen": "Подросток", "ageYoung": "Молодой взрослый", "ageAdult": "Взрослый"
+  },
   "Nav": {
     "dashboard": "Панель",
     "schedule": "Расписание",
-    "students": "Ученики"
+    "students": "Ученики",
+    "homework": "Домашки"
   }
 }

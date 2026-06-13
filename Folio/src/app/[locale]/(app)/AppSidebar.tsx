@@ -7,6 +7,7 @@ const NAV = [
   { href: "/dashboard", key: "dashboard" },
   { href: "/schedule", key: "schedule" },
   { href: "/students", key: "students" },
+  { href: "/homework", key: "homework" },
 ] as const;
 
 // Soft sidebar (left rail on desktop, top bar on mobile) with an active-state pill.

@@ -50,9 +50,19 @@
     "group": "Group", "noStudents": "Add students first",
     "saved": "Saved", "saveError": "Could not save", "pickStudents": "Pick at least one student"
   },
+  "Homework": {
+    "title": "Homework", "type": "Task type", "topic": "Topic", "level": "Level", "age": "Audience",
+    "verb": "Verb", "generate": "Generate", "generating": "Generating…", "result": "Result",
+    "saveTemplate": "Save template", "saved": "Template saved", "saveError": "Failed",
+    "empty": "No templates yet", "templates": "Templates",
+    "typeReading": "Reading", "typeVocabulary": "Vocabulary", "typeTranslationTexts": "Translation (texts)",
+    "typeTranslationSentences": "Translation (sentences)", "typeVerb": "Verbs",
+    "ageTeen": "Teen", "ageYoung": "Young adult", "ageAdult": "Adult"
+  },
   "Nav": {
     "dashboard": "Dashboard",
     "schedule": "Schedule",
-    "students": "Students"
+    "students": "Students",
+    "homework": "Homework"
   }
 }
