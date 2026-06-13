@@ -42,8 +42,17 @@
     "archivedToast": "Ученик в архиве",
     "restoredToast": "Ученик возвращён"
   },
+  "Schedule": {
+    "title": "Расписание", "today": "Сегодня", "newLesson": "Новое занятие", "editLesson": "Занятие",
+    "datetime": "Дата и время", "duration": "Длительность (мин)", "location": "Формат",
+    "online": "Онлайн", "offline": "Офлайн", "students": "Ученики", "notes": "Заметки",
+    "save": "Сохранить", "cancel": "Отмена", "cancelLesson": "Отменить занятие", "complete": "Состоялось",
+    "group": "Группа", "noStudents": "Сначала добавьте учеников",
+    "saved": "Сохранено", "saveError": "Не удалось сохранить", "pickStudents": "Выберите хотя бы одного ученика"
+  },
   "Nav": {
     "dashboard": "Панель",
+    "schedule": "Расписание",
     "students": "Ученики"
   }
 }

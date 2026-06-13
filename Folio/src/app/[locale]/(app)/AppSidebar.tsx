@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 
 const NAV = [
   { href: "/dashboard", key: "dashboard" },
+  { href: "/schedule", key: "schedule" },
   { href: "/students", key: "students" },
 ] as const;
 

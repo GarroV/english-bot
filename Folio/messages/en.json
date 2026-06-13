@@ -42,8 +42,17 @@
     "archivedToast": "Student archived",
     "restoredToast": "Student restored"
   },
+  "Schedule": {
+    "title": "Schedule", "today": "Today", "newLesson": "New lesson", "editLesson": "Lesson",
+    "datetime": "Date & time", "duration": "Duration (min)", "location": "Format",
+    "online": "Online", "offline": "Offline", "students": "Students", "notes": "Notes",
+    "save": "Save", "cancel": "Cancel", "cancelLesson": "Cancel lesson", "complete": "Completed",
+    "group": "Group", "noStudents": "Add students first",
+    "saved": "Saved", "saveError": "Could not save", "pickStudents": "Pick at least one student"
+  },
   "Nav": {
     "dashboard": "Dashboard",
+    "schedule": "Schedule",
     "students": "Students"
   }
 }
