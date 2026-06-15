@@ -35,8 +35,13 @@ export default async function HomeworkPage() {
   ]);
 
   const t = await getTranslations("Homework");
-  const typeKey = (m: string) => t(TYPE_KEY[m] ?? "typeReading");
-  const statusLabel = (s: string) => t(STATUS_KEY[s] ?? "statusAssigned");
+  // Plain serializable maps — functions cannot be passed to Client Components.
+  const typeLabels: Record<string, string> = Object.fromEntries(
+    Object.entries(TYPE_KEY).map(([type, key]) => [type, t(key)]),
+  );
+  const statusLabels: Record<string, string> = Object.fromEntries(
+    Object.entries(STATUS_KEY).map(([status, key]) => [status, t(key)]),
+  );
 
   const genLabels = {
     type: t("type"), topic: t("topic"), level: t("level"), age: t("age"), verb: t("verb"),
@@ -51,11 +56,11 @@ export default async function HomeworkPage() {
     copy: t("copy"), copied: t("copied"), assign: t("assign"), assignTitle: t("assignTitle"),
     students: t("students"), dueDate: t("dueDate"), confirmAssign: t("confirmAssign"),
     cancel: t("cancel"), assigned: t("assigned"), pickStudents: t("pickStudents"),
-    saveError: t("saveError"), typeKey,
+    saveError: t("saveError"), typeLabels,
   };
   const asgLabels = {
     assignmentsTitle: t("assignmentsTitle"), noAssignments: t("noAssignments"),
-    noDue: t("noDue"), saveError: t("saveError"), typeKey, statusLabel,
+    noDue: t("noDue"), saveError: t("saveError"), typeLabels, statusLabels,
   };
 
   return (

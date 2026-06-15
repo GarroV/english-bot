@@ -9,8 +9,8 @@ import type { AssignmentRow } from "@/lib/homework/queries";
 
 interface Labels {
   assignmentsTitle: string; noAssignments: string; noDue: string; saveError: string;
-  typeKey: (m: string) => string;
-  statusLabel: (s: string) => string;
+  typeLabels: Record<string, string>;
+  statusLabels: Record<string, string>;
 }
 
 export function AssignmentsList({ assignments, labels }: {
@@ -45,7 +45,7 @@ export function AssignmentsList({ assignments, labels }: {
               <div className="flex flex-wrap items-baseline gap-2">
                 <span className="font-semibold">{a.student_name ?? "—"}</span>
                 <span className="text-xs text-muted-foreground">
-                  {a.template_topic ?? "—"}{a.template_type ? ` · ${labels.typeKey(a.template_type)}` : ""} · {a.due_date ?? labels.noDue}
+                  {a.template_topic ?? "—"}{a.template_type ? ` · ${labels.typeLabels[a.template_type] ?? a.template_type}` : ""} · {a.due_date ?? labels.noDue}
                 </span>
               </div>
               <select
@@ -54,7 +54,7 @@ export function AssignmentsList({ assignments, labels }: {
                 disabled={busyId === a.id}
                 onChange={(e) => changeStatus(a.id, e.target.value)}
               >
-                {ASSIGNMENT_STATUSES.map((s) => <option key={s} value={s}>{labels.statusLabel(s)}</option>)}
+                {ASSIGNMENT_STATUSES.map((s) => <option key={s} value={s}>{labels.statusLabels[s] ?? s}</option>)}
               </select>
             </li>
           ))}

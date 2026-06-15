@@ -15,7 +15,7 @@ interface Labels {
   empty: string; templates: string; view: string; hide: string; copy: string; copied: string;
   assign: string; assignTitle: string; students: string; dueDate: string; confirmAssign: string;
   cancel: string; assigned: string; pickStudents: string; saveError: string;
-  typeKey: (m: string) => string;
+  typeLabels: Record<string, string>;
 }
 
 export function TemplatesList({ templates, students, labels }: {
@@ -68,7 +68,7 @@ export function TemplatesList({ templates, students, labels }: {
               <div className="flex flex-wrap items-baseline gap-2">
                 <span className="font-semibold">{tpl.topic}</span>
                 <span className="text-xs text-muted-foreground">
-                  {labels.typeKey(tpl.module_type)}{tpl.level ? ` · ${tpl.level}` : ""} · {new Date(tpl.created_at).toLocaleDateString()}
+                  {labels.typeLabels[tpl.module_type] ?? tpl.module_type}{tpl.level ? ` · ${tpl.level}` : ""} · {new Date(tpl.created_at).toLocaleDateString()}
                 </span>
               </div>
               <div className="flex gap-2">
