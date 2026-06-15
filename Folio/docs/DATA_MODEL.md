@@ -21,6 +21,7 @@
 - `20260612181221_folio_students.sql` — таблица `folio_students` (ростер учеников репетитора) + индекс по `workspace_id` + workspace RLS
 - `20260612192152_folio_lessons.sql` — таблицы `folio_lessons` + `folio_lesson_students` (M4 Schedule) + enums (`folio_lesson_type`, `folio_lesson_status`, `folio_location_type`) + индексы + RLS (`folio_lessons` workspace-scoped; `folio_lesson_students` — parent-scoped через `folio_lessons`)
 - `20260613213941_folio_homework_templates.sql` — таблица `folio_homework_templates` (M7a генерация домашек) + индекс по `workspace_id` + workspace RLS
+- `20260615151554_folio_homework_assignments.sql` — таблица `folio_homework_assignments` (M7b назначение шаблона ученику: due_date, status) + индексы + workspace RLS с cross-entity `WITH CHECK`
 
 ---
 
@@ -159,6 +160,24 @@ updated_at      timestamptz
 ```
 
 > Реализовано в `20260613213941_folio_homework_templates.sql` (M7a). Шаблон сгенерированной домашки. `module_type` ограничен теми же 5 типами, что и движок генерации (`READING_MODULE` / `VOCABULARY_MODULE` / `TRANSLATION_TEXTS` / `TRANSLATION_SENTENCES` / `VERB_SENTENCES`). `source` различает, откуда пришёл шаблон: `'web'` (форма генерации в веб-Folio, дефолт) или `'bot'` (english-bot). Workspace RLS: политика `workspace_isolation` `FOR ALL` с `USING` **и** `WITH CHECK` по `workspace_id = folio_current_workspace_id()`. См. [[ARCHITECTURE]].
+
+### folio_homework_assignments ✅
+```sql
+id              uuid PK
+workspace_id    uuid not null FK → folio_workspaces(id) ON DELETE CASCADE  -- RLS anchor
+template_id     uuid not null FK → folio_homework_templates(id) ON DELETE CASCADE
+student_id      uuid not null FK → folio_students(id) ON DELETE CASCADE
+assigned_by     uuid FK → folio_users(id)
+due_date        date
+status          text DEFAULT 'assigned' CHECK (status IN ('assigned','submitted','reviewed'))
+note            text
+assigned_at     timestamptz
+created_at      timestamptz
+updated_at      timestamptz
+-- unique(template_id, student_id); index on (workspace_id, template_id) and (student_id)
+```
+
+> Реализовано в `20260615151554_folio_homework_assignments.sql` (M7b). Назначение шаблона ученику (репетитор управляет статусом вручную). Один шаблон назначается ученику не более одного раза (`unique(template_id, student_id)`; повторное назначение — no-op через upsert). Workspace RLS `workspace_isolation` `FOR ALL`: `USING` по `workspace_id`, а `WITH CHECK` дополнительно требует, чтобы `template_id` и `student_id` принадлежали тому же workspace (защита от кросс-workspace ссылок — как у `folio_lesson_students`). Доставка ученику пока ручная (репетитор копирует контент шаблона); авто-доставка — M7c.
 
 ### lesson_journal_entries
 ```sql

@@ -184,8 +184,12 @@ Workspace-scoped CRUD ростера учеников репетитора: сп
   «Сохранить шаблон»; плюс список шаблонов. В сайдбар добавлен пункт «Домашки».
 - **Хранилище** — `folio_homework_templates` (workspace RLS, `source` ∈ web/bot).
 
-Отложено в следующие срезы: назначение шаблона ученику
-(`folio_homework_assignments`) + доставка (Telegram/email/PDF); teacher-guide /
-правки / PDF в вебе; Template Editor (промпты в БД); кэширование генерации; стриминг.
+### Назначение домашек (M7b)
+- **Хранилище** — `folio_homework_assignments` (template → student, `due_date`, `status` assigned/submitted/reviewed). RLS `workspace_isolation` с cross-entity `WITH CHECK` (template и student обязаны быть из того же workspace).
+- **Слой** — `lib/homework/queries.ts` `listAssignments` (джойн student + template), `lib/homework/assignments.ts` (`"use server"`): `assignTemplate` (workspace+assigned_by с сессии, upsert с `ignoreDuplicates` — повторное назначение no-op), `updateAssignmentStatus`. zod в `assignments-schema.ts`.
+- **UI** — `TemplatesList.tsx` (просмотр/копирование контента шаблона для ручной отправки + диалог «Назначить» с мульти-выбором учеников и дедлайном) и `AssignmentsList.tsx` (смена статуса).
+- **Доставка** — пока ручная (репетитор копирует контент). Авто-доставка (Telegram/email) — M7c: бот не может инициировать сообщение ученику, не нажавшему Start; почты/n8n нет.
 
-Таблица и RLS — в [[DATA_MODEL]] (`folio_homework_templates`).
+Отложено: авто-доставка (M7c); teacher-guide / правки / PDF в вебе; Template Editor (промпты в БД); кэширование генерации; стриминг; кабинет ученика (M8).
+
+Таблицы и RLS — в [[DATA_MODEL]] (`folio_homework_templates`, `folio_homework_assignments`).
