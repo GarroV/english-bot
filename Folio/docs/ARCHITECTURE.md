@@ -193,3 +193,14 @@ Workspace-scoped CRUD ростера учеников репетитора: сп
 Отложено: авто-доставка (M7c); teacher-guide / правки / PDF в вебе; Template Editor (промпты в БД); кэширование генерации; стриминг; кабинет ученика (M8).
 
 Таблицы и RLS — в [[DATA_MODEL]] (`folio_homework_templates`, `folio_homework_assignments`).
+
+## Billing (M5)
+
+Учёт денег. Роут `/[locale]/billing` (`(app)/billing/`).
+
+- **Леджер** `folio_student_payments` (charge/payment). Остаток = Σcharge − Σpayment.
+- **Автоначисление как инвариант:** charge существует ⇔ занятие `completed`. Зашито в действия статуса занятия (`lib/lessons/actions.ts`): `completeLesson` → `chargeForCompletedLesson` (создаёт charge по ростеру, сумма = `rate_override ?? default_rate`); `reopenLesson`/`cancelLesson` → `reverseChargesForLesson`. Best-effort: если начисление упало, статус всё равно сменился (статус — источник правды, ошибка логируется). Идемпотентно через `unique(lesson_id, student_id)`.
+- **Слой** `lib/billing/`: `amount.ts` (чистая `chargeAmount`), `charges.ts` (create/reverse), `queries.ts` (`listBalances` — JS-агрегация леджера, `listLedgerEntries`), `actions.ts` (`recordPayment`, `deleteEntry`), `schema.ts` (zod оплаты).
+- **UI** — `BalancesList.tsx`: баланс по ученикам (начислено/оплачено/остаток, долги подсвечены), диалог «Записать оплату», раскрытие леджера с удалением операции (коррекция).
+
+Отложено: UI переопределения ставки в занятии (`rate_override` есть), фильтры по периоду, редактирование суммы charge, валюта. Таблица и RLS — в [[DATA_MODEL]] (`folio_student_payments`).

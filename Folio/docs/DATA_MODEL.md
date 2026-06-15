@@ -22,6 +22,7 @@
 - `20260612192152_folio_lessons.sql` — таблицы `folio_lessons` + `folio_lesson_students` (M4 Schedule) + enums (`folio_lesson_type`, `folio_lesson_status`, `folio_location_type`) + индексы + RLS (`folio_lessons` workspace-scoped; `folio_lesson_students` — parent-scoped через `folio_lessons`)
 - `20260613213941_folio_homework_templates.sql` — таблица `folio_homework_templates` (M7a генерация домашек) + индекс по `workspace_id` + workspace RLS
 - `20260615151554_folio_homework_assignments.sql` — таблица `folio_homework_assignments` (M7b назначение шаблона ученику: due_date, status) + индексы + workspace RLS с cross-entity `WITH CHECK`
+- `20260615194711_folio_student_payments.sql` — леджер `folio_student_payments` (M5 charge/payment) + индекс + workspace RLS
 
 ---
 
@@ -193,18 +194,21 @@ created_by      uuid FK → users.id
 created_at      timestamptz
 ```
 
-### student_payments
+### folio_student_payments ✅
 ```sql
 id              uuid PK
-workspace_id    uuid FK → workspaces.id
-student_id      uuid FK → students.id
-amount          numeric(10,2)
-type            enum('charge', 'payment')   -- charge=начислено, payment=оплачено
-lesson_id       uuid FK → lessons.id nullable
-note            text nullable
-created_by      uuid FK → users.id
+workspace_id    uuid not null FK → folio_workspaces(id) ON DELETE CASCADE  -- RLS anchor
+student_id      uuid not null FK → folio_students(id) ON DELETE CASCADE
+amount          numeric(10,2) not null
+type            text CHECK (type IN ('charge','payment'))   -- charge=начислено, payment=оплачено
+lesson_id       uuid FK → folio_lessons(id) ON DELETE CASCADE nullable  -- set on auto-charges
+note            text
+created_by      uuid FK → folio_users(id)
 created_at      timestamptz
+-- unique(lesson_id, student_id); index on (workspace_id, student_id)
 ```
+
+> Реализовано в `20260615194711_folio_student_payments.sql` (M5). Денежный леджер: остаток ученика = Σ(charge) − Σ(payment). **Charge** создаётся автоматически при отметке занятия «состоялось» (`completeLesson`, сумма = `lesson_students.rate_override ?? folio_students.default_rate ?? 0`, `lesson_id` проставлен) и удаляется при возврате/отмене занятия — инвариант: charge существует ⇔ занятие `completed`. Идемпотентность через `unique(lesson_id, student_id)` (payment'ы имеют `lesson_id=null` и не конфликтуют). **Payment** заносит репетитор вручную. RLS `workspace_isolation` `FOR ALL`: `USING` по `workspace_id`, `WITH CHECK` дополнительно требует student из того же workspace. Реализует черновик `student_payments` из проектной модели. См. [[ARCHITECTURE]].
 
 ### homework_templates
 > ⚠️ Старый черновик (без префикса `folio_`) — **частично реализован / заменён** таблицей `folio_homework_templates ✅` выше (M7a). В реализации: `module_type` (5 типов движка генерации) вместо `type`/`difficulty`, `source` ∈ (`web`,`bot`), без `bot_cache_key` (кэширование генерации отложено). Черновик ниже оставлен для истории проектных идей.
