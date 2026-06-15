@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { lessonInputSchema, lessonTypeFor, type LessonInput } from "./schema";
+import { chargeForCompletedLesson, reverseChargesForLesson } from "@/lib/billing/charges";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -92,15 +93,42 @@ async function setStatus(id: string, status: "scheduled" | "completed" | "cancel
   return { ok: true };
 }
 
+// Mark completed and create per-student charges (best-effort: status is the source of truth).
 export async function completeLesson(id: string): Promise<ActionResult> {
-  return setStatus(id, "completed");
+  const res = await setStatus(id, "completed");
+  if (!res.ok) return res;
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) await chargeForCompletedLesson(supabase, id, user.id);
+  } catch (e) {
+    console.error(`completeLesson: charging failed for ${id}: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  return res;
 }
 
-// Revert a completed lesson back to scheduled (un-check the "состоялось" box).
+// Revert a completed lesson back to scheduled (un-check the "состоялось" box); remove its charges.
 export async function reopenLesson(id: string): Promise<ActionResult> {
-  return setStatus(id, "scheduled");
+  const res = await setStatus(id, "scheduled");
+  if (!res.ok) return res;
+  try {
+    const supabase = await createClient();
+    await reverseChargesForLesson(supabase, id);
+  } catch (e) {
+    console.error(`reopenLesson: reversing charges failed for ${id}: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  return res;
 }
 
+// Cancel; a cancelled lesson is not billed, so remove any charges too.
 export async function cancelLesson(id: string): Promise<ActionResult> {
-  return setStatus(id, "cancelled");
+  const res = await setStatus(id, "cancelled");
+  if (!res.ok) return res;
+  try {
+    const supabase = await createClient();
+    await reverseChargesForLesson(supabase, id);
+  } catch (e) {
+    console.error(`cancelLesson: reversing charges failed for ${id}: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  return res;
 }
