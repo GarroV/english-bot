@@ -110,6 +110,28 @@
     "dashboard": "Панель",
     "schedule": "Расписание",
     "students": "Ученики",
-    "homework": "Домашки"
+    "homework": "Домашки",
+    "billing": "Деньги"
+  },
+  "Billing": {
+    "title": "Деньги",
+    "student": "Ученик",
+    "charged": "Начислено",
+    "paid": "Оплачено",
+    "balance": "Остаток",
+    "recordPayment": "Записать оплату",
+    "amount": "Сумма",
+    "note": "Заметка",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "saved": "Сохранено",
+    "saveError": "Не удалось",
+    "empty": "Учеников пока нет",
+    "ledger": "История",
+    "hide": "Скрыть",
+    "delete": "Удалить",
+    "charge": "Начисление",
+    "payment": "Оплата",
+    "noEntries": "Операций нет"
   }
 }

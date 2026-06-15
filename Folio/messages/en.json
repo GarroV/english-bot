@@ -110,6 +110,28 @@
     "dashboard": "Dashboard",
     "schedule": "Schedule",
     "students": "Students",
-    "homework": "Homework"
+    "homework": "Homework",
+    "billing": "Money"
+  },
+  "Billing": {
+    "title": "Money",
+    "student": "Student",
+    "charged": "Charged",
+    "paid": "Paid",
+    "balance": "Balance",
+    "recordPayment": "Record payment",
+    "amount": "Amount",
+    "note": "Note",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saved": "Saved",
+    "saveError": "Failed",
+    "empty": "No students yet",
+    "ledger": "History",
+    "hide": "Hide",
+    "delete": "Delete",
+    "charge": "Charge",
+    "payment": "Payment",
+    "noEntries": "No entries"
   }
 }
