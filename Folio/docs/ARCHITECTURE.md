@@ -211,3 +211,16 @@ Workspace-scoped CRUD ростера учеников репетитора: сп
 - **UI** — `BalancesList.tsx`: баланс по ученикам (начислено/оплачено/остаток, долги подсвечены), диалог «Записать оплату», раскрытие леджера с удалением операции (коррекция).
 
 Отложено: UI переопределения ставки в занятии (`rate_override` есть), фильтры по периоду, редактирование суммы charge, валюта. Таблица и RLS — в [[DATA_MODEL]] (`folio_student_payments`).
+
+---
+
+## Lesson Journal (M6)
+
+Запись о том, что прошло на занятии. Живёт на экране расписания (`(app)/schedule/`), отдельного роута нет.
+
+- **Триггер:** отметка ✓ «состоялось» остаётся быстрым тапом и форму **не** открывает. На состоявшемся занятии в `LessonDialog` появляется кнопка «Журнал занятия» → открывает `JournalDialog` (открытие закрывает LessonDialog — без вложенных диалогов).
+- **Гранулярность:** одна запись на занятие (`folio_lesson_journal`, `unique(lesson_id)`, upsert). История по ученику собирается через ростер (`journal → lesson → lesson_students`), отдельного `student_id` в записи нет.
+- **Слой** `lib/journal/`: `schema.ts` (zod `journalInputSchema` — поля `topic/level/comment/progress` опциональны, `level` — enum CEFR, отклоняет полностью пустую запись), `queries.ts` (`getJournalForLesson`, `listJournalForStudent` через PostgREST-embed `folio_lessons!inner(folio_lesson_students!inner)` с фильтром по `student_id`), `actions.ts` (`"use server"`: `saveJournalEntry` upsert по `lesson_id`, `workspace_id`+`created_by` из сессии; `loadJournalEntry`/`loadJournalForStudent` — обёртки для ленивой загрузки клиентскими диалогами).
+- **UI** (`(app)/schedule/`): `JournalDialog.tsx` (запись/правка одной записи; форма грузится по открытию через server action в `useEffect` с cancelled-флагом), `StudentJournalDialog.tsx` (история ученика; открывается кликом по имени в `StudentsPanel`). Серверный `page.tsx` собирает plain-объекты лейблов (namespace `Journal`) и передаёт вниз — функции через границу RSC не передаются.
+
+Отложено: шкала/статистика прогресса (выбран свободный текст), per-student записи для групп, связь с домашками. Таблица и RLS — в [[DATA_MODEL]] (`folio_lesson_journal`).
