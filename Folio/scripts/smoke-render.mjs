@@ -45,16 +45,21 @@ if (!cookieHeader) { console.error("no auth cookie minted"); process.exit(1); }
 // 3) render the page with the session cookie
 const res = await fetch(`http://localhost:3000${path}`, { headers: { cookie: cookieHeader }, redirect: "manual" });
 const body = await res.text();
-const overlayMarkers = [
-  "Functions cannot be passed",
-  "__next_error__",
-  "runtime-error",
-  "Internal Server Error",
-];
-const hit = overlayMarkers.find((m) => body.includes(m));
+const location = res.headers.get("location");
+const isRedirect = res.status >= 300 && res.status < 400;
+const badStatus = res.status >= 500 || res.status === 404;
+// HTTP status is the authoritative signal — Next embeds error-boundary fallback
+// strings (e.g. "This page could not be found", __next_error__) into HEALTHY page
+// bodies, so generic body-text grep gives false positives. The only body string we
+// trust is the specific server-component serialization error, which a dev 200 can
+// still surface via the overlay payload.
+const errorText = body.includes("Functions cannot be passed directly to Client Components")
+  ? "Functions cannot be passed to Client Components"
+  : null;
 console.log(`status=${res.status} bytes=${body.length} path=${path}`);
-console.log(hit ? `ERROR-OVERLAY: "${hit}"` : "no error markers");
-// Show a content signal so we know it's the real page, not a redirect
+if (location) console.log("location=", location);
 const h1 = body.match(/<h1[^>]*>([^<]+)<\/h1>/)?.[1];
-console.log("h1=", h1 ?? "(none)");
-process.exit(hit ? 1 : 0);
+if (!isRedirect) console.log("h1=", h1 ?? "(none)");
+const failed = badStatus || (!isRedirect && !!errorText);
+console.log(failed ? `FAIL: ${errorText ?? `status ${res.status}`}` : (isRedirect ? "OK (redirect)" : "OK (rendered)"));
+process.exit(failed ? 1 : 0);
