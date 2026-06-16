@@ -11,9 +11,11 @@ const NAV = [
 ] as const;
 
 // Soft sidebar (left rail on desktop, top bar on mobile) with an active-state pill.
-export function AppSidebar() {
+// The "Админка" entry is shown only to a super_admin (flag resolved server-side in the layout).
+export function AppSidebar({ isSuperAdmin }: { isSuperAdmin?: boolean }) {
   const pathname = usePathname();
   const t = useTranslations("Nav");
+  const nav = isSuperAdmin ? [...NAV, { href: "/admin", key: "admin" } as const] : NAV;
 
   return (
     <aside className="flex w-full shrink-0 flex-row items-center gap-2 border-b border-sidebar-border bg-sidebar p-3 md:w-60 md:flex-col md:items-stretch md:gap-1 md:border-b-0 md:border-r md:p-5">
@@ -22,7 +24,7 @@ export function AppSidebar() {
         <span className="font-heading text-xl font-extrabold tracking-tight">Folio</span>
       </div>
       <nav className="flex flex-1 flex-row gap-1 md:flex-none md:flex-col">
-        {NAV.map((item) => {
+        {nav.map((item) => {
           const active = pathname === item.href;
           return (
             <Link

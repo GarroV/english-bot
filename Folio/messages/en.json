@@ -112,7 +112,8 @@
     "schedule": "Schedule",
     "students": "Students",
     "homework": "Homework",
-    "billing": "Money"
+    "billing": "Money",
+    "admin": "Admin"
   },
   "Billing": {
     "title": "Money",
@@ -161,5 +162,31 @@
     "error": "Could not sign in. Try again",
     "invalidTitle": "Invalid invitation",
     "invalidBody": "This link is invalid or has expired. Ask the admin for a new one."
+  },
+  "Admin": {
+    "title": "Admin",
+    "invitesTitle": "Tutor invites",
+    "note": "Note (for whom)",
+    "ttlDays": "TTL (days)",
+    "create": "Create invite",
+    "created": "Invite created",
+    "copy": "Copy",
+    "copied": "Copied",
+    "link": "Link",
+    "statusPending": "Pending",
+    "statusUsed": "Used",
+    "expires": "until",
+    "usedBy": "Used by",
+    "revoke": "Revoke",
+    "revoked": "Revoked",
+    "noInvites": "No invites yet",
+    "workspacesTitle": "Workspaces",
+    "wsName": "Workspace",
+    "tutor": "Tutor",
+    "students": "Students",
+    "lessons": "Lessons",
+    "createdAt": "Created",
+    "noWorkspaces": "No workspaces yet",
+    "saveError": "Error"
   }
 }
