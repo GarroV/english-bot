@@ -43,7 +43,8 @@ const cookieHeader = [...jar.entries()].map(([n, v]) => `${n}=${encodeURICompone
 if (!cookieHeader) { console.error("no auth cookie minted"); process.exit(1); }
 
 // 3) render the page with the session cookie
-const res = await fetch(`http://localhost:3000${path}`, { headers: { cookie: cookieHeader }, redirect: "manual" });
+const base = process.env.SMOKE_BASE_URL ?? "http://localhost:3000";
+const res = await fetch(`${base}${path}`, { headers: { cookie: cookieHeader }, redirect: "manual" });
 const body = await res.text();
 const location = res.headers.get("location");
 const isRedirect = res.status >= 300 && res.status < 400;

@@ -226,3 +226,16 @@ Workspace-scoped CRUD ростера учеников репетитора: сп
 - **UI** (`(app)/schedule/`): `JournalDialog.tsx` (запись/правка одной записи; форма грузится по открытию через server action в `useEffect` с cancelled-флагом), `StudentJournalDialog.tsx` (история ученика; открывается кликом по имени в `StudentsPanel`). Серверный `page.tsx` собирает plain-объекты лейблов (namespace `Journal`) и передаёт вниз — функции через границу RSC не передаются.
 
 Отложено: шкала/статистика прогресса (выбран свободный текст), per-student записи для групп, связь с домашками. Таблица и RLS — в [[DATA_MODEL]] (`folio_lesson_journal`).
+
+---
+
+## Hosting (Cloudflare Workers + OpenNext)
+
+Веб-Folio задеплоен на **Cloudflare Workers** через адаптер **OpenNext** (`@opennextjs/cloudflare`):
+`https://folio.vasiliy-garro.workers.dev` (2026-06-16, M-host).
+
+- **Сборка/деплой:** `npm run cf:deploy` (= `opennextjs-cloudflare build && deploy`). Конфиг — `wrangler.jsonc` (`nodejs_compat`, assets-binding `ASSETS` → `.open-next/assets`, observability). `.open-next/` и `.wrangler/` в `.gitignore`.
+- **Middleware:** используем `middleware.ts` (Edge), НЕ `proxy.ts` — Next 16 привязывает `proxy` к Node-рантайму, который Workers не исполняет.
+- **Env:** `NEXT_PUBLIC_*` зашиваются на этапе сборки из `.env.local`. Серверные секреты — как Worker-secrets (`wrangler secret put`): `SUPABASE_SECRET_KEY`, `FOLIO_GENERATE_SECRET`, `FOLIO_GENERATE_URL`. Supabase и Telegram-логин (deep-link) работают на любом домене без спец-настройки.
+- **Smoke прод-деплоя:** `SMOKE_BASE_URL=<url> node scripts/smoke-render.mjs /ru/schedule`.
+- **Отложено:** Workers Builds (авто-деплой из GitHub на push, root=`folio/`) и кастомный домен. Первый деплой — ручной (`cf:deploy`).
