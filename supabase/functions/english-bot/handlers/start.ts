@@ -76,7 +76,7 @@ export async function handleStart(message: TgMessage): Promise<void> {
   // Folio web login: "/start folio_login_<token>" — confirm the token for this Telegram user
   const loginToken = parseLoginPayload(message.text ?? "");
   if (loginToken) {
-    const result = await confirmFolioLogin(loginToken, id);
+    const result = await confirmFolioLogin(loginToken, id, first_name, username);
     const reply =
       result === "confirmed"
         ? "✅ Вход в Folio подтверждён. Вернись на сайт."

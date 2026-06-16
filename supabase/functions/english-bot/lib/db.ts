@@ -196,37 +196,58 @@ export async function listUsers(): Promise<DbUser[]> {
 export async function confirmFolioLogin(
   token: string,
   telegramId: number,
+  firstName?: string,
+  username?: string,
 ): Promise<"confirmed" | "not_linked" | "invalid"> {
-  // 1) token must exist, be pending, and not expired
+  // 1) token must exist, be pending, and not expired (also read the optional signup invite)
   const { data: tok } = await supabase
     .from("folio_login_tokens")
-    .select("id, status, expires_at")
+    .select("id, status, expires_at, signup_invite_id")
     .eq("token", token)
     .maybeSingle();
   if (!tok || tok.status !== "pending" || Date.parse(tok.expires_at) <= Date.now()) {
     return "invalid";
   }
 
-  // 2) resolve the folio user by telegram auth method
+  const tgInfo = {
+    telegram_id: telegramId,
+    tg_first_name: firstName ?? null,
+    tg_username: username ?? null,
+    confirmed_at: new Date().toISOString(),
+  };
+  const confirm = (fields: Record<string, unknown>) =>
+    supabase
+      .from("folio_login_tokens")
+      .update({ status: "confirmed", ...tgInfo, ...fields })
+      .eq("token", token)
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString());
+
+  // 2) existing Folio user linked to this Telegram → normal login
   const { data: method } = await supabase
     .from("folio_auth_methods")
     .select("user_id")
     .eq("provider", "telegram")
     .eq("provider_uid", String(telegramId))
     .maybeSingle();
-  if (!method) return "not_linked";
+  if (method) {
+    const { error } = await confirm({ folio_user_id: method.user_id });
+    return error ? "invalid" : "confirmed";
+  }
 
-  // 3) confirm
-  const { error } = await supabase
-    .from("folio_login_tokens")
-    .update({
-      status: "confirmed",
-      telegram_id: telegramId,
-      folio_user_id: method.user_id,
-      confirmed_at: new Date().toISOString(),
-    })
-    .eq("token", token)
-    .eq("status", "pending")
-    .gt("expires_at", new Date().toISOString());
-  return error ? "invalid" : "confirmed";
+  // 3) no existing user — allowed only if the token carries a still-valid signup invite.
+  // folio_user_id stays null; the Folio /session route provisions the new tutor + workspace.
+  if (tok.signup_invite_id) {
+    const { data: inv } = await supabase
+      .from("folio_signup_invites")
+      .select("status, expires_at")
+      .eq("id", tok.signup_invite_id)
+      .maybeSingle();
+    if (inv && inv.status === "pending" && Date.parse(inv.expires_at) > Date.now()) {
+      const { error } = await confirm({});
+      return error ? "invalid" : "confirmed";
+    }
+  }
+
+  return "not_linked";
 }
