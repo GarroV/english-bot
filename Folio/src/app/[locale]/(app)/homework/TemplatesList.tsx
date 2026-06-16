@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { assignTemplate } from "@/lib/homework/assignments";
 import type { TemplateRow } from "@/lib/homework/queries";
 import type { StudentOption } from "@/lib/lessons/queries";
+import { formatDate } from "@/lib/format/date";
 
 interface Labels {
   empty: string; templates: string; view: string; hide: string; copy: string; copied: string;
@@ -68,7 +69,7 @@ export function TemplatesList({ templates, students, labels }: {
               <div className="flex flex-wrap items-baseline gap-2">
                 <span className="font-semibold">{tpl.topic}</span>
                 <span className="text-xs text-muted-foreground">
-                  {labels.typeLabels[tpl.module_type] ?? tpl.module_type}{tpl.level ? ` · ${tpl.level}` : ""} · {new Date(tpl.created_at).toLocaleDateString()}
+                  {labels.typeLabels[tpl.module_type] ?? tpl.module_type}{tpl.level ? ` · ${tpl.level}` : ""} · {formatDate(tpl.created_at)}
                 </span>
               </div>
               <div className="flex gap-2">

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { updateAssignmentStatus } from "@/lib/homework/assignments";
 import { ASSIGNMENT_STATUSES } from "@/lib/homework/assignments-schema";
 import type { AssignmentRow } from "@/lib/homework/queries";
+import { formatDate } from "@/lib/format/date";
 
 interface Labels {
   assignmentsTitle: string; noAssignments: string; noDue: string; saveError: string;
@@ -45,7 +46,7 @@ export function AssignmentsList({ assignments, labels }: {
               <div className="flex flex-wrap items-baseline gap-2">
                 <span className="font-semibold">{a.student_name ?? "—"}</span>
                 <span className="text-xs text-muted-foreground">
-                  {a.template_topic ?? "—"}{a.template_type ? ` · ${labels.typeLabels[a.template_type] ?? a.template_type}` : ""} · {a.due_date ?? labels.noDue}
+                  {a.template_topic ?? "—"}{a.template_type ? ` · ${labels.typeLabels[a.template_type] ?? a.template_type}` : ""} · {a.due_date ? formatDate(a.due_date) : labels.noDue}
                 </span>
               </div>
               <select

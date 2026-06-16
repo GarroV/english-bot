@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { recordPayment, deleteEntry } from "@/lib/billing/actions";
 import type { Balance, LedgerEntry } from "@/lib/billing/queries";
+import { formatDate } from "@/lib/format/date";
 
 interface Labels {
   student: string; charged: string; paid: string; balance: string; recordPayment: string;
@@ -97,7 +98,7 @@ export function BalancesList({ balances, ledger, labels }: {
                   <li key={e.id} className="flex items-center justify-between gap-2">
                     <span>
                       {e.type === "charge" ? labels.charge : labels.payment} · {e.amount}
-                      {e.note ? ` · ${e.note}` : ""} · {new Date(e.created_at).toLocaleDateString()}
+                      {e.note ? ` · ${e.note}` : ""} · {formatDate(e.created_at)}
                     </span>
                     <Button variant="ghost" size="sm" disabled={pending} onClick={() => remove(e.id)}>{labels.delete}</Button>
                   </li>

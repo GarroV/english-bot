@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { LessonDialog, type LessonDialogState } from "./LessonDialog";
 import { completeLesson, reopenLesson, updateLesson } from "@/lib/lessons/actions";
 import { toDatetimeLocal, toDateParam } from "@/lib/lessons/week";
+import { formatDate } from "@/lib/format/date";
 import type { LessonWithStudents, StudentOption } from "@/lib/lessons/queries";
 
 const DAY_START = 7;
@@ -112,7 +113,7 @@ export function ScheduleBoard({
         <Button variant="outline" size="sm" onClick={gotoToday}>{labels.today}</Button>
         <Button variant="outline" size="sm" onClick={() => gotoWeek(7)}>→</Button>
         <span className="ml-2 font-semibold">
-          {dayDates[0].toLocaleDateString()} — {dayDates[6].toLocaleDateString()}
+          {formatDate(dayDates[0])} — {formatDate(dayDates[6])}
         </span>
       </div>
 
