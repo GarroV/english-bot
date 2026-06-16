@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
 import {
@@ -52,19 +52,26 @@ export function StudentForm({ mode, student, labels }: {
     rate: student?.default_rate != null ? String(student.default_rate) : "",
     notes: student?.notes ?? "",
   });
+  const [seededFor, setSeededFor] = useState<string | null>(null);
 
-  // The component instance is reused across router.refresh(); re-sync the form from the
-  // latest student prop each time the dialog opens so edits never show stale values.
-  useEffect(() => {
-    if (!open || !student) return;
+  // Seed the form once per open, keyed by mode+id — NOT on every `student` prop identity.
+  // On the merged schedule screen a router.refresh() from a sibling action (archive,
+  // lesson save, ✓ toggle, drag-drop) gives a fresh student object with the SAME id;
+  // keying on id keeps the user's unsaved edits instead of clobbering them.
+  const seedKey = open ? `${mode}:${student?.id ?? "new"}` : null;
+  if (open && seedKey !== seededFor) {
+    setSeededFor(seedKey);
     setForm({
-      name: student.name,
-      email: student.email ?? "",
-      telegram: student.telegram_id != null ? String(student.telegram_id) : "",
-      rate: student.default_rate != null ? String(student.default_rate) : "",
-      notes: student.notes ?? "",
+      name: student?.name ?? "",
+      email: student?.email ?? "",
+      telegram: student?.telegram_id != null ? String(student.telegram_id) : "",
+      rate: student?.default_rate != null ? String(student.default_rate) : "",
+      notes: student?.notes ?? "",
     });
-  }, [open, student]);
+  } else if (!open && seededFor !== null) {
+    // Reset on close so reopening re-seeds from the latest server values.
+    setSeededFor(null);
+  }
 
   async function submit() {
     if (mode === "edit" && !student) {
