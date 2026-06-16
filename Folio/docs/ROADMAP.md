@@ -20,7 +20,7 @@
 - [ ] Инвайт-флоу: репетитор создаёт ученика → письмо → активация (отложено в M2a)
 - [x] Super Admin создан (seed-bootstrap, telegram_id 744230399 — временно)
 - [x] Telegram login (bot deep-link + одноразовый токен; не Login Widget)
-- [x] Роли и middleware (защита роутов через `proxy.ts` + `getUser()`)
+- [x] Роли и middleware (защита роутов через `middleware.ts` (Edge) + `getUser()`)
 
 ### M3: Students
 > M3 (2026-06-12): CRUD учеников + мягкая архивация. Логин ученика / скраб PII — позже.

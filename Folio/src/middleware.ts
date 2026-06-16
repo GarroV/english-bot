@@ -2,6 +2,11 @@ import createMiddleware from "next-intl/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "@/i18n/routing";
 
+// NOTE: this is the `middleware.ts` (Edge runtime) convention, NOT Next 16's
+// `proxy.ts`. Next 16 locks `proxy` to the Node.js runtime, which the Cloudflare
+// Workers target (OpenNext) cannot run; `middleware` keeps the Edge runtime that
+// Workers supports. Our logic here is Edge-safe (cookie check + redirect + intl).
+
 const intlMiddleware = createMiddleware(routing);
 
 // Locale-aware path is like /ru/dashboard ; strip the locale prefix for matching.
@@ -18,7 +23,7 @@ function hasSupabaseSession(request: NextRequest): boolean {
   return request.cookies.getAll().some((c) => /^sb-.*-auth-token/.test(c.name));
 }
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // API routes bypass intl + auth gating here (each route guards itself).

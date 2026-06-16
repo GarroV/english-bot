@@ -10,7 +10,7 @@ M2 (Auth) изначально планировал email magic link + Telegram 
 - Вход через **bot deep-link + одноразовый токен**, переиспользуя english-bot (а не Login Widget). Таблица `folio_login_tokens` (pending→confirmed→consumed, TTL 5 мин, single-use, deny-all RLS, service-role). english-bot ловит `/start folio_login_<token>`, резолвит юзера по telegram_id и помечает токен confirmed.
 - **Сессия Supabase** выпускается на сервере Folio: `admin.generateLink({type:'magiclink'})` → `verifyOtp({token_hash, type:'email'})` (magic link и email OTP делят реализацию). @supabase/ssr пишет auth-куки.
 - **Bootstrap** первого super_admin — seed-миграция (telegram_id 744230399). Временное решение.
-- **Защита роутов**: `proxy.ts` (Next 16) — оптимистичная проверка куки; реальная проверка в server-компоненте через `getUser()`.
+- **Защита роутов**: `middleware.ts` (Edge runtime; не `proxy.ts` — тот в Next 16 только Node, несовместим с Cloudflare Workers) — оптимистичная проверка куки; реальная проверка в server-компоненте через `getUser()`.
 
 ## Последствия
 - Работает на localhost, без Vercel/туннелей/доменов; один бот.

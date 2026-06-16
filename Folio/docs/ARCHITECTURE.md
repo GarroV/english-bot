@@ -33,7 +33,7 @@ folio/
 │   ├── components/        — переиспользуемые UI-компоненты (включая shadcn/ui)
 │   ├── i18n/              — routing.ts, navigation.ts, request.ts (next-intl)
 │   ├── lib/               — бизнес-логика, Supabase-клиент, серверные хелперы
-│   └── proxy.ts           — middleware для роутинга локалей (Next.js 16 convention)
+│   └── middleware.ts      — Edge middleware: gate авторизации + роутинг локалей
 ├── messages/              — ru.json, en.json
 └── docs/                  — CLAUDE.md, AGENTS.md
 ```
@@ -47,8 +47,10 @@ folio/
 
 - Маршруты локализованы через App Router сегмент `[locale]`: `/ru/...`, `/en/...`
 - `routing.ts` задаёт список локалей и дефолт (`ru`)
-- `proxy.ts` (Next.js 16, бывший `middleware.ts`) редиректит `/` → `/ru` и резолвит локаль
-  из cookie/Accept-Language
+- `middleware.ts` (Edge runtime) редиректит `/` → `/ru` и резолвит локаль
+  из cookie/Accept-Language. **Используем `middleware.ts`, а не `proxy.ts`:** в Next 16
+  `proxy.ts` жёстко привязан к Node-рантайму, который Cloudflare Workers (OpenNext) не
+  исполняет; `middleware.ts` остаётся на Edge — его Workers поддерживают.
 - Тексты — в `messages/{locale}.json`, ключи добавляются сразу на оба языка
 
 ---
@@ -96,7 +98,7 @@ english-bot остаётся самостоятельной Deno Edge Function. 
 → `verifyOtp({token_hash, type:'email'})`. Magic link и email-OTP делят реализацию,
 поэтому verify-тип — `'email'`. Auth-куки пишет `@supabase/ssr`.
 
-**Защита роутов**: `proxy.ts` (middleware в Next 16) делает только ОПТИМИСТИЧНУЮ
+**Защита роутов**: `middleware.ts` (Edge) делает только ОПТИМИСТИЧНУЮ
 проверку наличия cookie `sb-*-auth-token` и редиректит неавторизованных на
 `/[locale]/login`. Реальная верификация — в server-компоненте дашборда через
 `supabase.auth.getUser()` (per Next 16 docs).
