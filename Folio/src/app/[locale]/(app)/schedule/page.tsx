@@ -1,9 +1,11 @@
 import { getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { listLessonsInRange, listActiveStudents } from "@/lib/lessons/queries";
+import { listLessonsInRange } from "@/lib/lessons/queries";
+import { listStudents } from "@/lib/students/queries";
 import { mondayFromParam, weekRange } from "@/lib/lessons/week";
 import { ScheduleBoard } from "./ScheduleBoard";
+import { StudentsPanel } from "./StudentsPanel";
 
 export default async function SchedulePage({
   searchParams,
@@ -20,12 +22,18 @@ export default async function SchedulePage({
   const { week } = await searchParams;
   const monday = mondayFromParam(week);
   const { fromISO, toISO } = weekRange(monday);
-  const [lessons, students] = await Promise.all([
+  // Load all students once (incl. archived for the panel's toggle); the board only
+  // needs active ones for lesson creation.
+  const [lessons, allStudents] = await Promise.all([
     listLessonsInRange(fromISO, toISO),
-    listActiveStudents(),
+    listStudents(true),
   ]);
+  const activeStudents = allStudents
+    .filter((s) => s.archived_at == null)
+    .map((s) => ({ id: s.id, name: s.name }));
 
   const t = await getTranslations("Schedule");
+  const ts = await getTranslations("Students");
   const labels = {
     today: t("today"), group: t("group"), noStudents: t("noStudents"),
     dialog: {
@@ -36,16 +44,28 @@ export default async function SchedulePage({
       saved: t("saved"), saveError: t("saveError"), pickStudents: t("pickStudents"),
     },
   };
+  const studentLabels = {
+    title: ts("title"), add: ts("add"), empty: ts("empty"), name: ts("name"), email: ts("email"),
+    telegram: ts("telegram"), rate: ts("rate"), notes: ts("notes"), edit: ts("edit"),
+    archive: ts("archive"), restore: ts("restore"), save: ts("save"), cancel: ts("cancel"),
+    newStudent: ts("newStudent"), editStudent: ts("editStudent"),
+    showArchived: ts("showArchived"), showActive: ts("showActive"), archivedBadge: ts("archivedBadge"),
+    saved: ts("saved"), saveError: ts("saveError"),
+    archivedToast: ts("archivedToast"), restoredToast: ts("restoredToast"),
+  };
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 p-8">
-      <h1 className="text-4xl font-bold">{t("title")}</h1>
-      <ScheduleBoard
-        weekStartISO={monday.toISOString()}
-        lessons={lessons}
-        students={students}
-        labels={labels}
-      />
+    <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-6 p-6 xl:flex-row">
+      <div className="flex min-w-0 flex-1 flex-col gap-4">
+        <h1 className="text-4xl font-bold">{t("title")}</h1>
+        <ScheduleBoard
+          weekStartISO={monday.toISOString()}
+          lessons={lessons}
+          students={activeStudents}
+          labels={labels}
+        />
+      </div>
+      <StudentsPanel students={allStudents} labels={studentLabels} />
     </main>
   );
 }

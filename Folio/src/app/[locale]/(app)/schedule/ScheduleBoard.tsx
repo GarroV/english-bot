@@ -11,7 +11,8 @@ import type { LessonWithStudents, StudentOption } from "@/lib/lessons/queries";
 
 const DAY_START = 7;
 const DAY_END = 22;
-const HOUR_PX = 76;
+const HOUR_PX = 48;
+const MIN_CARD_PX = 30;
 const HOURS = Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_START + i);
 const DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
@@ -158,8 +159,8 @@ export function ScheduleBoard({
                     let top = (minutes / 60) * HOUR_PX;
                     let height = (l.duration_min / 60) * HOUR_PX - 2;
                     if (top < 0) { height += top; top = 0; } // trim the part before DAY_START
-                    top = Math.min(top, totalPx - 36);
-                    height = Math.max(36, Math.min(height, totalPx - top));
+                    top = Math.min(top, totalPx - MIN_CARD_PX);
+                    height = Math.max(MIN_CARD_PX, Math.min(height, totalPx - top));
                     const cancelled = l.status === "cancelled";
                     const completed = l.status === "completed";
                     const title = l.type === "group" ? `${labels.group} (${l.students.length})` : (l.students[0]?.name ?? "—");
@@ -168,7 +169,7 @@ export function ScheduleBoard({
                         draggable={!busy && !cancelled}
                         onDragStart={(e) => e.dataTransfer.setData("lessonId", l.id)}
                         onClick={() => openEdit(l)}
-                        className={`pointer-events-auto absolute left-1 right-1 cursor-pointer overflow-hidden rounded-xl border px-3 py-2 text-left text-sm shadow-sm transition ${
+                        className={`pointer-events-auto absolute left-1 right-1 cursor-pointer overflow-hidden rounded-lg border px-2 py-1 text-left text-xs leading-tight shadow-sm transition ${
                           cancelled
                             ? "border-border bg-muted text-muted-foreground line-through"
                             : completed
@@ -181,7 +182,7 @@ export function ScheduleBoard({
                             aria-label={labels.dialog.complete} title={labels.dialog.complete}
                             disabled={busy}
                             onClick={(e) => { e.stopPropagation(); toggleComplete(l); }}
-                            className={`absolute right-2 top-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border text-sm transition ${
+                            className={`absolute right-1 top-1 flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs transition ${
                               completed
                                 ? "border-primary bg-primary text-primary-foreground"
                                 : "border-primary/50 bg-card text-transparent hover:text-primary/60"
@@ -189,10 +190,12 @@ export function ScheduleBoard({
                             ✓
                           </button>
                         )}
-                        <div className="pr-8 font-semibold">
-                          {start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        <div className="truncate pr-6">
+                          <span className="font-semibold tabular-nums">
+                            {start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                          {" · "}{title}
                         </div>
-                        <div className="truncate pr-8">{title}</div>
                       </div>
                     );
                   })}
