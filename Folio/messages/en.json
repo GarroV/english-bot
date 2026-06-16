@@ -62,7 +62,8 @@
     "noStudents": "Add students first",
     "saved": "Saved",
     "saveError": "Could not save",
-    "pickStudents": "Pick at least one student"
+    "pickStudents": "Pick at least one student",
+    "journal": "Lesson journal"
   },
   "Homework": {
     "title": "Homework",
@@ -133,5 +134,22 @@
     "charge": "Charge",
     "payment": "Payment",
     "noEntries": "No entries"
+  },
+  "Journal": {
+    "title": "Lesson journal",
+    "topic": "Topic",
+    "level": "Level",
+    "levelNone": "— none",
+    "comment": "Comment",
+    "progress": "Progress",
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading…",
+    "saved": "Saved",
+    "saveError": "Could not save",
+    "historyTitle": "Student journal",
+    "historyEmpty": "No entries yet",
+    "close": "Close",
+    "loadError": "Could not load"
   }
 }

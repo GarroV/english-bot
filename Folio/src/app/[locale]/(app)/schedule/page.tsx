@@ -34,6 +34,7 @@ export default async function SchedulePage({
 
   const t = await getTranslations("Schedule");
   const ts = await getTranslations("Students");
+  const tj = await getTranslations("Journal");
   const labels = {
     today: t("today"), group: t("group"), noStudents: t("noStudents"),
     dialog: {
@@ -42,6 +43,12 @@ export default async function SchedulePage({
       students: t("students"), notes: t("notes"), save: t("save"), cancel: t("cancel"),
       cancelLesson: t("cancelLesson"), complete: t("complete"),
       saved: t("saved"), saveError: t("saveError"), pickStudents: t("pickStudents"),
+      journal: t("journal"),
+    },
+    journal: {
+      title: tj("title"), topic: tj("topic"), level: tj("level"), levelNone: tj("levelNone"),
+      comment: tj("comment"), progress: tj("progress"), save: tj("save"), cancel: tj("cancel"),
+      loading: tj("loading"), loadError: tj("loadError"), saved: tj("saved"), saveError: tj("saveError"),
     },
   };
   const studentLabels = {
@@ -52,6 +59,10 @@ export default async function SchedulePage({
     showArchived: ts("showArchived"), showActive: ts("showActive"), archivedBadge: ts("archivedBadge"),
     saved: ts("saved"), saveError: ts("saveError"),
     archivedToast: ts("archivedToast"), restoredToast: ts("restoredToast"),
+  };
+  const studentJournalLabels = {
+    historyTitle: tj("historyTitle"), historyEmpty: tj("historyEmpty"),
+    progress: tj("progress"), loading: tj("loading"), loadError: tj("loadError"), close: tj("close"),
   };
 
   return (
@@ -65,7 +76,7 @@ export default async function SchedulePage({
           labels={labels}
         />
       </div>
-      <StudentsPanel students={allStudents} labels={studentLabels} />
+      <StudentsPanel students={allStudents} labels={studentLabels} journalLabels={studentJournalLabels} />
     </main>
   );
 }

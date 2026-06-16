@@ -23,16 +23,17 @@ interface Labels {
   newLesson: string; editLesson: string; datetime: string; duration: string;
   location: string; online: string; offline: string; students: string; notes: string;
   save: string; cancel: string; cancelLesson: string; complete: string;
-  saved: string; saveError: string; pickStudents: string;
+  saved: string; saveError: string; pickStudents: string; journal: string;
 }
 
 export function LessonDialog({
-  state, onClose, students, labels,
+  state, onClose, students, labels, onOpenJournal,
 }: {
   state: LessonDialogState | null;
   onClose: () => void;
   students: StudentOption[];
   labels: Labels;
+  onOpenJournal?: (lesson: LessonWithStudents) => void;
 }) {
   const router = useRouter();
   const open = state !== null;
@@ -158,6 +159,12 @@ export function LessonDialog({
         <DialogFooter className="flex-wrap gap-2">
           {editing && (
             <>
+              {state?.lesson?.status === "completed" && onOpenJournal && (
+                <Button variant="outline" size="sm" disabled={pending}
+                  onClick={() => { const l = state.lesson!; onClose(); onOpenJournal(l); }}>
+                  {labels.journal}
+                </Button>
+              )}
               <Button variant="outline" size="sm" disabled={pending} onClick={() => runAction(cancelLesson)}>
                 {labels.cancelLesson}
               </Button>

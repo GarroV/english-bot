@@ -5,6 +5,7 @@ import { useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { StudentForm } from "../students/StudentForm";
+import { StudentJournalDialog, type StudentJournalLabels } from "./StudentJournalDialog";
 import { archiveStudent, restoreStudent } from "@/lib/students/actions";
 import type { StudentRow } from "@/lib/students/queries";
 
@@ -17,14 +18,17 @@ interface Labels {
 }
 
 // Right-column students panel for the merged schedule screen. Add/edit open the
-// shared StudentForm dialog; the archived view toggles client-side (no extra query).
-export function StudentsPanel({ students, labels }: {
+// shared StudentForm dialog; clicking a name opens that student's journal history;
+// the archived view toggles client-side (no extra query).
+export function StudentsPanel({ students, labels, journalLabels }: {
   students: StudentRow[];
   labels: Labels;
+  journalLabels: StudentJournalLabels;
 }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [historyFor, setHistoryFor] = useState<{ id: string; name: string } | null>(null);
 
   const formLabels = {
     name: labels.name, email: labels.email, telegram: labels.telegram, rate: labels.rate,
@@ -65,9 +69,10 @@ export function StudentsPanel({ students, labels }: {
               <li key={s.id}
                 className={`flex items-center justify-between gap-2 rounded-xl border border-border bg-card p-3 shadow-sm ${archived ? "opacity-60" : ""}`}>
                 <div className="min-w-0">
-                  <div className="truncate font-medium">
+                  <button type="button" onClick={() => setHistoryFor({ id: s.id, name: s.name })}
+                    className="block max-w-full truncate text-left font-medium hover:underline">
                     {s.name}{archived ? ` (${labels.archivedBadge})` : ""}
-                  </div>
+                  </button>
                   <div className="text-xs text-muted-foreground">{labels.rate}: {s.default_rate ?? "—"}</div>
                 </div>
                 <div className="flex shrink-0 gap-1">
@@ -89,6 +94,8 @@ export function StudentsPanel({ students, labels }: {
       <Button variant="ghost" size="sm" className="self-start" onClick={() => setShowArchived((v) => !v)}>
         {showArchived ? labels.showActive : labels.showArchived}
       </Button>
+
+      <StudentJournalDialog student={historyFor} onClose={() => setHistoryFor(null)} labels={journalLabels} />
     </aside>
   );
 }

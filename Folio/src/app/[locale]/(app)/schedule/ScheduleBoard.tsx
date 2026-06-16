@@ -5,6 +5,7 @@ import { useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { LessonDialog, type LessonDialogState } from "./LessonDialog";
+import { JournalDialog } from "./JournalDialog";
 import { completeLesson, reopenLesson, updateLesson } from "@/lib/lessons/actions";
 import { toDatetimeLocal, toDateParam } from "@/lib/lessons/week";
 import { formatDate } from "@/lib/format/date";
@@ -30,10 +31,12 @@ export function ScheduleBoard({
   labels: {
     today: string; group: string; noStudents: string;
     dialog: React.ComponentProps<typeof LessonDialog>["labels"];
+    journal: React.ComponentProps<typeof JournalDialog>["labels"];
   };
 }) {
   const router = useRouter();
   const [dialog, setDialog] = useState<LessonDialogState | null>(null);
+  const [journalFor, setJournalFor] = useState<LessonWithStudents | null>(null);
   const [busy, setBusy] = useState(false);
   const weekStart = new Date(weekStartISO);
 
@@ -207,7 +210,9 @@ export function ScheduleBoard({
         </div>
       </div>
 
-      <LessonDialog state={dialog} onClose={() => setDialog(null)} students={students} labels={labels.dialog} />
+      <LessonDialog state={dialog} onClose={() => setDialog(null)} students={students}
+        labels={labels.dialog} onOpenJournal={setJournalFor} />
+      <JournalDialog lesson={journalFor} onClose={() => setJournalFor(null)} labels={labels.journal} />
     </div>
   );
 }
