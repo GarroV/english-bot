@@ -12,7 +12,8 @@ export async function createSignupInvite(input: { note?: string; ttlDays?: numbe
   const sa = await getSuperAdmin();
   if (!sa) return { ok: false, error: "forbidden" };
 
-  const ttlDays = Math.min(Math.max(Math.round(input.ttlDays ?? 14), 1), 90);
+  const raw = Number(input.ttlDays);
+  const ttlDays = Number.isFinite(raw) ? Math.min(Math.max(Math.round(raw), 1), 90) : 14;
   const token = randomBytes(18).toString("base64url");
   const expiresAt = new Date(Date.now() + ttlDays * 86_400_000).toISOString();
 

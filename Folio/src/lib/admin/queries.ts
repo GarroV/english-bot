@@ -62,7 +62,7 @@ export async function listWorkspacesOverview(): Promise<WorkspaceOverview[]> {
       const owner = w.owner_id
         ? (await admin.from("folio_users").select("name, telegram_id").eq("id", w.owner_id).maybeSingle()).data
         : null;
-      const students = (await admin.from("folio_students").select("*", { count: "exact", head: true }).eq("workspace_id", w.id)).count ?? 0;
+      const students = (await admin.from("folio_students").select("*", { count: "exact", head: true }).eq("workspace_id", w.id).is("archived_at", null)).count ?? 0;
       const lessons = (await admin.from("folio_lessons").select("*", { count: "exact", head: true }).eq("workspace_id", w.id)).count ?? 0;
       return {
         id: w.id as string,

@@ -118,7 +118,19 @@ english-bot остаётся самостоятельной Deno Edge Function. 
 - **Безопасность:** инвайт строго one-use (consume атомарен с созданием, без отката в pending → утёкшая ссылка не плодит аккаунты для разных Telegram); `telegram_id` доверяется только из токена (его пишет бот через service-role); уже зарегистрированный Telegram логинится в существующий аккаунт без дубля; синтетический email `tg<id>@folio.local` (внутренний, для сессии). Проверено e2e на проде. Findings security-review закрыты.
 - **`lib/auth/demo-seed.ts`** — сид нового workspace: 3 ученика, 2 занятия (одно «состоялось» с записью журнала + charge/payment), шаблон+назначение домашки.
 
-Отложено: UI супер-админа для выдачи инвайтов (M9); инвайты участников в существующий workspace (`folio_invite_tokens`); email-инвайты.
+Отложено: инвайты участников в существующий workspace (`folio_invite_tokens`); email-инвайты.
+
+### Super-admin панель (M9 core, 2026-06-16)
+
+Роут `/[locale]/admin` — только для `super_admin`. Выпуск инвайтов без разработчика + обзор воркспейсов.
+
+- **Гейт `getSuperAdmin()`** (`lib/admin/guard.ts`): читает `folio_users.role` текущей сессии через request-scoped клиент (своя строка, RLS). Применяется **и в странице** (иначе redirect на `/dashboard`), **и в каждом server-action**.
+- **`lib/admin/queries.ts`** (server-only): `listSignupInvites`, `listWorkspacesOverview` — кросс-воркспейсные чтения через service-role admin-клиент (RLS видит только свой workspace), вызываются только из гейтнутой страницы.
+- **`lib/admin/actions.ts`** (`"use server"`, каждый гейтит `getSuperAdmin()`): `createSignupInvite` (ttl 1..90д, токен, `created_by`=super_admin) и `revokeSignupInvite` (удаляет только `pending`).
+- **UI** `AdminPanel`: создать/копировать/отозвать инвайт (ссылка собирается из origin запроса) + таблица воркспейсов (репетитор, ученики, занятия). Пункт «Админка» в сайдбаре — только super_admin (layout резолвит роль).
+- **Безопасность:** server-actions — публичные POST-эндпоинты, поэтому гейт в КАЖДОМ (не только в UI/навигации). Проверено e2e: репетитор на `/admin` → 307 на `/dashboard`, контент не утекает.
+
+Отложено: ручное создание/блокировка/удаление репетиторов и воркспейсов.
 
 ---
 
