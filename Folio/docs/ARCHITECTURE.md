@@ -110,7 +110,8 @@ english-bot остаётся самостоятельной Deno Edge Function. 
 ## Students module (M3)
 
 Workspace-scoped CRUD ростера учеников репетитора: список, создание, редактирование,
-мягкая архивация/восстановление. Роут `/[locale]/students`.
+мягкая архивация/восстановление. **С 2026-06-16 экран учеников слит с расписанием** —
+ученики живут правой колонкой на `/[locale]/schedule`; `/[locale]/students` редиректит туда.
 
 - **Серверный слой** `lib/students/`:
   - `schema.ts` — zod `studentInputSchema` (name обязателен; email/telegramId/defaultRate/notes опциональны).
@@ -119,10 +120,12 @@ Workspace-scoped CRUD ростера учеников репетитора: сп
     (`"use server"`). `workspace_id` берётся из строки `folio_users` сессионного юзера,
     **никогда** из клиента; запись идёт через request-scoped серверный клиент, чтобы
     применялась RLS.
-- **UI** (`(app)/students/`): `page.tsx` (server, auth-guard через `getUser`, читает `?archived`),
-  `StudentsTable.tsx` (client, shadcn Table + фильтр архива + row actions),
-  `StudentForm.tsx` (client, shadcn Dialog, create/edit, sonner toasts). `<Toaster/>`
-  смонтирован в `[locale]/layout.tsx`.
+- **UI**: `StudentsPanel.tsx` (client, в `(app)/schedule/`) — вертикальный список учеников
+  правой колонкой расписания: «+ Добавить», edit/архив, клиентский тумблер «показать архив».
+  `students/page.tsx` теперь редиректит на `/schedule`. `StudentForm.tsx` (client, shadcn Dialog,
+  create/edit, sonner toasts) переиспользуется панелью; форма сидируется один раз на открытие
+  (ключ `mode:id`), поэтому `router.refresh()` соседних действий не затирает несохранённые правки.
+  `StudentsTable.tsx` удалён. `<Toaster/>` смонтирован в `[locale]/layout.tsx`.
 - **Архивация** — мягкая (`archived_at`, восстановимо). PII-скраб и логин/инвайты ученика
   отложены.
 
@@ -145,8 +148,12 @@ Workspace-scoped CRUD ростера учеников репетитора: сп
   - `actions.ts` (`"use server"`) — `createLesson` (вставляет урок + ростер, откатывает
     урок если вставка ростера упала), `updateLesson`, `cancelLesson`, `completeLesson`.
     `workspace_id` берётся из сессии, **никогда** из клиента.
-- **UI**: `ScheduleBoard.tsx` (client, сетка-неделя) + `LessonDialog.tsx`
-  (create / edit / cancel / complete). В сайдбар добавлен пункт «Расписание».
+- **UI**: двухпанельный экран — `ScheduleBoard.tsx` (client, сетка-неделя) по центру +
+  `StudentsPanel.tsx` (ученики) правой колонкой (`xl:flex-row`, ниже `xl` — стопкой);
+  `LessonDialog.tsx` (create / edit / cancel / complete). Сетка компактная по высоте
+  (`HOUR_PX=48`, `MIN_CARD_PX=30`), карточки занятий — одной строкой «ЧЧ:ММ · Имя» + ✓.
+  `page.tsx` грузит `listStudents(true)` один раз: активных отдаёт доске, всех — панели.
+  В сайдбаре «Расписание»; пункт «Ученики» убран (слит в расписание).
 - **Тип занятия выводится** из размера ростера (1 ученик → solo, 2+ → group).
 - Отметка «состоялось» только ставит `status='completed'` — триггеры биллинга (M5) /
   журнала (M6) добавятся позже.
