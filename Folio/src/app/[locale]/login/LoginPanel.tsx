@@ -21,6 +21,9 @@ export function LoginPanel({ labels, inviteToken, redirectTo }: {
   const polls = useRef(0);
   const cancelled = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The poll loop reschedules itself through this ref so it never references its own
+  // binding before declaration (react-hooks/immutability) — kept in sync below.
+  const pollRef = useRef<(token: string) => void>(() => {});
 
   // Stop the polling loop and drop any pending timer when the panel unmounts.
   useEffect(() => {
@@ -38,7 +41,7 @@ export function LoginPanel({ labels, inviteToken, redirectTo }: {
 
     try {
       const res = await fetch(`/api/auth/telegram/status?token=${encodeURIComponent(token)}`);
-      if (!res.ok) { timer.current = setTimeout(() => poll(token), POLL_MS); return; }
+      if (!res.ok) { timer.current = setTimeout(() => pollRef.current(token), POLL_MS); return; }
       const { status } = await res.json();
 
       if (status === "confirmed") {
@@ -52,11 +55,14 @@ export function LoginPanel({ labels, inviteToken, redirectTo }: {
         setPhase("error");
         return;
       }
-      timer.current = setTimeout(() => poll(token), POLL_MS);
+      timer.current = setTimeout(() => pollRef.current(token), POLL_MS);
     } catch {
       if (!cancelled.current) setPhase("error");
     }
   }, [router, redirectTo]);
+
+  // Keep the self-scheduling ref pointed at the latest poll.
+  useEffect(() => { pollRef.current = poll; }, [poll]);
 
   const start = useCallback(async () => {
     setPhase("waiting");

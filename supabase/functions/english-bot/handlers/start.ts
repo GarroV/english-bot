@@ -80,9 +80,11 @@ export async function handleStart(message: TgMessage): Promise<void> {
     const reply =
       result === "confirmed"
         ? "✅ Вход в Folio подтверждён. Вернись на сайт."
-        : result === "not_linked"
-          ? "Этот Telegram не привязан к Folio."
-          : "Ссылка устарела. Открой вход в Folio заново.";
+        : result === "invite_expired"
+          ? "Приглашение истекло или уже использовано. Запроси новую ссылку."
+          : result === "not_linked"
+            ? "Этот Telegram не привязан к Folio."
+            : "Ссылка устарела. Открой вход в Folio заново.";
     await sendMessage(chatId, reply);
     return;
   }

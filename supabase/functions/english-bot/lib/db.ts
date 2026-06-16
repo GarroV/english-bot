@@ -198,7 +198,7 @@ export async function confirmFolioLogin(
   telegramId: number,
   firstName?: string,
   username?: string,
-): Promise<"confirmed" | "not_linked" | "invalid"> {
+): Promise<"confirmed" | "not_linked" | "invite_expired" | "invalid"> {
   // 1) token must exist, be pending, and not expired (also read the optional signup invite)
   const { data: tok } = await supabase
     .from("folio_login_tokens")
@@ -247,6 +247,8 @@ export async function confirmFolioLogin(
       const { error } = await confirm({});
       return error ? "invalid" : "confirmed";
     }
+    // Token carried an invite, but it is no longer redeemable — distinct from not_linked.
+    return "invite_expired";
   }
 
   return "not_linked";
