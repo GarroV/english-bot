@@ -34,7 +34,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "not redeemable" }, { status: 401 });
     }
 
-    const ok = await mintSessionForUser(email);
+    // One retry: the account/registration is already committed; a transient mint blip
+    // shouldn't strand a freshly-provisioned tutor (they can also use /login afterward).
+    let ok = await mintSessionForUser(email);
+    if (!ok) ok = await mintSessionForUser(email);
     if (!ok) return NextResponse.json({ error: "session mint failed" }, { status: 500 });
     return NextResponse.json({ ok: true });
   } catch {
