@@ -10,12 +10,14 @@ import { routing } from "@/i18n/routing";
 const intlMiddleware = createMiddleware(routing);
 
 // Locale-aware path is like /ru/dashboard ; strip the locale prefix for matching.
-const PUBLIC_SEGMENTS = ["", "login"]; // "" = locale root (landing)
+// Public: the locale root (landing), /login, and /invite/* (signup via invite link).
+const PUBLIC_FIRST_SEGMENTS = ["login", "invite"];
 
 function isPublicPath(pathname: string): boolean {
-  const parts = pathname.split("/").filter(Boolean); // ["ru","dashboard"]
-  const afterLocale = parts.slice(1).join("/");       // "dashboard"
-  return PUBLIC_SEGMENTS.includes(afterLocale);
+  const parts = pathname.split("/").filter(Boolean); // ["ru","invite","tok"]
+  const afterLocale = parts.slice(1);                 // ["invite","tok"]
+  if (afterLocale.length === 0) return true;          // locale root (landing)
+  return PUBLIC_FIRST_SEGMENTS.includes(afterLocale[0]);
 }
 
 // Optimistic Supabase session check: presence of an auth cookie. Real check is server-side.

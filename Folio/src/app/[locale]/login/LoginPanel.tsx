@@ -9,7 +9,13 @@ type Phase = "idle" | "waiting" | "expired" | "error";
 const POLL_MS = 2000;
 const MAX_POLLS = 90; // ~3 min
 
-export function LoginPanel({ labels }: { labels: Labels }) {
+// Reused for plain login and for invite registration: pass inviteToken to register a new
+// tutor, and redirectTo to control where to land after the session is minted.
+export function LoginPanel({ labels, inviteToken, redirectTo }: {
+  labels: Labels;
+  inviteToken?: string;
+  redirectTo?: string;
+}) {
   const [phase, setPhase] = useState<Phase>("idle");
   const router = useRouter();
   const polls = useRef(0);
@@ -42,7 +48,7 @@ export function LoginPanel({ labels }: { labels: Labels }) {
           body: JSON.stringify({ token }),
         });
         if (cancelled.current) return;
-        if (s.ok) { router.push("/dashboard"); return; }
+        if (s.ok) { router.push(redirectTo ?? "/dashboard"); return; }
         setPhase("error");
         return;
       }
@@ -50,13 +56,17 @@ export function LoginPanel({ labels }: { labels: Labels }) {
     } catch {
       if (!cancelled.current) setPhase("error");
     }
-  }, [router]);
+  }, [router, redirectTo]);
 
   const start = useCallback(async () => {
     setPhase("waiting");
     polls.current = 0;
     try {
-      const res = await fetch("/api/auth/telegram/start", { method: "POST" });
+      const res = await fetch("/api/auth/telegram/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(inviteToken ? { inviteToken } : {}),
+      });
       if (!res.ok) { setPhase("error"); return; }
       const { token, deepLink } = await res.json();
       if (!token || !deepLink) { setPhase("error"); return; }
@@ -65,7 +75,7 @@ export function LoginPanel({ labels }: { labels: Labels }) {
     } catch {
       setPhase("error");
     }
-  }, [poll]);
+  }, [poll, inviteToken]);
 
   return (
     <div className="flex flex-col items-center gap-3">

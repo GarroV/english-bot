@@ -11,14 +11,18 @@ export interface CreatedToken {
 }
 
 // Create a pending login token and return the Telegram deep-link to confirm it.
-export async function createLoginToken(): Promise<CreatedToken> {
+// Pass signupInviteId for the registration flow (bot confirms without an existing user).
+export async function createLoginToken(signupInviteId?: string): Promise<CreatedToken> {
   const token = randomBytes(24).toString("base64url");
   const expiresAt = new Date(Date.now() + TOKEN_TTL_MS).toISOString();
   const admin = createAdminClient();
 
-  const { error } = await admin
-    .from(TABLE)
-    .insert({ token, status: "pending", expires_at: expiresAt });
+  const { error } = await admin.from(TABLE).insert({
+    token,
+    status: "pending",
+    expires_at: expiresAt,
+    ...(signupInviteId ? { signup_invite_id: signupInviteId } : {}),
+  });
   if (error) throw new Error(`createLoginToken failed: ${error.message}`);
 
   const bot = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME!;
@@ -37,12 +41,20 @@ export async function getLoginTokenStatus(token: string): Promise<LoginTokenStat
   return (data?.status as LoginTokenStatus) ?? null;
 }
 
-// Atomically consume a confirmed token; returns the folio user id or null if not redeemable.
-export async function consumeLoginToken(token: string): Promise<string | null> {
+export interface ConsumedToken {
+  folioUserId: string | null;     // set → existing-user login
+  signupInviteId: string | null;  // set (and no folioUserId) → registration
+  telegramId: number | null;
+  tgFirstName: string | null;
+}
+
+// Atomically consume a confirmed token; returns its redemption payload or null if
+// not redeemable. The caller mints a session (folioUserId) or registers (signupInviteId).
+export async function consumeLoginToken(token: string): Promise<ConsumedToken | null> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from(TABLE)
-    .select("status, expires_at, consumed_at, folio_user_id")
+    .select("status, expires_at, consumed_at, folio_user_id, signup_invite_id")
     .eq("token", token)
     .maybeSingle();
   if (error) throw new Error(`consumeLoginToken read failed: ${error.message}`);
@@ -57,8 +69,14 @@ export async function consumeLoginToken(token: string): Promise<string | null> {
     .eq("status", "confirmed")
     .is("consumed_at", null)
     .gt("expires_at", new Date().toISOString())
-    .select("folio_user_id")
+    .select("folio_user_id, signup_invite_id, telegram_id, tg_first_name")
     .maybeSingle();
   if (updErr) throw new Error(`consumeLoginToken update failed: ${updErr.message}`);
-  return (updated?.folio_user_id as string) ?? null;
+  if (!updated) return null;
+  return {
+    folioUserId: (updated.folio_user_id as string | null) ?? null,
+    signupInviteId: (updated.signup_invite_id as string | null) ?? null,
+    telegramId: (updated.telegram_id as number | null) ?? null,
+    tgFirstName: (updated.tg_first_name as string | null) ?? null,
+  };
 }

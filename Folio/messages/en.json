@@ -151,5 +151,15 @@
     "historyEmpty": "No entries yet",
     "close": "Close",
     "loadError": "Could not load"
+  },
+  "Invite": {
+    "title": "Folio invitation",
+    "subtitle": "You have been invited as a tutor. Sign in with Telegram and we will create your workspace.",
+    "button": "Sign in with Telegram",
+    "waiting": "Confirm the login in Telegram…",
+    "expired": "The link expired, try again",
+    "error": "Could not sign in. Try again",
+    "invalidTitle": "Invalid invitation",
+    "invalidBody": "This link is invalid or has expired. Ask the admin for a new one."
   }
 }
