@@ -16,8 +16,10 @@
 
 ### M2: Auth
 > M2a (2026-06-12): Telegram-login ядро + seed super_admin + защита роутов. Email/инвайты/Login Widget — позже.
+> M2b (2026-06-16): self-serve регистрация РЕПЕТИТОРА по инвайт-ссылке (Telegram) → свой workspace + демо-данные. Атомарный provisioning (RPC `folio_register_tutor`), проверено e2e на проде. Выдача инвайтов — пока скриптом (UI супер-админа в M9).
+- [x] Self-serve регистрация репетитора по инвайту (`folio_signup_invites` → новый workspace, демо-данные)
 - [ ] Email magic link (Supabase Auth) (отложено в M2a)
-- [ ] Инвайт-флоу: репетитор создаёт ученика → письмо → активация (отложено в M2a)
+- [ ] Инвайт-флоу УЧЕНИКА: репетитор создаёт ученика → письмо → активация (отдельно от M2b)
 - [x] Super Admin создан (seed-bootstrap, telegram_id 744230399 — временно)
 - [x] Telegram login (bot deep-link + одноразовый токен; не Login Widget)
 - [x] Роли и middleware (защита роутов через `middleware.ts` (Edge) + `getUser()`)

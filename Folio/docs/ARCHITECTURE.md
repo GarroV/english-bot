@@ -104,8 +104,21 @@ english-bot остаётся самостоятельной Deno Edge Function. 
 `supabase.auth.getUser()` (per Next 16 docs).
 
 **Bootstrap**: первый super_admin захардкожен seed-миграцией (telegram_id 744230399) —
-ВРЕМЕННОЕ решение, заменить нормальным онбордингом. Отложено в M2a: email/magic-link
-как пользовательский метод, инвайты, n8n, Login Widget.
+ВРЕМЕННОЕ решение. Email/magic-link, n8n, Login Widget — всё ещё отложено.
+
+### Self-serve регистрация репетитора по инвайту (M2, 2026-06-16)
+
+Новый репетитор (заказчик) переходит по инвайт-ссылке и регистрируется через Telegram,
+получая **свой** workspace с демо-данными.
+
+- **`folio_signup_invites`** — инвайт, создающий новый workspace при погашении (service-role only). Выдаётся скриптом/SQL (UI супер-админа — позже в M9).
+- **Страница** `/[locale]/invite/[token]` (публичная, в middleware) валидирует инвайт и переиспользует `LoginPanel` (`inviteToken` + `redirectTo=/schedule`).
+- **`/api/auth/telegram/start`** принимает `inviteToken` → привязывает его к login-токену. **Бот** `confirmFolioLogin`: если Telegram не привязан, но токен несёт валидный инвайт — подтверждает (пишет `telegram_id` + имя), `folio_user_id=null`; отдельный исход `invite_expired`.
+- **`/api/auth/telegram/session`** на подтверждённом токене с инвайтом вызывает `registerTutorFromInvite` (`lib/auth/register.ts`): orphan-safe создание `auth.users` (admin `createUser`) → **атомарная RPC `folio_register_tutor`** (consume инвайта + workspace + user + owner + auth_method в одной транзакции) → демо-сид → выпуск сессии.
+- **Безопасность:** инвайт строго one-use (consume атомарен с созданием, без отката в pending → утёкшая ссылка не плодит аккаунты для разных Telegram); `telegram_id` доверяется только из токена (его пишет бот через service-role); уже зарегистрированный Telegram логинится в существующий аккаунт без дубля; синтетический email `tg<id>@folio.local` (внутренний, для сессии). Проверено e2e на проде. Findings security-review закрыты.
+- **`lib/auth/demo-seed.ts`** — сид нового workspace: 3 ученика, 2 занятия (одно «состоялось» с записью журнала + charge/payment), шаблон+назначение домашки.
+
+Отложено: UI супер-админа для выдачи инвайтов (M9); инвайты участников в существующий workspace (`folio_invite_tokens`); email-инвайты.
 
 ---
 

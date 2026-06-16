@@ -24,6 +24,8 @@
 - `20260615151554_folio_homework_assignments.sql` — таблица `folio_homework_assignments` (M7b назначение шаблона ученику: due_date, status) + индексы + workspace RLS с cross-entity `WITH CHECK`
 - `20260615194711_folio_student_payments.sql` — леджер `folio_student_payments` (M5 charge/payment) + индекс + workspace RLS
 - `20260616105915_folio_lesson_journal.sql` — таблица `folio_lesson_journal` (M6 журнал урока, одна запись на занятие) + индекс по `workspace_id` + workspace RLS с cross-entity `WITH CHECK` по `lesson_id`
+- `20260616142113_folio_signup_invites.sql` — таблица `folio_signup_invites` (M2 self-serve регистрация репетитора) + колонки `signup_invite_id`/`tg_username`/`tg_first_name` в `folio_login_tokens`; service-role only
+- `20260616155229_folio_register_tutor_rpc.sql` / `20260616180730_folio_register_tutor_rpc_fix.sql` — функция `folio_register_tutor()`: атомарное создание репетитора (consume инвайта + workspace + user + owner + auth_method в одной транзакции), execute только service_role
 
 ---
 
@@ -92,7 +94,24 @@ expires_at      timestamptz
 -- index on (token)
 ```
 
-> **deny-all RLS** — только service-role (english-bot + серверные роуты Folio); pre-auth таблица; TTL ~5 мин; single-use. RLS включён, но политик НЕТ (любой anon/authenticated доступ запрещён). Жизненный цикл: `pending` (создан страницей `/login`) → `confirmed` (бот поймал `/start folio_login_<token>` и сверил telegram_id) → `consumed` (серверный роут выпустил сессию). См. [[003-telegram-auth]].
+> **deny-all RLS** — только service-role (english-bot + серверные роуты Folio); pre-auth таблица; TTL ~5 мин; single-use. RLS включён, но политик НЕТ (любой anon/authenticated доступ запрещён). Жизненный цикл: `pending` (создан страницей `/login`) → `confirmed` (бот поймал `/start folio_login_<token>` и сверил telegram_id) → `consumed` (серверный роут выпустил сессию). M2: добавлены `signup_invite_id` (FK → `folio_signup_invites`), `tg_username`, `tg_first_name` — бот пишет их для регистрации по инвайту. См. [[003-telegram-auth]].
+
+### folio_signup_invites ✅
+```sql
+id              uuid PK
+token           text UNIQUE
+role            folio_user_role DEFAULT 'tutor'
+note            text
+status          text CHECK (status IN ('pending','used')) DEFAULT 'pending'
+used_by         uuid FK → folio_users.id ON DELETE SET NULL
+created_by      uuid FK → folio_users.id ON DELETE SET NULL
+expires_at      timestamptz
+created_at      timestamptz
+used_at         timestamptz
+-- index on (token)
+```
+
+> **deny-all RLS** (service-role only), как `folio_login_tokens`. M2 self-serve онбординг репетитора: инвайт создаёт **новый** workspace при погашении (в отличие от `folio_invite_tokens`, добавляющего участника в существующий). Погашение — атомарное, в функции `folio_register_tutor()` (consume инвайта + создание workspace/user/owner/auth_method в одной транзакции → строго one-use, без отката инвайта в pending при сбое). Реализовано в `20260616142113` + RPC `20260616155229`/`20260616180730`. См. [[ARCHITECTURE]].
 
 ### folio_students ✅
 ```sql
