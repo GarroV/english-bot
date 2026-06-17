@@ -26,6 +26,7 @@
 - `20260616105915_folio_lesson_journal.sql` — таблица `folio_lesson_journal` (M6 журнал урока, одна запись на занятие) + индекс по `workspace_id` + workspace RLS с cross-entity `WITH CHECK` по `lesson_id`
 - `20260616142113_folio_signup_invites.sql` — таблица `folio_signup_invites` (M2 self-serve регистрация репетитора) + колонки `signup_invite_id`/`tg_username`/`tg_first_name` в `folio_login_tokens`; service-role only
 - `20260616155229_folio_register_tutor_rpc.sql` / `20260616180730_folio_register_tutor_rpc_fix.sql` — функция `folio_register_tutor()`: атомарное создание репетитора (consume инвайта + workspace + user + owner + auth_method в одной транзакции), execute только service_role
+- `20260616194059_folio_lock_privesc.sql` — **security**: revoke insert/update/delete на `folio_users` + `folio_workspaces` от anon/authenticated + добавлен `WITH CHECK` в их политики. Закрывает privilege-escalation (репетитор мог PATCH-ом выставить себе `role=super_admin`). Эти таблицы пишет только service-role. См. [[project_folio_rls_invariants]]
 
 ---
 

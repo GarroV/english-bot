@@ -62,7 +62,7 @@ EDITING          — ждёт текст с правками к заданию
 ```
 /start (новый)   → REGISTERING
 /start (admin/known) → WAITING_REQUEST
-/start folio_login_<token> → подтверждает токен входа Folio (confirmFolioLogin), затем обычный путь /start
+/start folio_login_<token> → подтверждает токен входа Folio (confirmFolioLogin). Если Telegram не привязан, но токен несёт валидный signup-инвайт — подтверждает для регистрации репетитора (исход invite_expired, если инвайт протух). Иначе обычный путь /start
 ввод инвайт-кода → WAITING_REQUEST
 
 текст в WAITING_REQUEST → CLARIFYING
@@ -137,6 +137,7 @@ EDITING          — ждёт текст с правками к заданию
 | `eb_assignments` | Кэш сгенерированных заданий с pgvector embedding (vector 384) |
 | `eb_invitations` | Инвайт-коды (code, created_by, used_by, used_at) |
 | `folio_login_tokens` | Токены входа в Folio (общая с Folio); бот пишет подтверждение (`confirmed`) при deep-link `folio_login_<token>` |
+| `folio_signup_invites` | Signup-инвайты Folio (общая с Folio); бот **читает** при подтверждении инвайт-токена, чтобы разрешить регистрацию нового репетитора |
 
 **Кэш**: embedding = `level + topic + ageGroup` через `gte-small` (Supabase AI). Поиск через `match_assignments` RPC — косинусное сходство, порог 0.85, фильтр по `module_type`. Задание попадает в кэш только при скачивании PDF (пользователь одобрил).
 
