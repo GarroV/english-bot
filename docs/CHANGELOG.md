@@ -6,6 +6,10 @@
 
 ## 2026-06-17
 
+### fix: модель Anthropic — claude-sonnet-4-6 (генерация была сломана)
+
+`claude-sonnet-4-20250514` ретайрнули — Anthropic API отвечал `404 not_found_error`, из-за чего генерация падала и в боте, и в веб-Folio (`folio-generate` отдавал 500 за ~350мс). Обновил на `claude-sonnet-4-6`; вынес в одну константу `MODEL` в `_shared/generate.ts` (было 3 копии в generateModuleContent / generateTeacherGuide / applyEdit), чтобы больше не дрейфовало. Передеплоены обе функции (`english-bot`, `folio-generate`); проверено реальной генерацией.
+
 ### feat: кнопка перехода на сайт Folio
 
 После `/start` (для админа и known-юзеров) и `/help` бот шлёт сообщение с inline-кнопкой «🌐 Открыть Folio» (URL на веб-кабинет). Отдельным сообщением, т.к. персистентная reply-клавиатура (`mainMenu`) и inline-URL-кнопка не уживаются в одном сообщении. URL — константа `FOLIO_URL` в `lib/telegram.ts` (можно переопределить env `FOLIO_WEB_URL`); `InlineKeyboardButton` теперь допускает `url`. Новый хелпер `siteLink()`.

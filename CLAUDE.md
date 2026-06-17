@@ -4,7 +4,7 @@
 
 - **Runtime:** Deno / Supabase Edge Function
 - **Язык:** TypeScript
-- **LLM:** Anthropic claude-sonnet-4-20250514 (`lib/claude.ts`)
+- **LLM:** Anthropic `claude-sonnet-4-6` — константа `MODEL` в `supabase/functions/_shared/generate.ts` (общий движок бота и Folio; `lib/claude.ts` — ре-экспорт)
 - **БД:** Supabase Postgres + pgvector (`lib/db.ts`)
 - **Тесты:** `deno test supabase/functions/english-bot/lib/ --allow-env`
 - **Деплой:** `supabase functions deploy english-bot --no-verify-jwt`

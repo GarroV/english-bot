@@ -3,6 +3,10 @@ import type { ModuleType, ClarifyingParams } from "../english-bot/lib/types.ts";
 
 const anthropic = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_KEY") });
 
+// Current Anthropic model — single source of truth (was claude-sonnet-4-20250514, which
+// the API retired with a 404 not_found_error, breaking generation in both bot and web).
+const MODEL = "claude-sonnet-4-6";
+
 // ─── Prompts ──────────────────────────────────────────────────────────────────
 
 const READING_PROMPT = `Ты опытный преподаватель английского языка. Создай Reading Module.
@@ -212,7 +216,7 @@ export async function generateModuleContent(
 ): Promise<string> {
   const prompt = buildPrompt(moduleType, params, userInput);
   const message = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
+    model: MODEL,
     max_tokens: 4000,
     messages: [{ role: "user", content: prompt }],
   });
@@ -223,7 +227,7 @@ export async function generateModuleContent(
 export async function generateTeacherGuide(studentContent: string): Promise<string> {
   const prompt = TEACHER_GUIDE_PROMPT.replace("{STUDENT_CONTENT}", studentContent);
   const message = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
+    model: MODEL,
     max_tokens: 4000,
     messages: [{ role: "user", content: prompt }],
   });
@@ -236,7 +240,7 @@ export async function applyEdit(
   editRequest: string
 ): Promise<string> {
   const message = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
+    model: MODEL,
     max_tokens: 4000,
     messages: [{
       role: "user",
