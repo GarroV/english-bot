@@ -152,6 +152,8 @@ EDITING          — ждёт текст с правками к заданию
 
 Показывается после `/start`, `/help`, `/new`, после успешной регистрации.
 
+После `/start` (known/admin) и `/help` дополнительно отправляется сообщение с inline-кнопкой **«🌐 Открыть Folio»** (URL-кнопка на веб-кабинет) — отдельным сообщением, т.к. reply-клавиатура и inline-URL не уживаются в одном.
+
 ---
 
 ## Секреты Supabase (production)
@@ -163,6 +165,7 @@ EDITING          — ждёт текст с правками к заданию
 | `ADMIN_USER_ID` | Telegram ID администратора |
 | `SUPABASE_URL` | URL проекта (auto-injected) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Ключ Supabase (auto-injected) |
+| `FOLIO_WEB_URL` | (опц.) URL веб-кабинета Folio для кнопки «Открыть Folio»; дефолт — прод-URL |
 
 ---
 

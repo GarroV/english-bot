@@ -1,4 +1,4 @@
-import { sendMessage, mainMenu } from "../lib/telegram.ts";
+import { sendMessage, mainMenu, siteLink } from "../lib/telegram.ts";
 import {
   isAllowed,
   registerUser,
@@ -12,6 +12,13 @@ import { parseLoginPayload } from "../lib/folio_login.ts";
 import type { TgMessage } from "../lib/types.ts";
 
 const ADMIN_ID = Number(Deno.env.get("ADMIN_USER_ID")!);
+
+// Follow-up message with an inline button that opens the Folio web app.
+// Sent as a separate message because the persistent reply keyboard (mainMenu) and an
+// inline URL button cannot share one message; the reply keyboard stays visible regardless.
+async function sendSiteLink(chatId: number): Promise<void> {
+  await sendMessage(chatId, "Веб-кабинет Folio 👇", siteLink());
+}
 
 const WELCOME =
   "Я генерирую учебные задания по английскому. Вот что умею:\n\n" +
@@ -94,6 +101,7 @@ export async function handleStart(message: TgMessage): Promise<void> {
     await registerUser(id, username, first_name);
     await setSession(id, "WAITING_REQUEST");
     await sendMessage(chatId, `Добро пожаловать! ${WELCOME}`, mainMenu());
+    await sendSiteLink(chatId);
     return;
   }
 
@@ -101,6 +109,7 @@ export async function handleStart(message: TgMessage): Promise<void> {
   if (await isAllowed(id)) {
     await setSession(id, "WAITING_REQUEST");
     await sendMessage(chatId, WELCOME, mainMenu());
+    await sendSiteLink(chatId);
     return;
   }
 
@@ -112,6 +121,7 @@ export async function handleStart(message: TgMessage): Promise<void> {
 // Handle /help command — send usage guide
 export async function handleHelp(message: TgMessage): Promise<void> {
   await sendMessage(message.chat.id, HELP, mainMenu());
+  await sendSiteLink(message.chat.id);
 }
 
 // Handle /new command — shortcut to reset state and start a new assignment

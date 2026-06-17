@@ -69,6 +69,14 @@ export async function setMyCommands(
   await call("setMyCommands", { commands });
 }
 
+// Public Folio web URL (override via FOLIO_WEB_URL; not a secret).
+const FOLIO_URL = Deno.env.get("FOLIO_WEB_URL") ?? "https://folio.vasiliy-garro.workers.dev";
+
+// Inline keyboard with a single button that opens the Folio web app in the browser.
+export function siteLink(): InlineKeyboard {
+  return { inline_keyboard: [[{ text: "🌐 Открыть Folio", url: FOLIO_URL }]] };
+}
+
 // Two persistent buttons always visible at the bottom
 export function mainMenu(): ReplyKeyboardMarkup {
   return {
