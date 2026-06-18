@@ -64,7 +64,7 @@
 - [x] Форма генерации задания в веб-Folio (тема/уровень/тип → сгенерировать → сохранить шаблон)
 - [x] Список домашек/шаблонов в админке репетитора
 - [x] Назначение домашки ученику (`folio_homework_assignments` + дедлайн + статус)
-- [ ] english-bot пишет в `homework_templates` (как сейчас)
+- [x] english-bot пишет в `folio_homework_templates` (мост бот→веб, 2026-06-18; запись при скачивании PDF, `source='bot'`; webhook аутентифицируется через `TELEGRAM_WEBHOOK_SECRET`)
 - [ ] Отправка через Telegram бота / email (M7c — после онбординга ученика в бот / почты)
 
 ### M8: Student Cabinet

@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-06-18
+
+### feat: мост бот → веб (M7) — задания из бота попадают в библиотеку Folio
+
+При скачивании PDF бот теперь зеркалит студенческое задание в `folio_homework_templates` воркспейса репетитора (`source='bot'`), так что оно видно и назначается в веб-Folio. Воркспейс резолвится по связке Telegram → `folio_auth_methods` → `folio_users` (`resolveFolioWorkspace` в `lib/db.ts`), запись — `saveFolioTemplateFromBot`, вызов — best-effort после `saveAssignment` в `handlers/pdf_download.ts` (сбой Folio-записи логируется и не ломает выдачу PDF). Для не-репетиторов / несвязанных юзеров — no-op. Извлечение темы вынесено в чистую `extractTopic` (`lib/utils.ts`). Миграций нет — таблица существует с M7a. Движок генерации уже общий — это связывает «готовое» в единый стор назначаемых заданий.
+
+### fix(security): аутентификация webhook — закрытие спуфинга `from.id`
+
+Состязательное ревью моста выявило CRITICAL: вебхук задеплоен `--no-verify-jwt` и был зарегистрирован без `secret_token`, поэтому `query.from.id` (ключ тенанта для моста) спуфился — кто угодно мог прислать поддельный update с чужим `from.id` и записать в чужой Folio-воркспейс в обход RLS (service-role). `index.ts` теперь сверяет заголовок `X-Telegram-Bot-Api-Secret-Token` с `TELEGRAM_WEBHOOK_SECRET` (constant-time `timingSafeEqual` в `utils.ts`): fail-closed когда секрет задан, fail-open + warn когда нет (чтобы не «окирпичить» бота до настройки). **Активация** (требует бот-токен): перерегистрировать webhook с `secret_token`, затем `supabase secrets set TELEGRAM_WEBHOOK_SECRET=...`.
+
 ## 2026-06-17
 
 ### fix: модель Anthropic — claude-sonnet-4-6 (генерация была сломана)

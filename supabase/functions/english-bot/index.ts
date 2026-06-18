@@ -16,11 +16,28 @@ import { handleHistory, handleHistoryDownload } from "./handlers/history.ts";
 import { handleInvite, handleUsers, handleSetup } from "./handlers/admin.ts";
 import { isAllowed, getSession } from "./lib/db.ts";
 import { sendMessage } from "./lib/telegram.ts";
+import { timingSafeEqual } from "./lib/utils.ts";
 import type { TgUpdate } from "./lib/types.ts";
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response("OK", { status: 200 });
+  }
+
+  // Verify the request actually came from Telegram before trusting its contents — query.from.id
+  // is the tenancy key the Folio bridge writes by (service-role bypasses RLS). Telegram echoes the
+  // secret_token registered via setWebhook in this header. Fail-closed when the secret is set;
+  // fail-open with a warning when it is not, so the bot keeps working until the secret is configured.
+  const webhookSecret = Deno.env.get("TELEGRAM_WEBHOOK_SECRET");
+  if (webhookSecret) {
+    const provided = req.headers.get("X-Telegram-Bot-Api-Secret-Token") ?? "";
+    if (!timingSafeEqual(provided, webhookSecret)) {
+      return new Response("forbidden", { status: 403 });
+    }
+  } else {
+    console.warn(
+      "TELEGRAM_WEBHOOK_SECRET is not set — webhook requests are unauthenticated and query.from.id is spoofable. Set the secret and re-register the webhook with secret_token.",
+    );
   }
 
   let chatId: number | null = null;

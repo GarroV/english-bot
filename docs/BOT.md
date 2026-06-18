@@ -18,14 +18,14 @@ Telegram → webhook → Supabase Edge Function (english-bot) → Anthropic API
 
 ```
 supabase/functions/english-bot/
-├── index.ts                    — точка входа: парсинг update, роутинг, обработка ошибок
+├── index.ts                    — точка входа: проверка webhook secret (X-Telegram-Bot-Api-Secret-Token), парсинг update, роутинг, обработка ошибок
 ├── lib/
 │   ├── types.ts                — все TypeScript-типы (State, ModuleType, TgUpdate и др.)
 │   ├── telegram.ts             — обёртки Telegram API (sendMessage, editMessageText, keyboard, mainMenu)
 │   ├── claude.ts               — тонкий ре-экспорт движка генерации из `_shared/generate.ts` (см. примечание ниже)
-│   ├── db.ts                   — Supabase-запросы (сессии, пользователи, задания, инвайты)
+│   ├── db.ts                   — Supabase-запросы (сессии, пользователи, задания, инвайты; мост в Folio: resolveFolioWorkspace, saveFolioTemplateFromBot)
 │   ├── pdf.ts                  — генерация PDF через pdf-lib (A4, PT Sans, поддержка кириллицы)
-│   ├── utils.ts                — makeFilename, makeTeacherFilename, splitIfLong, generateInviteCode, normalizeRequest
+│   ├── utils.ts                — makeFilename, makeTeacherFilename, splitIfLong, generateInviteCode, normalizeRequest, extractTopic, timingSafeEqual
 │   ├── module_detect.ts        — detectModule() и extractParams() из свободного текста пользователя
 │   ├── folio_login.ts          — parseLoginPayload(): разбор deep-link `folio_login_<token>` для входа в Folio
 │   ├── utils.test.ts           — тесты utils
@@ -36,7 +36,7 @@ supabase/functions/english-bot/
     ├── clarify.ts              — экран параметров, buildClarifyMessage, handleTopicInput
     ├── generate.ts             — generateAndSend, кэш, handleUseCached, handleGenerateNew
     ├── edit.ts                 — EDITING: применить правки через Claude
-    ├── pdf_download.ts         — отправка PDF(ов) + сохранение задания в БД
+    ├── pdf_download.ts         — отправка PDF(ов) + сохранение в кэш eb_assignments + зеркалирование в библиотеку Folio (мост бот→веб)
     ├── history.ts              — /history: список последних 5 заданий + повторное скачивание PDF
     └── admin.ts                — /invite, /users, /setup (только ADMIN_USER_ID)
 ```
@@ -138,8 +138,11 @@ EDITING          — ждёт текст с правками к заданию
 | `eb_invitations` | Инвайт-коды (code, created_by, used_by, used_at) |
 | `folio_login_tokens` | Токены входа в Folio (общая с Folio); бот пишет подтверждение (`confirmed`) при deep-link `folio_login_<token>` |
 | `folio_signup_invites` | Signup-инвайты Folio (общая с Folio); бот **читает** при подтверждении инвайт-токена, чтобы разрешить регистрацию нового репетитора |
+| `folio_homework_templates` | Библиотека шаблонов Folio (общая с Folio); бот **пишет** (`source='bot'`) сгенерированное задание в воркспейс репетитора при скачивании PDF — мост бот→веб (`resolveFolioWorkspace` + `saveFolioTemplateFromBot`) |
 
 **Кэш**: embedding = `level + topic + ageGroup` через `gte-small` (Supabase AI). Поиск через `match_assignments` RPC — косинусное сходство, порог 0.85, фильтр по `module_type`. Задание попадает в кэш только при скачивании PDF (пользователь одобрил).
+
+**Мост бот→веб**: при скачивании PDF задание дополнительно зеркалится в `folio_homework_templates` репетитора (`source='bot'`), если Telegram связан с Folio-репетитором (через `folio_auth_methods`). Best-effort: сбой записи в Folio логируется и не ломает выдачу PDF. Воркспейс берётся из верифицированной Telegram-связки, не из тела запроса; аутентичность вебхука — `TELEGRAM_WEBHOOK_SECRET`.
 
 ---
 
@@ -166,6 +169,7 @@ EDITING          — ждёт текст с правками к заданию
 | `SUPABASE_URL` | URL проекта (auto-injected) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Ключ Supabase (auto-injected) |
 | `FOLIO_WEB_URL` | (опц.) URL веб-кабинета Folio для кнопки «Открыть Folio»; дефолт — прод-URL |
+| `TELEGRAM_WEBHOOK_SECRET` | (security) секрет для проверки `X-Telegram-Bot-Api-Secret-Token`; должен совпадать с `secret_token` в setWebhook. Без него вебхук не аутентифицирован (fail-open + warn в логах) |
 
 ---
 
@@ -182,10 +186,10 @@ supabase secrets set ANTHROPIC_KEY=sk-ant-...
 # Проверить статус webhook
 curl -s "https://api.telegram.org/bot<TOKEN>/getWebhookInfo" | python3 -m json.tool
 
-# Зарегистрировать webhook
+# Зарегистрировать webhook (secret_token ДОЛЖЕН совпадать с TELEGRAM_WEBHOOK_SECRET)
 curl -s -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://btlglelwxazdxfqdmcti.supabase.co/functions/v1/english-bot"}'
+  -d '{"url": "https://btlglelwxazdxfqdmcti.supabase.co/functions/v1/english-bot", "secret_token": "<TELEGRAM_WEBHOOK_SECRET>"}'
 
 # Запустить тесты
 deno test supabase/functions/english-bot/lib/ --allow-env

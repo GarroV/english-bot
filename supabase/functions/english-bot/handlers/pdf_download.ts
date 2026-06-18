@@ -1,11 +1,12 @@
 import { answerCallbackQuery, sendDocument, sendMessage } from "../lib/telegram.ts";
-import { getSession, saveAssignment } from "../lib/db.ts";
+import { getSession, saveAssignment, saveFolioTemplateFromBot } from "../lib/db.ts";
 import { generatePdf } from "../lib/pdf.ts";
-import { makeFilename, makeTeacherFilename } from "../lib/utils.ts";
+import { makeFilename, makeTeacherFilename, extractTopic } from "../lib/utils.ts";
 import type { TgCallbackQuery } from "../lib/types.ts";
 
 // Download PDF(s): sends student PDF always, plus teacher guide PDF when present in session.
-// Saves the student assignment to the database — only downloaded assignments enter the cache.
+// Saves the student assignment to the bot cache and mirrors it into the tutor's Folio library —
+// only downloaded assignments are persisted (the user approved them by downloading).
 export async function handleDownloadPdf(query: TgCallbackQuery): Promise<void> {
   await answerCallbackQuery(query.id, "Генерирую PDF...");
 
@@ -30,9 +31,7 @@ export async function handleDownloadPdf(query: TgCallbackQuery): Promise<void> {
     const level = session?.context.params?.level ?? "B1";
     const ageGroup = session?.context.params?.ageGroup ?? "adult";
     const moduleType = session?.context.module_type ?? "READING_MODULE";
-    const firstLine = studentText.split("\n")[0];
-    const topicMatch = firstLine.match(/Topic:\s*([^·\n]+)/);
-    const topic = topicMatch ? topicMatch[1].trim() : firstLine.slice(0, 80);
+    const topic = extractTopic(studentText);
 
     await saveAssignment({
       telegramId: userId,
@@ -43,6 +42,24 @@ export async function handleDownloadPdf(query: TgCallbackQuery): Promise<void> {
       requestText: topic,
       content: studentText,
     });
+
+    // Bridge: mirror into the tutor's Folio library (source='bot') so it is visible/assignable
+    // in the web. Best-effort and isolated — a Folio write must never break PDF delivery.
+    try {
+      const result = await saveFolioTemplateFromBot({
+        telegramId: userId,
+        moduleType,
+        level,
+        ageGroup,
+        topic,
+        content: studentText,
+      });
+      if (result === "saved") {
+        await sendMessage(chatId, "📚 Добавлено в библиотеку Folio");
+      }
+    } catch (e) {
+      console.error("saveFolioTemplateFromBot failed:", e);
+    }
   } catch (e) {
     await sendMessage(chatId, `Ошибка при создании PDF: ${e}`);
   }

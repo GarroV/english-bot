@@ -36,6 +36,8 @@ supabase link --project-ref btlglelwxazdxfqdmcti
 supabase secrets set ANTHROPIC_KEY=sk-ant-...
 supabase secrets set TELEGRAM_BOT_TOKEN=...
 supabase secrets set ADMIN_USER_ID=...
+# Webhook-аутентификация: значение ДОЛЖНО совпадать с secret_token в setWebhook (шаг 4)
+supabase secrets set TELEGRAM_WEBHOOK_SECRET=$(openssl rand -hex 32)
 ```
 
 ### 3. Задеплоить функцию
@@ -47,9 +49,11 @@ supabase functions deploy english-bot --no-verify-jwt
 ### 4. Зарегистрировать webhook
 
 ```bash
+# secret_token ДОЛЖЕН совпадать с TELEGRAM_WEBHOOK_SECRET — Telegram шлёт его в заголовке
+# X-Telegram-Bot-Api-Secret-Token, index.ts проверяет его и отклоняет (403) поддельные запросы
 curl -s -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://btlglelwxazdxfqdmcti.supabase.co/functions/v1/english-bot"}'
+  -d '{"url": "https://btlglelwxazdxfqdmcti.supabase.co/functions/v1/english-bot", "secret_token": "<TELEGRAM_WEBHOOK_SECRET>"}'
 ```
 
 ### 5. Запустить тесты

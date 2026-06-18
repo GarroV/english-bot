@@ -253,3 +253,57 @@ export async function confirmFolioLogin(
 
   return "not_linked";
 }
+
+// Resolve the Folio workspace for a Telegram user, if they are a non-archived Folio tutor.
+// Uses the same telegram→user link the login flow relies on. Returns the workspace id plus
+// the folio_users id (for attribution), or null for unlinked / student / archived users.
+export async function resolveFolioWorkspace(
+  telegramId: number,
+): Promise<{ workspaceId: string; userId: string } | null> {
+  const { data: method } = await supabase
+    .from("folio_auth_methods")
+    .select("user_id")
+    .eq("provider", "telegram")
+    .eq("provider_uid", String(telegramId))
+    .maybeSingle();
+  if (!method) return null;
+
+  const { data: user } = await supabase
+    .from("folio_users")
+    .select("id, workspace_id, role, archived_at")
+    .eq("id", method.user_id)
+    .maybeSingle();
+  if (!user || user.archived_at || user.role === "student") return null;
+
+  return { workspaceId: String(user.workspace_id), userId: String(user.id) };
+}
+
+// Mirror a bot-generated assignment into the tutor's Folio template library (source='bot'),
+// so it is visible and assignable in the web. No-op ("skipped") for unlinked / non-tutor users
+// or empty content. The workspace_id comes from the verified telegram link, never from input.
+export async function saveFolioTemplateFromBot(params: {
+  telegramId: number;
+  moduleType: string;
+  level: string;
+  ageGroup: string;
+  topic: string;
+  content: string;
+}): Promise<"saved" | "skipped"> {
+  if (!params.content.trim() || !params.topic.trim()) return "skipped";
+
+  const ws = await resolveFolioWorkspace(params.telegramId);
+  if (!ws) return "skipped";
+
+  const { error } = await supabase.from("folio_homework_templates").insert({
+    workspace_id: ws.workspaceId,
+    module_type: params.moduleType,
+    level: params.level,
+    age_group: params.ageGroup,
+    topic: params.topic,
+    content: params.content,
+    source: "bot",
+    created_by: ws.userId,
+  });
+  if (error) throw new Error(`folio template insert failed: ${error.message}`);
+  return "saved";
+}

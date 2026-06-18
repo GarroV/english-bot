@@ -9,7 +9,7 @@
 
 > Состояние на 2026-06-17. Ядро M1–M9 закрыто и задеплоено (Cloudflare Workers). Ниже — что осталось внутри вех.
 
-- [ ] **M7 bot bridge** — english-bot пишет сгенерированные задания в `homework_templates` (сейчас бот шлёт PDF в Telegram, в общий стор не пишет)
+- [ ] **M7 обратное чтение** — бот показывает / повторно отдаёт шаблоны из библиотеки Folio (web→bot), для полного «единого целого». Запись бот→веб сделана 2026-06-18 (`source='bot'`).
 - [ ] **M7c доставка домашек** — отправка назначенной домашки ученику через Telegram-бот / email. Блокирует: ученик не нажал Start у бота + нет почтовой инфры/n8n
 - [ ] **M8 кабинет ученика** — расписание / баланс / список домашек глазами ученика. Блокирует: онбординг ученика (M7c / отдельный вход ученика)
 - [ ] **M2 email magic-link** — вход по email как альтернатива Telegram
@@ -77,6 +77,8 @@
 - [ ] **`server-only` pin** на `lib/supabase/admin.ts` — defense-in-depth, чтобы service-role клиент нельзя было случайно затащить в клиентский бандл
 - [ ] **Поллинг логина 180s vs TTL токена 300s** — рассинхрон: подтверждение в окне 3–5 мин теряется (login UX, pre-existing)
 - [ ] **Хардкод `locale:"ru"`** в auth-редиректах страниц `(app)` — EN-юзера кидает на `/ru/login` (i18n, pre-existing)
+- [ ] **Активировать webhook secret бота** — `index.ts` сверяет `X-Telegram-Bot-Api-Secret-Token` с `TELEGRAM_WEBHOOK_SECRET`, но пока fail-open (секрет не задан). Задать секрет + перерегистрировать webhook с `secret_token`; иначе `from.id` спуфится → межтенантная запись через мост бот→веб. (security-review M7, 2026-06-18, **CRITICAL** — было задеплоено живым) [[project_folio_rls_invariants]]
+- [ ] **Defense-in-depth для bot-bridge** (опц.; ревью M7 отклонило как неэксплуатируемое при текущих ограничениях): композитная проверка `created_by`↔`workspace_id` на уровне БД; сверка `provider_uid`↔`folio_users.telegram_id` в `resolveFolioWorkspace`.
 
 ### Hosting / деплой
 

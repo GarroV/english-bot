@@ -43,7 +43,7 @@
 ## Архитектура
 
 - **Бизнес-логика не в компонентах и не в боте** — только в shared слое (`/lib` или Edge Functions)
-- **Bot Bridge** — english-bot читает/пишет только в `homework_templates` и `template_prompts`
+- **Bot Bridge** — english-bot пишет сгенерированные задания в `folio_homework_templates` (`source='bot'`, при скачивании PDF; см. `docs/superpowers/specs/2026-06-18-bot-web-homework-bridge-design.md`). Воркспейс резолвится из верифицированной Telegram-связки (`folio_auth_methods`→`folio_users`); аутентичность webhook обеспечивается `TELEGRAM_WEBHOOK_SECRET` (без него `from.id` спуфится)
 - **n8n** — вся асинхронная/событийная логика. Edge Functions только для синхронного API
 - Каждый модуль — своя папка: `/modules/students`, `/modules/schedule`, etc.
 
