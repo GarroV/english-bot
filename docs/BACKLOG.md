@@ -1,6 +1,8 @@
 # English Bot — Backlog
 
-Идеи и запланированные улучшения. При реализации — перенести в CHANGELOG.md и удалить отсюда.
+> **Активный беклог — GitHub Issues:** https://github.com/GarroV/english-bot/issues (фильтр по метке [`bot`](https://github.com/GarroV/english-bot/issues?q=is%3Aissue+is%3Aopen+label%3Abot)). Находки аудита 2026-06-30 заведены как issues #3–#22. Новые задачи — заводить там, не здесь. Этот файл оставлен как заметки/контекст.
+
+Идеи и запланированные улучшения. При реализации — закрыть соответствующий issue.
 
 ---
 
@@ -39,7 +41,7 @@
 Кнопка "🔄 Сгенерировать другой вариант" в `POST_GENERATION` — регенерация с теми же параметрами, минуя кэш. Сейчас нужно начинать заново через "🆕 Новое задание".
 
 ### Поддержка других языков обучения
-Параметр "язык" (немецкий, французский, испанский) — добавить в `ClarifyingParams` и `buildClarifyMessage`. Промпты адаптировать или сделать отдельные.
+Параметр "язык" (немецкий, французский, испанский) — добавить в `ClarifyingParams` и визард (`buildWizardMessage`/`handleWizardStep`). Промпты адаптировать или сделать отдельные.
 
 ### Экспорт в DOCX
 Альтернатива PDF для пользователей, которым нужно редактировать задание. Библиотека `docx` для Deno/Node.
@@ -51,6 +53,10 @@
 
 ## Технический долг
 
-- `friendlyError` дублируется в `clarify.ts` и `generate.ts` — вынести в `lib/utils.ts`
-- `ADMIN_USER_ID` читается в нескольких файлах (`start.ts`, `admin.ts`) — вынести в общую константу
-- Миграция `20260513000000_init.sql` содержит `match_assignments` без фильтра по `module_type` — актуальная версия в `20260525000001_match_assignments_module_filter.sql`
+- **Мёртвый путь кэш-оффера** — `findSimilarAssignment` (`db.ts`), состояние `CACHE_OFFER` и `WAITING_TOPIC` (`types.ts`), callback'и `use_cached`/`generate_new` с хендлерами `handleUseCached`/`handleGenerateNew` (`generate.ts`) и их роуты в `index.ts` — недостижимы в текущем визард-флоу (кнопки кэш-оффера нигде не создаются, `findSimilarAssignment` не вызывается). Решить: либо вернуть кэш-оффер в визард, либо удалить весь путь целиком и привести `BOT.md` в соответствие (рекомендуется удалить — YAGNI).
+- `friendlyError` дублируется в `clarify.ts` и `generate.ts` — вынести в общий `lib/` модуль
+- `MODULE_LABELS` дублируется в `clarify.ts` и `history.ts` с уже разъехавшимися значениями («Translation (тексты)» vs «Перевод (тексты)») — единый источник в `lib/types.ts`
+- `ADMIN_USER_ID` читается в нескольких файлах (`start.ts`, `admin.ts`) через `Number(...!)` (NaN тихо отключает admin-гейт) — вынести в общую константу с fail-fast
+- Висящий дубль RPC `match_assignments`: старая 3-арг версия без фильтра `module_type` (`20260513000000_init.sql`) не удалена — актуальная 4-арг в `20260525000001_match_assignments_module_filter.sql`. Дропнуть старую миграцией (`DROP FUNCTION match_assignments(vector(384),float,int)`)
+- `deno.json` task `test` гоняет только `utils.test.ts` — `module_detect.test.ts` и `folio_login.test.ts` молча пропускаются; расширить на каталог `lib/`
+- Мёртвые экспорты: `removeKeyboard` (`telegram.ts`), `normalizeRequest` (`utils.ts`) — удалить

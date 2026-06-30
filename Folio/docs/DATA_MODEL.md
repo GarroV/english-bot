@@ -1,7 +1,7 @@
 # Folio — Data Model
 
-> Последнее обновление: 2026-06-08
-> Статус: M1 (Фундамент) — таблицы workspaces/users/auth_methods/invite_tokens созданы и задеплоены
+> Последнее обновление: 2026-06-30
+> Статус: таблицы M1–M9 созданы и задеплоены (см. «Применённые миграции»).
 
 ---
 
@@ -20,6 +20,7 @@
 - `20260612150019_folio_seed_super_admin.sql` — seed первого super_admin (workspace «Folio», telegram_id 744230399, email v.garro@dodobrands.io) — ВРЕМЕННЫЙ bootstrap
 - `20260612181221_folio_students.sql` — таблица `folio_students` (ростер учеников репетитора) + индекс по `workspace_id` + workspace RLS
 - `20260612192152_folio_lessons.sql` — таблицы `folio_lessons` + `folio_lesson_students` (M4 Schedule) + enums (`folio_lesson_type`, `folio_lesson_status`, `folio_location_type`) + индексы + RLS (`folio_lessons` workspace-scoped; `folio_lesson_students` — parent-scoped через `folio_lessons`)
+- `20260613131140_folio_lesson_students_student_workspace_check.sql` — ужесточение RLS `folio_lesson_students`: `WITH CHECK` дополнительно требует, чтобы `student_id` принадлежал тому же workspace (защита от кросс-workspace ссылок через FK)
 - `20260613213941_folio_homework_templates.sql` — таблица `folio_homework_templates` (M7a генерация домашек) + индекс по `workspace_id` + workspace RLS
 - `20260615151554_folio_homework_assignments.sql` — таблица `folio_homework_assignments` (M7b назначение шаблона ученику: due_date, status) + индексы + workspace RLS с cross-entity `WITH CHECK`
 - `20260615194711_folio_student_payments.sql` — леджер `folio_student_payments` (M5 charge/payment) + индекс + workspace RLS
@@ -80,6 +81,8 @@ used_at       timestamptz nullable
 created_by    uuid FK → users.id
 created_at    timestamptz
 ```
+
+> ⚠️ **Пока не используется.** Канон инвайтов для участников существующего workspace (инвайт ученика), но этот флоу отложен. Реальный онбординг репетитора идёт через `folio_signup_invites` (создаёт **новый** workspace). RLS этой таблицы — USING-only без `WITH CHECK` (как был баг `folio_users`); при реализации инвайта ученика добавить `WITH CHECK` + `REVOKE` записи от authenticated. См. [BACKLOG.md](BACKLOG.md) (hardening из ревью).
 
 ### folio_login_tokens ✅
 ```sql
@@ -357,15 +360,18 @@ as $$
   select workspace_id from folio_users where id = auth.uid()
 $$;
 
--- Каждая таблица: пользователь видит только свой workspace
+-- Каждая таблица: пользователь видит и пишет только в свой workspace.
+-- КАНОН: USING (чтение/видимость) + WITH CHECK (вставка/обновление) — оба обязательны,
+-- иначе INSERT не scoped (как был privesc-баг folio_users).
 ALTER TABLE folio_lessons ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "workspace_isolation" ON folio_lessons
   FOR ALL
-  USING (workspace_id = folio_current_workspace_id());
+  USING (workspace_id = folio_current_workspace_id())
+  WITH CHECK (workspace_id = folio_current_workspace_id());
 ```
 
-Эта функция и политики для `folio_workspaces`/`folio_users`/`folio_auth_methods`/`folio_invite_tokens` уже в `20260608120000_folio_init.sql`. Все новые таблицы Folio следуют этому шаблону.
+Функция и базовые политики — в `20260608120000_folio_init.sql`. Все таблицы M3+ следуют шаблону USING + WITH CHECK (у parent-scoped таблиц `WITH CHECK` дополнительно сверяет принадлежность FK тому же workspace). **Исторические исключения:** в init.sql политики были USING-only; `20260616194059_folio_lock_privesc.sql` добавил `WITH CHECK` + `REVOKE` записи (anon/authenticated) на `folio_users`/`folio_workspaces`, но `folio_auth_methods` и `folio_invite_tokens` остаются USING-only — закрыть при реализации инвайта ученика (см. [BACKLOG.md](BACKLOG.md), hardening из ревью).
 
 ---
 
