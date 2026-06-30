@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Folio">
+  <rect width="32" height="32" rx="7" fill="#14919E"/>
+  <!-- ear tufts -->
+  <path d="M7 10 L11 5 L13 11 Z" fill="#ffffff"/>
+  <path d="M25 10 L21 5 L19 11 Z" fill="#ffffff"/>
+  <!-- eyes -->
+  <circle cx="11.5" cy="15" r="5.2" fill="#ffffff"/>
+  <circle cx="20.5" cy="15" r="5.2" fill="#ffffff"/>
+  <circle cx="11.5" cy="15" r="2.1" fill="#0e2e32"/>
+  <circle cx="20.5" cy="15" r="2.1" fill="#0e2e32"/>
+  <!-- beak -->
+  <path d="M16 16.5 L14.4 20 L17.6 20 Z" fill="#0e2e32"/>
+  <!-- belly hint -->
+  <path d="M11 22 Q16 26 21 22" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round"/>
+</svg>
