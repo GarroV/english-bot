@@ -1,5 +1,7 @@
 # Folio — Backlog
 
+> **Активный беклог — GitHub Issues:** https://github.com/GarroV/english-bot/issues (фильтр по метке [`folio`](https://github.com/GarroV/english-bot/issues?q=is%3Aissue+is%3Aopen+label%3Afolio)). Находки аудита 2026-06-30 заведены как issues #3–#22 (хвосты MVP M2/M3/M5/M7c/M8, hardening, процесс). Новые задачи — заводить там, не здесь. Этот файл оставлен как заметки/контекст.
+
 > Все идеи, отложенные фичи, пожелания. Сюда пишем всё что не в MVP.
 > Не удалять — только помечать статусом.
 

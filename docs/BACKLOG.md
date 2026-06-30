@@ -1,6 +1,8 @@
 # English Bot — Backlog
 
-Идеи и запланированные улучшения. При реализации — перенести в CHANGELOG.md и удалить отсюда.
+> **Активный беклог — GitHub Issues:** https://github.com/GarroV/english-bot/issues (фильтр по метке [`bot`](https://github.com/GarroV/english-bot/issues?q=is%3Aissue+is%3Aopen+label%3Abot)). Находки аудита 2026-06-30 заведены как issues #3–#22. Новые задачи — заводить там, не здесь. Этот файл оставлен как заметки/контекст.
+
+Идеи и запланированные улучшения. При реализации — закрыть соответствующий issue.
 
 ---
 
