@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { homeworkInputSchema, type HomeworkInput } from "./schema";
-import { callGenerate } from "./generate";
+import { callGenerate, callEdit } from "./generate";
 
 export type GenResult = { ok: true; content: string } | { ok: false; error: string };
 export type SaveResult = { ok: true } | { ok: false; error: string };
@@ -19,6 +19,21 @@ export async function generateHomework(input: HomeworkInput): Promise<GenResult>
     return { ok: true, content };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "generation failed" };
+  }
+}
+
+// Proofread/revise a previewed result (auth-gated). Returns the revised content.
+export async function editHomework(content: string, edit: string): Promise<GenResult> {
+  if (!content.trim()) return { ok: false, error: "empty content" };
+  if (!edit.trim()) return { ok: false, error: "empty edit" };
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "not authenticated" };
+  try {
+    const revised = await callEdit(content, edit);
+    return { ok: true, content: revised };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "edit failed" };
   }
 }
 

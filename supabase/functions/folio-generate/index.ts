@@ -1,4 +1,4 @@
-import { generateModuleContent } from "../_shared/generate.ts";
+import { generateModuleContent, applyEdit } from "../_shared/generate.ts";
 
 const MODULE_TYPES = [
   "READING_MODULE", "VOCABULARY_MODULE", "TRANSLATION_TEXTS", "TRANSLATION_SENTENCES", "VERB_SENTENCES",
@@ -15,7 +15,23 @@ Deno.serve(async (req) => {
     return json({ error: "unauthorized" }, 401);
   }
   try {
-    const { moduleType, level, ageGroup, topic, verb } = await req.json();
+    const body = await req.json();
+
+    // Edit action — вычитка/правка существующего задания (движок умеет applyEdit).
+    if (body.action === "edit") {
+      const { content, edit } = body;
+      if (
+        typeof content !== "string" || !content.trim() || content.length > 20000 ||
+        typeof edit !== "string" || !edit.trim() || edit.length > 1000
+      ) {
+        return json({ error: "bad request" }, 400);
+      }
+      const edited = await applyEdit(content, edit);
+      return json({ content: edited });
+    }
+
+    // Generate action (default).
+    const { moduleType, level, ageGroup, topic, verb } = body;
     // Allowlist everything that flows into the prompt — the function is callable directly.
     if (
       !MODULE_TYPES.includes(moduleType) ||
