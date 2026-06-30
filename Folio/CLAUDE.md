@@ -12,13 +12,17 @@
 
 ## Стек
 
-- **Framework:** Next.js 14+ (App Router)
-- **UI:** shadcn/ui + Tailwind CSS
-- **Backend:** Supabase (Postgres + RLS + Edge Functions + Storage)
+> Версии — в `package.json`; архитектура и деплой — в `docs/ARCHITECTURE.md`. **Это НЕ тот Next.js, что в обучающих данных** (см. `AGENTS.md`): перед кодом сверяться с `node_modules/next/dist/docs/`.
+
+- **Framework:** Next.js 16 (App Router, src-dir) + React 19
+- **UI:** shadcn/ui + Tailwind CSS v4
+- **Backend:** Supabase (Postgres + RLS + Edge Functions + Storage), тот же проект `btlglelwxazdxfqdmcti`
 - **Language:** TypeScript (strict mode)
-- **AI:** OpenAI SDK (gpt-4o-mini)
-- **Events:** n8n via webhook
-- **Runtime Edge Functions:** Deno
+- **i18n:** next-intl, локали `ru`/`en`, сегмент `[locale]`
+- **Генерация заданий (LLM):** Anthropic Claude (`claude-sonnet-4-6`) — **общий движок с english-bot** (`supabase/functions/_shared/generate.ts`), вызывается по HTTP через Edge Function `folio-generate`. OpenAI в проекте **не используется**
+- **Events:** n8n — **запланировано (V2+), пока не внедрено**; событийные побочные эффекты сейчас best-effort в server actions
+- **Hosting:** Cloudflare Workers через OpenNext (`npm run cf:deploy`); middleware на Edge — `middleware.ts`, НЕ `proxy.ts`
+- **Runtime Edge Functions:** Deno (`folio-generate`, общие с ботом)
 
 ---
 
@@ -44,8 +48,8 @@
 
 - **Бизнес-логика не в компонентах и не в боте** — только в shared слое (`/lib` или Edge Functions)
 - **Bot Bridge** — english-bot пишет сгенерированные задания в `folio_homework_templates` (`source='bot'`, при скачивании PDF; см. `docs/superpowers/specs/2026-06-18-bot-web-homework-bridge-design.md`). Воркспейс резолвится из верифицированной Telegram-связки (`folio_auth_methods`→`folio_users`); аутентичность webhook обеспечивается `TELEGRAM_WEBHOOK_SECRET` (без него `from.id` спуфится)
-- **n8n** — вся асинхронная/событийная логика. Edge Functions только для синхронного API
-- Каждый модуль — своя папка: `/modules/students`, `/modules/schedule`, etc.
+- **Событийная логика** — пока в server actions (синхронно) / best-effort побочными эффектами; вынос в **n8n** — целевой замысел (V2+), не внедрён
+- **Структура модуля** (фактическая): серверный слой — `src/lib/<module>/` (`schema.ts` zod, `queries.ts`, `actions.ts` с `"use server"`); роуты и UI — `src/app/[locale]/(app)/<route>/`. Бизнес-логика — в `lib/`, не в компонентах
 
 ---
 
@@ -64,7 +68,7 @@
 По завершении задачи Claude Code обязан:
 1. Обновить `docs/DATA_MODEL.md` если менялась схема БД
 2. Обновить `docs/ARCHITECTURE.md` если менялась архитектура
-3. Добавить ADR в `docs/decisions/` если принималось архитектурное решение
+3. Добавить ADR в `docs/` (`00N-*.md`, нумерация продолжает 001/002/003) если принималось архитектурное решение
 4. Пополнить `docs/BACKLOG.md` если в процессе появились идеи/отложенные вещи
 5. Обновить этот файл если менялись правила
 

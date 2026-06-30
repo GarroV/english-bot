@@ -1,7 +1,7 @@
 # ADR-001: Выбор стека
 
 Date: 2026-06-04
-Status: Accepted
+Status: Accepted — частично пересмотрено (см. «Обновление 2026-06-30»: хостинг и AI изменены; n8n не внедрён)
 Updated: 2026-06-08 — уточнено: тот же Supabase-проект и репозиторий, что у english-bot
 
 ## Контекст
@@ -23,3 +23,11 @@ Next.js + Supabase (существующий проект `btlglelwxazdxfqdmcti`
 - n8n на Railway = ~$5/мес
 - Итого старт: $0-5/мес
 - Repo остаётся монорепо: `supabase/functions/english-bot/` (бот) + директория Next.js приложения Folio рядом
+
+## Обновление (2026-06-30)
+
+Решение по ядру (Next.js + Supabase + TypeScript + shadcn/ui, общий проект и репозиторий) в силе. Отклонения, принятые по ходу разработки:
+
+- **Хостинг: Cloudflare Workers через OpenNext**, а не Vercel. Деплой `npm run cf:deploy`; прод `folio.vasiliy-garro.workers.dev`. Следствие для кода — middleware на Edge (`middleware.ts`, не `proxy.ts`). См. [ARCHITECTURE.md](ARCHITECTURE.md) «Hosting».
+- **AI: общий движок Anthropic Claude** (`claude-sonnet-4-6`) с english-bot (`_shared/generate.ts`), а не отдельный OpenAI GPT-4o-mini. OpenAI в проект не вводился (решение о равносилии веб ↔ бот, M7a).
+- **n8n не внедрён.** Событийная логика пока в server actions / best-effort; n8n остаётся в планах V2+. Соответственно расходы на Railway пока не возникают.
