@@ -2,6 +2,7 @@
 
 import { Link, usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const NAV = [
   { href: "/dashboard", key: "dashboard" },
@@ -10,20 +11,21 @@ const NAV = [
   { href: "/billing", key: "billing" },
 ] as const;
 
-// Soft sidebar (left rail on desktop, top bar on mobile) with an active-state pill.
-// The "Админка" entry is shown only to a super_admin (flag resolved server-side in the layout).
-export function AppSidebar({ isSuperAdmin }: { isSuperAdmin?: boolean }) {
+// Top navigation bar (replaces the left rail) — full-width bento needs the horizontal space.
+// "Админка" shows only for super_admin (resolved server-side in the layout).
+export function TopNav({ isSuperAdmin }: { isSuperAdmin?: boolean }) {
   const pathname = usePathname();
   const t = useTranslations("Nav");
+  const td = useTranslations("Dashboard");
   const nav = isSuperAdmin ? [...NAV, { href: "/admin", key: "admin" } as const] : NAV;
 
   return (
-    <aside className="flex w-full shrink-0 flex-row items-center gap-2 border-b border-sidebar-border bg-sidebar p-3 md:w-60 md:flex-col md:items-stretch md:gap-1 md:border-b-0 md:border-r md:p-5">
-      <div className="flex items-center gap-2 px-2 md:mb-5 md:py-1">
+    <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-sidebar-border bg-sidebar/90 px-4 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-sidebar/75">
+      <Link href="/dashboard" className="flex flex-none items-center gap-2 pr-1">
         <span className="inline-block h-3.5 w-3.5 rounded-full bg-primary" aria-hidden />
         <span className="font-heading text-xl font-extrabold tracking-tight">Folio</span>
-      </div>
-      <nav className="flex flex-1 flex-row gap-1 md:flex-none md:flex-col">
+      </Link>
+      <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
         {nav.map((item) => {
           const active = pathname === item.href;
           return (
@@ -32,7 +34,7 @@ export function AppSidebar({ isSuperAdmin }: { isSuperAdmin?: boolean }) {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={[
-                "rounded-xl px-3 py-2 text-sm font-semibold transition-colors",
+                "whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors",
                 active
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-muted-foreground hover:bg-secondary hover:text-foreground",
@@ -43,6 +45,7 @@ export function AppSidebar({ isSuperAdmin }: { isSuperAdmin?: boolean }) {
           );
         })}
       </nav>
-    </aside>
+      <ThemeToggle labels={{ system: td("themeSystem"), light: td("themeLight"), dark: td("themeDark") }} />
+    </header>
   );
 }

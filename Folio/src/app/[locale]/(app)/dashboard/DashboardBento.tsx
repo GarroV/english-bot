@@ -27,7 +27,6 @@ export interface DashboardBentoProps {
   genDash: GenerateDashLabels;
   headerLabels: HeaderActionsLabels;
   paymentLabels: QuickPaymentLabels;
-  themeLabels: { system: string; light: string; dark: string };
   hwLabels: { homework: string; onCheck: string; overdue: string; noHomework: string };
   debtLabels: { debts: string; toReceive: string; noDebts: string };
 }
@@ -41,7 +40,6 @@ export function DashboardBento(p: DashboardBentoProps) {
           students={p.students}
           labels={p.headerLabels}
           paymentLabels={p.paymentLabels}
-          themeLabels={p.themeLabels}
         />
       </header>
 

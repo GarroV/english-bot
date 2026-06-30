@@ -67,16 +67,12 @@ export default async function DashboardPage() {
         fix: d("fix"), fixPlaceholder: d("fixPlaceholder"), applyFix: d("applyFix"),
         fixing: d("fixing"), regenerate: d("regenerate"),
       }}
-      headerLabels={{
-        history: d("history"), manageStudents: d("manageStudents"),
-        addLesson: d("addLesson"), addPayment: d("addPayment"),
-      }}
+      headerLabels={{ addLesson: d("addLesson"), addPayment: d("addPayment") }}
       paymentLabels={{
         title: b("recordPayment"), student: b("student"), amount: b("amount"), note: b("note"),
         save: b("save"), cancel: b("cancel"), saved: b("saved"), error: b("saveError"),
         pickStudent: d("pickStudent"),
       }}
-      themeLabels={{ system: d("themeSystem"), light: d("themeLight"), dark: d("themeDark") }}
       hwLabels={{ homework: d("homework"), onCheck: d("onCheck"), overdue: d("overdue"), noHomework: d("noHomework") }}
       debtLabels={{ debts: d("debts"), toReceive: d("toReceive"), noDebts: d("noDebts") }}
     />
