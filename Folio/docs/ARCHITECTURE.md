@@ -206,6 +206,9 @@ Workspace-scoped CRUD ростера учеников репетитора: сп
   `x-folio-secret` сверяется с `FOLIO_GENERATE_SECRET`), деплоится
   `--no-verify-jwt`, переиспользует `ANTHROPIC_KEY`. Оба потребителя (бот через
   импорт, веб через `folio-generate`) гоняют идентичный движок.
+  **Действие `edit`** (2026-07-01): тело `{ action: "edit", content, edit }` →
+  `applyEdit` (вычитка/правка готового задания, движок уже это умел; веб-обёртки
+  `callEdit`/`editHomework`). Используется в дашборде. Без `action` — генерация, как раньше.
 - **Веб-слой** `lib/homework/`:
   - `schema.ts` — zod `homeworkInputSchema` + `MODULE_TYPES` (`verb` обязателен
     для `VERB_SENTENCES`).
@@ -253,6 +256,18 @@ Workspace-scoped CRUD ростера учеников репетитора: сп
 Отложено: шкала/статистика прогресса (выбран свободный текст), per-student записи для групп, связь с домашками. Таблица и RLS — в [[DATA_MODEL]] (`folio_lesson_journal`).
 
 ---
+
+## Dashboard (бенто, 2026-07-01)
+
+Стартовая страница `/[locale]/dashboard` — командный центр репетитора (single-tutor) в формате бенто. Раньше была заглушка (только роль).
+
+- **Раскладка** (3 колонки, `(app)/dashboard/DashboardBento.tsx`): слева **«Занятия сегодня»** (`TodayLessons`, шапка-ссылка → `/schedule`); центр — **генерация задания + вычитка** (`GeneratePanel`); справа — раскрытые мини-блоки **«Домашки»** и **«Долги»** (`MiniBlock`). В шапке — быстрые действия (`HeaderActions`): История (→ `/homework`), Ученики/«+ Занятие» (→ `/schedule`), «+ Оплата» (`QuickPaymentDialog`) и переключатель темы.
+- **Данные — переиспуют существующие queries** (без новых таблиц): `listLessonsInRange`, `listBalances`, `listAssignments`, `listStudents`. Чистые derive-функции (`lib/dashboard/derive.ts`, покрыты тестами): `todayLessons` (фильтр по Europe/Moscow), `debtors`, `homeworkBuckets` (submitted → на проверку; assigned с прошедшим `due_date` → просрочено).
+- **Центр (генерация+вычитка)** переиспует `lib/homework/` (`generateHomework`/`saveTemplate`) + новое `editHomework` → `folio-generate` `action:"edit"`. Все вызовы генерации идут через `lib/homework/` — **единая точка** под будущий контроль кредитов (issue #23).
+- **Тема:** `next-themes` `ThemeProvider` (`attribute="class"`, system default) в `[locale]/layout.tsx`; обе палитры — в `globals.css` (`:root` / `.dark`); компоненты используют только токены.
+- **Идентичность:** сова-знак `src/app/icon.svg` (фавикон, заменяет дефолт create-next-app).
+
+Отложено (полировка/будущее): визуальная полировка, инлайн quick-add занятия, назначение из черновика, дайджест (решено не делать), контроль генераций (#23).
 
 ## Hosting (Cloudflare Workers + OpenNext)
 
