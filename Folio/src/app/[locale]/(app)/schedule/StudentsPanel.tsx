@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { StudentForm } from "../students/StudentForm";
 import { StudentJournalDialog, type StudentJournalLabels } from "./StudentJournalDialog";
-import { archiveStudent, restoreStudent } from "@/lib/students/actions";
+import { archiveStudent, restoreStudent, ensureCabinetToken } from "@/lib/students/actions";
 import type { StudentRow } from "@/lib/students/queries";
 
 interface Labels {
@@ -15,6 +16,7 @@ interface Labels {
   save: string; cancel: string; newStudent: string; editStudent: string;
   showArchived: string; showActive: string; archivedBadge: string;
   saved: string; saveError: string; archivedToast: string; restoredToast: string;
+  cabinet: string; cabinetCopied: string;
 }
 
 // Right-column students panel for the merged schedule screen. Add/edit open the
@@ -26,9 +28,22 @@ export function StudentsPanel({ students, labels, journalLabels }: {
   journalLabels: StudentJournalLabels;
 }) {
   const router = useRouter();
+  const locale = useLocale();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [historyFor, setHistoryFor] = useState<{ id: string; name: string } | null>(null);
+
+  // Ensure the student's cabinet token, build the personal link and copy it. On clipboard
+  // failure (permissions) fall back to showing the URL in the toast so it can still be shared.
+  async function copyCabinet(id: string) {
+    setBusyId(id);
+    const res = await ensureCabinetToken(id);
+    setBusyId(null);
+    if (!res.ok) { toast.error(`${labels.saveError}: ${res.error}`); return; }
+    const url = `${window.location.origin}/${locale}/s/${res.token}`;
+    try { await navigator.clipboard.writeText(url); toast.success(labels.cabinetCopied); }
+    catch { toast.success(url); }
+  }
 
   const formLabels = {
     name: labels.name, email: labels.email, telegram: labels.telegram, rate: labels.rate,
@@ -81,6 +96,11 @@ export function StudentsPanel({ students, labels, journalLabels }: {
                     student={s}
                     labels={{ ...formLabels, trigger: labels.edit, heading: labels.editStudent }}
                   />
+                  {!archived && (
+                    <Button variant="outline" size="sm" disabled={busyId === s.id} onClick={() => copyCabinet(s.id)}>
+                      {labels.cabinet}
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" disabled={busyId === s.id} onClick={() => onArchive(s.id, archived)}>
                     {archived ? labels.restore : labels.archive}
                   </Button>

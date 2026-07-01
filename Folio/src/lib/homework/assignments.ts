@@ -33,6 +33,22 @@ export async function assignTemplate(input: AssignInput): Promise<AssignResult> 
   return { ok: true };
 }
 
+// Mark an assignment reviewed and save the tutor's comment (visible to the student in their cabinet).
+// RLS scopes to the caller's workspace.
+export async function reviewAssignment(id: string, comment: string): Promise<AssignResult> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "not authenticated" };
+  const { data, error } = await supabase
+    .from("folio_homework_assignments")
+    .update({ status: "reviewed", tutor_comment: comment.trim() || null, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select("id");
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: "not found" };
+  return { ok: true };
+}
+
 export async function updateAssignmentStatus(id: string, status: string): Promise<AssignResult> {
   const parsed = assignmentStatusSchema.safeParse(status);
   if (!parsed.success) return { ok: false, error: "bad status" };

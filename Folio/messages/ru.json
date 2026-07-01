@@ -70,7 +70,9 @@
     "saved": "Сохранено",
     "saveError": "Не удалось сохранить",
     "archivedToast": "Ученик в архиве",
-    "restoredToast": "Ученик возвращён"
+    "restoredToast": "Ученик возвращён",
+    "cabinet": "Кабинет",
+    "cabinetCopied": "Ссылка на кабинет скопирована"
   },
   "Schedule": {
     "title": "Расписание",
@@ -132,6 +134,9 @@
     "pickStudents": "Выберите хотя бы одного ученика",
     "assignmentsTitle": "Назначения",
     "noAssignments": "Назначений пока нет",
+    "commentPlaceholder": "Комментарий ученику…",
+    "review": "Проверено",
+    "reviewedToast": "Отмечено «проверено»",
     "statusAssigned": "Назначено",
     "statusSubmitted": "Сдано",
     "statusReviewed": "Проверено",
