@@ -36,11 +36,9 @@ export default async function DashboardPage() {
 
   const d = await getTranslations("Dashboard");
   const h = await getTranslations("Homework");
-  const b = await getTranslations("Billing");
 
   return (
     <DashboardBento
-      title={d("title")}
       nowISO={nowISO}
       todayLessons={today}
       debtors={debt}
@@ -71,12 +69,6 @@ export default async function DashboardPage() {
         title: h("assignTitle"), students: h("students"), dueDate: h("dueDate"),
         confirm: h("confirmAssign"), cancel: h("cancel"), assigned: h("assigned"),
         pickStudents: h("pickStudents"), error: h("saveError"),
-      }}
-      headerLabels={{ addLesson: d("addLesson"), addPayment: d("addPayment") }}
-      paymentLabels={{
-        title: b("recordPayment"), student: b("student"), amount: b("amount"), note: b("note"),
-        save: b("save"), cancel: b("cancel"), saved: b("saved"), error: b("saveError"),
-        pickStudent: d("pickStudent"),
       }}
       hwLabels={{ homework: d("homework"), onCheck: d("onCheck"), overdue: d("overdue"), noHomework: d("noHomework") }}
       debtLabels={{ debts: d("debts"), toReceive: d("toReceive"), noDebts: d("noDebts") }}
