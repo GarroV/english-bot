@@ -91,13 +91,17 @@ english-bot остаётся самостоятельной Deno Edge Function. 
 Флоу:
 
 1. Страница `/[locale]/login` минтит токен: `POST /api/auth/telegram/start` → запись
-   `pending` в `folio_login_tokens`.
+   `pending` в `folio_login_tokens`. Роут ставит **httpOnly-cookie с nonce** и хранит его
+   SHA-256 в `nonce_hash` (браузер-биндинг, #4).
 2. Открывается `https://t.me/garro_oracle_bot?start=folio_login_<token>`; страница
    опрашивает `GET /api/auth/telegram/status`.
-3. english-bot ловит `/start folio_login_<token>`, резолвит folio-юзера по `telegram_id`
-   (через `folio_auth_methods`) и помечает токен `confirmed`.
-4. На `confirmed` страница вызывает `POST /api/auth/telegram/session` → роут
-   потребляет токен (`consumed`) и выпускает сессию Supabase.
+3. english-bot ловит `/start folio_login_<token>` и **НЕ подтверждает автоматически**: показывает
+   явный запрос с предупреждением и кнопками «Подтвердить вход» / «Отмена» (#4 login-CSRF —
+   тапнутая кем-то чужим ссылка больше не авторизует молча). Только на нажатие «Подтвердить»
+   бот резолвит folio-юзера по `telegram_id` (через `folio_auth_methods`) и помечает токен `confirmed`.
+4. На `confirmed` страница вызывает `POST /api/auth/telegram/session` → роут потребляет токен
+   (`consumed`) **только при совпадении nonce-cookie с `nonce_hash`** (#4 session fixation) и
+   выпускает сессию Supabase.
 
 **Минтинг сессии** (на сервере Folio): `supabase.auth.admin.generateLink({type:'magiclink', email})`
 → `verifyOtp({token_hash, type:'email'})`. Magic link и email-OTP делят реализацию,

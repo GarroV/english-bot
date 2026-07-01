@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { consumeLoginToken } from "@/lib/auth/login-tokens";
+import { consumeLoginToken, loginNonceCookieName } from "@/lib/auth/login-tokens";
 import { mintSessionForUser } from "@/lib/auth/session";
 import { registerTutorFromInvite } from "@/lib/auth/register";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -10,8 +10,12 @@ export async function POST(request: NextRequest) {
   const token = typeof body?.token === "string" ? body.token : null;
   if (!token) return NextResponse.json({ error: "missing token" }, { status: 400 });
 
+  // Browser-binding nonce (#4): only the browser that minted THIS token carries its cookie
+  // (per-token name so concurrent logins in the same browser don't clobber each other).
+  const nonce = request.cookies.get(loginNonceCookieName(token))?.value ?? null;
+
   try {
-    const consumed = await consumeLoginToken(token);
+    const consumed = await consumeLoginToken(token, nonce);
     if (!consumed) return NextResponse.json({ error: "not redeemable" }, { status: 401 });
 
     let email: string | null = null;
@@ -39,7 +43,9 @@ export async function POST(request: NextRequest) {
     let ok = await mintSessionForUser(email);
     if (!ok) ok = await mintSessionForUser(email);
     if (!ok) return NextResponse.json({ error: "session mint failed" }, { status: 500 });
-    return NextResponse.json({ ok: true });
+    const res = NextResponse.json({ ok: true });
+    res.cookies.delete(loginNonceCookieName(token)); // consumed — clear the browser-binding cookie
+    return res;
   } catch {
     return NextResponse.json({ error: "internal error" }, { status: 500 });
   }

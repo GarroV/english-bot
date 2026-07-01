@@ -32,7 +32,7 @@ supabase/functions/english-bot/
 │   ├── module_detect.test.ts   — тесты детекции модулей
 │   └── folio_login.test.ts     — тесты разбора login-payload
 └── handlers/
-    ├── start.ts                — /start (регистрация + инвайт-код), /help, /new; ветвится на payload `folio_login_` → confirmFolioLogin
+    ├── start.ts                — /start (регистрация + инвайт-код), /help, /new; на payload `folio_login_` шлёт запрос-подтверждение (кнопки); handleFolioConfirm/handleFolioCancel → confirmFolioLogin (#4)
     ├── request.ts              — WAITING_REQUEST: detectModule/extractParams → CLARIFYING (старт визарда); handleChangeRequest
     ├── clarify.ts              — визард параметров: buildWizardMessage, handleWizardStep (wiz_*); handleTopicInput, handleVerbInput
     ├── generate.ts             — generateAndSend, sendAssignment, handleNewAssignment; handleUseCached/handleGenerateNew (кэш-оффер — мёртвый путь, см. ниже)
@@ -66,10 +66,14 @@ EDITING          — ждёт текст с правками к заданию
 ```
 /start (новый)        → REGISTERING
 /start (admin/known)  → WAITING_REQUEST (+ сообщение с кнопкой «🌐 Открыть Folio»)
-/start folio_login_<token> → подтверждает токен входа Folio (confirmFolioLogin). Если Telegram
-                         не привязан, но токен несёт валидный signup-инвайт — подтверждает для
-                         регистрации репетитора (исход invite_expired, если инвайт протух).
-                         Иначе обычный путь /start
+/start folio_login_<token> → НЕ подтверждает сразу: шлёт запрос с предупреждением и кнопками
+                         «✅ Подтвердить вход» (folio_confirm_<token>) / «❌ Отмена» (folio_cancel_<token>)
+                         — защита от login-CSRF (#4). confirmFolioLogin вызывается только по нажатию
+                         «Подтвердить» (handleFolioConfirm). Если Telegram не привязан, но токен несёт
+                         валидный signup-инвайт — подтверждает для регистрации репетитора
+                         (исход invite_expired, если инвайт протух). Иначе обычный путь /start
+folio_confirm_<token> / folio_cancel_<token> → роутятся в index.ts ДО гейта isAllowed
+                         (Folio-юзер может быть не в allowlist бота)
 ввод инвайт-кода (REGISTERING) → WAITING_REQUEST
 
 текст в WAITING_REQUEST → CLARIFYING (handleRequest: detectModule + extractParams, wizard_step=type)
