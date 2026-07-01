@@ -5,7 +5,7 @@ import { homeworkInputSchema, type HomeworkInput } from "./schema";
 import { callGenerate, callEdit } from "./generate";
 
 export type GenResult = { ok: true; content: string } | { ok: false; error: string };
-export type SaveResult = { ok: true } | { ok: false; error: string };
+export type SaveResult = { ok: true; id: string } | { ok: false; error: string };
 
 // Generate (preview only, not persisted). Auth-gated so anon can't burn tokens.
 export async function generateHomework(input: HomeworkInput): Promise<GenResult> {
@@ -51,7 +51,7 @@ export async function saveTemplate(input: HomeworkInput, content: string): Promi
   const workspaceId = profile?.workspace_id as string | undefined;
   if (!workspaceId) return { ok: false, error: "no workspace" };
   const v = parsed.data;
-  const { error } = await supabase.from("folio_homework_templates").insert({
+  const { data, error } = await supabase.from("folio_homework_templates").insert({
     workspace_id: workspaceId,
     module_type: v.moduleType,
     level: v.level,
@@ -60,7 +60,7 @@ export async function saveTemplate(input: HomeworkInput, content: string): Promi
     content,
     source: "web",
     created_by: user.id,
-  });
+  }).select("id").single();
   if (error) return { ok: false, error: error.message };
-  return { ok: true };
+  return { ok: true, id: data.id as string };
 }
