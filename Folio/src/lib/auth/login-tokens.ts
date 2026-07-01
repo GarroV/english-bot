@@ -5,6 +5,11 @@ import { isRedeemable, type LoginTokenStatus } from "@/lib/auth/token-rules";
 const TOKEN_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const TABLE = "folio_login_tokens";
 
+// Cookie name for the browser-binding nonce (#4), namespaced PER TOKEN so concurrent or retried
+// logins in the same browser (multiple tabs / re-clicks) don't overwrite each other's cookie and
+// cause a false 401. The token is base64url — a valid cookie-name charset.
+export const loginNonceCookieName = (token: string): string => `folio_login_nonce_${token}`;
+
 export interface CreatedToken {
   token: string;
   deepLink: string;

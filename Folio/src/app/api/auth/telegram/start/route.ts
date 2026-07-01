@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createLoginToken } from "@/lib/auth/login-tokens";
+import { createLoginToken, loginNonceCookieName } from "@/lib/auth/login-tokens";
 import { validateSignupInvite } from "@/lib/auth/signup-invites";
 
 export async function POST(request: NextRequest) {
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     // Bind the token to THIS browser (#4): the nonce lives only in an httpOnly cookie; /session
     // redeems the token only if it presents the matching cookie. Never returned in the JSON body.
     const res = NextResponse.json({ token: created.token, deepLink: created.deepLink });
-    res.cookies.set("folio_login_nonce", created.nonce, {
+    res.cookies.set(loginNonceCookieName(created.token), created.nonce, {
       httpOnly: true,
       secure: true,
       sameSite: "lax",
