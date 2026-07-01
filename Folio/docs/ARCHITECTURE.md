@@ -51,6 +51,11 @@ folio/
   из cookie/Accept-Language. **Используем `middleware.ts`, а не `proxy.ts`:** в Next 16
   `proxy.ts` жёстко привязан к Node-рантайму, который Cloudflare Workers (OpenNext) не
   исполняет; `middleware.ts` остаётся на Edge — его Workers поддерживают.
+- `middleware.ts` также ставит **security-заголовки** на все ответы: CSP, `X-Frame-Options: DENY`,
+  `X-Content-Type-Options: nosniff`, `Referrer-Policy`, HSTS, `Permissions-Policy`. CSP держит
+  `script-src 'unsafe-inline'` (nonce-CSP требует `proxy.ts`/Node — на Workers недоступен), жёсткие
+  директивы — `frame-ancestors 'none'` (кликджекинг), `object-src 'none'`, `base-uri`, `connect-src`
+  (только self + Supabase). Ужесточение `script-src` (SRI/nonce) — отдельный issue (#11 хвост), требует preview-деплоя.
 - Тексты — в `messages/{locale}.json`, ключи добавляются сразу на оба языка
 
 ---
