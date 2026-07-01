@@ -5,8 +5,6 @@ import type { AssignmentRow } from "@/lib/homework/queries";
 import { TodayLessons, type TodayLessonsLabels } from "./TodayLessons";
 import { GeneratePanel, type GenerateFormLabels, type GenerateDashLabels, type GenerateAssignLabels } from "./GeneratePanel";
 import { MiniBlock } from "./MiniBlock";
-import { HeaderActions, type HeaderActionsLabels } from "./HeaderActions";
-import type { QuickPaymentLabels } from "../billing/QuickPaymentDialog";
 
 interface HwBuckets {
   review: AssignmentRow[];
@@ -16,7 +14,6 @@ interface HwBuckets {
 }
 
 export interface DashboardBentoProps {
-  title: string;
   nowISO: string;
   todayLessons: LessonWithStudents[];
   debtors: { rows: Balance[]; total: number };
@@ -26,25 +23,14 @@ export interface DashboardBentoProps {
   genForm: GenerateFormLabels;
   genDash: GenerateDashLabels;
   genAssign: GenerateAssignLabels;
-  headerLabels: HeaderActionsLabels;
-  paymentLabels: QuickPaymentLabels;
   hwLabels: { homework: string; onCheck: string; overdue: string; noHomework: string };
   debtLabels: { debts: string; toReceive: string; noDebts: string };
 }
 
 export function DashboardBento(p: DashboardBentoProps) {
   return (
-    <div className="mx-auto flex w-full max-w-[1500px] flex-1 flex-col gap-5 p-5 md:p-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-heading text-3xl font-bold tracking-tight">{p.title}</h1>
-        <HeaderActions
-          students={p.students}
-          labels={p.headerLabels}
-          paymentLabels={p.paymentLabels}
-        />
-      </header>
-
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[300px_minmax(0,1fr)_330px]">
+    <div className="mx-auto flex w-full max-w-[1500px] flex-1 flex-col gap-4 p-4 md:px-6 md:pt-4">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[300px_minmax(0,1fr)_330px]">
         {/* Left: today's lessons */}
         <div className="flex flex-col gap-5">
           <TodayLessons lessons={p.todayLessons} nowISO={p.nowISO} labels={p.todayLabels} />

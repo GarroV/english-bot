@@ -3,6 +3,8 @@
 import { Link, usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { HeaderActions, type HeaderActionsLabels } from "./dashboard/HeaderActions";
+import type { QuickPaymentLabels } from "./billing/QuickPaymentDialog";
 
 const NAV = [
   { href: "/dashboard", key: "dashboard" },
@@ -12,8 +14,16 @@ const NAV = [
 ] as const;
 
 // Top navigation bar (replaces the left rail) — full-width bento needs the horizontal space.
-// "Админка" shows only for super_admin (resolved server-side in the layout).
-export function TopNav({ isSuperAdmin }: { isSuperAdmin?: boolean }) {
+// Hosts nav + global quick-create actions (lesson/payment) + theme, so pages don't need a second
+// header row. "Админка" shows only for super_admin (resolved server-side in the layout).
+export function TopNav({
+  isSuperAdmin, students, headerLabels, paymentLabels,
+}: {
+  isSuperAdmin?: boolean;
+  students: { id: string; name: string }[];
+  headerLabels: HeaderActionsLabels;
+  paymentLabels: QuickPaymentLabels;
+}) {
   const pathname = usePathname();
   const t = useTranslations("Nav");
   const td = useTranslations("Dashboard");
@@ -45,6 +55,7 @@ export function TopNav({ isSuperAdmin }: { isSuperAdmin?: boolean }) {
           );
         })}
       </nav>
+      <HeaderActions students={students} labels={headerLabels} paymentLabels={paymentLabels} />
       <ThemeToggle labels={{ system: td("themeSystem"), light: td("themeLight"), dark: td("themeDark") }} />
     </header>
   );

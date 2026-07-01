@@ -129,13 +129,16 @@ export function GeneratePanel({
 
   return (
     <section
-      className="flex flex-col gap-3.5 rounded-2xl border border-border p-5 shadow-sm"
+      className="flex flex-col gap-2.5 rounded-2xl border border-border p-4 shadow-sm"
       style={{ background: "radial-gradient(120% 120% at 0% 0%, color-mix(in oklab, var(--primary) 12%, transparent), transparent 50%), var(--card)" }}
     >
-      <div>
-        <h2 className="font-heading text-xl font-bold tracking-tight">{dash.generateTitle}</h2>
-        <p className="mt-1 max-w-prose text-[13px] text-muted-foreground">{dash.generateLead}</p>
-      </div>
+      {/* Intro only before a draft exists — once there's content, give the draft the vertical space. */}
+      {!content && (
+        <div>
+          <h2 className="font-heading text-xl font-bold tracking-tight">{dash.generateTitle}</h2>
+          <p className="mt-1 max-w-prose text-[13px] text-muted-foreground">{dash.generateLead}</p>
+        </div>
+      )}
 
       {/* ask box */}
       <div className="flex items-center gap-2 rounded-xl border border-border bg-card/60 p-1.5 pl-3.5 focus-within:border-primary">
