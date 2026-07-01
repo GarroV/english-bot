@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, createHash } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isRedeemable, type LoginTokenStatus } from "@/lib/auth/token-rules";
 
@@ -8,12 +8,17 @@ const TABLE = "folio_login_tokens";
 export interface CreatedToken {
   token: string;
   deepLink: string;
+  nonce: string; // set by the caller as an httpOnly cookie; binds redemption to this browser
 }
 
-// Create a pending login token and return the Telegram deep-link to confirm it.
+const hashNonce = (nonce: string): string => createHash("sha256").update(nonce).digest("hex");
+
+// Create a pending login token and return the Telegram deep-link to confirm it, plus a browser-binding
+// nonce (#4). The caller sets `nonce` as an httpOnly cookie; only that browser can redeem the token.
 // Pass signupInviteId for the registration flow (bot confirms without an existing user).
 export async function createLoginToken(signupInviteId?: string): Promise<CreatedToken> {
   const token = randomBytes(24).toString("base64url");
+  const nonce = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + TOKEN_TTL_MS).toISOString();
   const admin = createAdminClient();
 
@@ -21,12 +26,13 @@ export async function createLoginToken(signupInviteId?: string): Promise<Created
     token,
     status: "pending",
     expires_at: expiresAt,
+    nonce_hash: hashNonce(nonce),
     ...(signupInviteId ? { signup_invite_id: signupInviteId } : {}),
   });
   if (error) throw new Error(`createLoginToken failed: ${error.message}`);
 
   const bot = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME!;
-  return { token, deepLink: `https://t.me/${bot}?start=folio_login_${token}` };
+  return { token, deepLink: `https://t.me/${bot}?start=folio_login_${token}`, nonce };
 }
 
 // Return only the status (no sensitive data) for the polling endpoint.
@@ -49,23 +55,29 @@ export interface ConsumedToken {
 }
 
 // Atomically consume a confirmed token; returns its redemption payload or null if
-// not redeemable. The caller mints a session (folioUserId) or registers (signupInviteId).
-export async function consumeLoginToken(token: string): Promise<ConsumedToken | null> {
+// not redeemable. Requires the browser-binding nonce (#4): the token is redeemable only from the
+// same browser that minted it (matching nonce_hash), which blocks cross-browser session fixation.
+// The caller mints a session (folioUserId) or registers (signupInviteId).
+export async function consumeLoginToken(token: string, nonce: string | null): Promise<ConsumedToken | null> {
+  if (!nonce) return null; // no browser-binding cookie → refuse (fail-closed)
+  const nonceHash = hashNonce(nonce);
   const admin = createAdminClient();
   const { data, error } = await admin
     .from(TABLE)
     .select("status, expires_at, consumed_at, folio_user_id, signup_invite_id")
     .eq("token", token)
+    .eq("nonce_hash", nonceHash)
     .maybeSingle();
   if (error) throw new Error(`consumeLoginToken read failed: ${error.message}`);
   if (!data || !isRedeemable(data, Date.now())) return null;
 
-  // Guard against double-consume (consumed_at IS NULL) and the read→update expiry
-  // window (status still confirmed, not yet expired) — all enforced atomically in SQL.
+  // Guard against double-consume (consumed_at IS NULL), the read→update expiry window (status still
+  // confirmed, not yet expired), and browser binding (nonce_hash) — all enforced atomically in SQL.
   const { data: updated, error: updErr } = await admin
     .from(TABLE)
     .update({ status: "consumed", consumed_at: new Date().toISOString() })
     .eq("token", token)
+    .eq("nonce_hash", nonceHash)
     .eq("status", "confirmed")
     .is("consumed_at", null)
     .gt("expires_at", new Date().toISOString())

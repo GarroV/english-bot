@@ -28,6 +28,7 @@
 - `20260616142113_folio_signup_invites.sql` — таблица `folio_signup_invites` (M2 self-serve регистрация репетитора) + колонки `signup_invite_id`/`tg_username`/`tg_first_name` в `folio_login_tokens`; service-role only
 - `20260616155229_folio_register_tutor_rpc.sql` / `20260616180730_folio_register_tutor_rpc_fix.sql` — функция `folio_register_tutor()`: атомарное создание репетитора (consume инвайта + workspace + user + owner + auth_method в одной транзакции), execute только service_role
 - `20260616194059_folio_lock_privesc.sql` — **security**: revoke insert/update/delete на `folio_users` + `folio_workspaces` от anon/authenticated + добавлен `WITH CHECK` в их политики. Закрывает privilege-escalation (репетитор мог PATCH-ом выставить себе `role=super_admin`). Эти таблицы пишет только service-role. См. [[project_folio_rls_invariants]]
+- `20260701102000_folio_login_token_nonce.sql` — **#4 login-CSRF (session-fixation)**: колонка `nonce_hash` в `folio_login_tokens`. `/api/auth/telegram/start` ставит httpOnly-cookie с nonce и хранит его SHA-256; `/api/auth/telegram/session` потребляет токен только при совпадающей cookie → токен нельзя redeem'ить в чужом браузере. Главная атака (жертва подтверждает чужой вход) закрыта на стороне бота явным подтверждением с предупреждением.
 
 ---
 
@@ -95,10 +96,11 @@ created_at      timestamptz
 confirmed_at    timestamptz
 consumed_at     timestamptz
 expires_at      timestamptz
+nonce_hash      text          -- #4: SHA-256 браузер-биндинг-nonce; consume требует совпадающую httpOnly-cookie
 -- index on (token)
 ```
 
-> **deny-all RLS** — только service-role (english-bot + серверные роуты Folio); pre-auth таблица; TTL ~5 мин; single-use. RLS включён, но политик НЕТ (любой anon/authenticated доступ запрещён). Жизненный цикл: `pending` (создан страницей `/login`) → `confirmed` (бот поймал `/start folio_login_<token>` и сверил telegram_id) → `consumed` (серверный роут выпустил сессию). M2: добавлены `signup_invite_id` (FK → `folio_signup_invites`), `tg_username`, `tg_first_name` — бот пишет их для регистрации по инвайту. См. [[003-telegram-auth]].
+> **deny-all RLS** — только service-role (english-bot + серверные роуты Folio); pre-auth таблица; TTL ~5 мин; single-use. RLS включён, но политик НЕТ (любой anon/authenticated доступ запрещён). Жизненный цикл: `pending` (создан страницей `/login`, которая ставит httpOnly-cookie с nonce) → `confirmed` (бот поймал `/start folio_login_<token>`, показал явное подтверждение и на нажатие кнопки сверил telegram_id) → `consumed` (серверный роут выпустил сессию, сверив `nonce_hash` с cookie). M2: `signup_invite_id` (FK → `folio_signup_invites`), `tg_username`, `tg_first_name` — бот пишет их для регистрации по инвайту. #4: `nonce_hash` — браузер-биндинг против session fixation. См. [[003-telegram-auth]].
 
 ### folio_signup_invites ✅
 ```sql

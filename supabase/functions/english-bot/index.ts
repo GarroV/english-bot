@@ -1,4 +1,11 @@
-import { handleStart, handleInviteCode, handleHelp, handleNew } from "./handlers/start.ts";
+import {
+  handleStart,
+  handleInviteCode,
+  handleHelp,
+  handleNew,
+  handleFolioConfirm,
+  handleFolioCancel,
+} from "./handlers/start.ts";
 import { handleRequest, handleChangeRequest } from "./handlers/request.ts";
 import {
   handleWizardStep,
@@ -61,9 +68,14 @@ Deno.serve(async (req) => {
 async function route(update: TgUpdate): Promise<void> {
   if (update.callback_query) {
     const query = update.callback_query;
-    if (!(await isAllowed(query.from.id))) return;
-
     const { data } = query;
+
+    // Folio web-login confirmation (#4). Available to any Telegram user — Folio users need not be on
+    // the english-bot allowlist — so route it BEFORE the isAllowed gate, like the /start login link.
+    if (data.startsWith("folio_confirm_")) return handleFolioConfirm(query);
+    if (data.startsWith("folio_cancel_")) return handleFolioCancel(query);
+
+    if (!(await isAllowed(query.from.id))) return;
 
     // Parameter selection buttons in CLARIFYING state
     if (data.startsWith("wiz_")) return handleWizardStep(query);

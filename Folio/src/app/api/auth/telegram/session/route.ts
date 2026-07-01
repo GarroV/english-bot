@@ -10,8 +10,11 @@ export async function POST(request: NextRequest) {
   const token = typeof body?.token === "string" ? body.token : null;
   if (!token) return NextResponse.json({ error: "missing token" }, { status: 400 });
 
+  // Browser-binding nonce (#4): only the browser that minted the token carries this cookie.
+  const nonce = request.cookies.get("folio_login_nonce")?.value ?? null;
+
   try {
-    const consumed = await consumeLoginToken(token);
+    const consumed = await consumeLoginToken(token, nonce);
     if (!consumed) return NextResponse.json({ error: "not redeemable" }, { status: 401 });
 
     let email: string | null = null;

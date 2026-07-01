@@ -1,4 +1,4 @@
-import { sendMessage, mainMenu, siteLink } from "../lib/telegram.ts";
+import { sendMessage, mainMenu, siteLink, keyboard, editMessageText, answerCallbackQuery } from "../lib/telegram.ts";
 import {
   isAllowed,
   registerUser,
@@ -9,7 +9,7 @@ import {
   confirmFolioLogin,
 } from "../lib/db.ts";
 import { parseLoginPayload } from "../lib/folio_login.ts";
-import type { TgMessage } from "../lib/types.ts";
+import type { TgMessage, TgCallbackQuery } from "../lib/types.ts";
 
 const ADMIN_ID = Number(Deno.env.get("ADMIN_USER_ID")!);
 
@@ -80,19 +80,22 @@ export async function handleStart(message: TgMessage): Promise<void> {
   const { id, first_name, username } = message.from;
   const chatId = message.chat.id;
 
-  // Folio web login: "/start folio_login_<token>" — confirm the token for this Telegram user
+  // Folio web login: "/start folio_login_<token>". Do NOT auto-confirm — a deep-link someone else
+  // generated, tapped by this user, would silently authorize THEIR browser into this account
+  // (login-CSRF, #4). Require an explicit, informed confirmation via inline buttons instead.
   const loginToken = parseLoginPayload(message.text ?? "");
   if (loginToken) {
-    const result = await confirmFolioLogin(loginToken, id, first_name, username);
-    const reply =
-      result === "confirmed"
-        ? "✅ Вход в Folio подтверждён. Вернись на сайт."
-        : result === "invite_expired"
-          ? "Приглашение истекло или уже использовано. Запроси новую ссылку."
-          : result === "not_linked"
-            ? "Этот Telegram не привязан к Folio."
-            : "Ссылка устарела. Открой вход в Folio заново.";
-    await sendMessage(chatId, reply);
+    const kb = keyboard([[
+      ["✅ Подтвердить вход", `folio_confirm_${loginToken}`],
+      ["❌ Отмена", `folio_cancel_${loginToken}`],
+    ]]);
+    await sendMessage(
+      chatId,
+      "🔐 Запрос на вход в *Folio*.\n\n" +
+        "Если *вы сами* только что открыли вход на сайте — нажмите «Подтвердить вход».\n" +
+        "Если вы этого не делали — нажмите «Отмена», ничего не произойдёт.",
+      kb,
+    );
     return;
   }
 
@@ -147,4 +150,35 @@ export async function handleInviteCode(message: TgMessage): Promise<void> {
   await useInvite(code, id);
   await setSession(id, "WAITING_REQUEST");
   await sendMessage(chatId, `Доступ открыт! ${WELCOME}`, mainMenu());
+}
+
+// Map a confirmFolioLogin outcome to a user-facing reply.
+function folioLoginReply(result: Awaited<ReturnType<typeof confirmFolioLogin>>): string {
+  return result === "confirmed"
+    ? "✅ Вход в Folio подтверждён. Вернись на сайт."
+    : result === "invite_expired"
+      ? "Приглашение истекло или уже использовано. Запроси новую ссылку."
+      : result === "not_linked"
+        ? "Этот Telegram не привязан к Folio."
+        : "Ссылка устарела. Открой вход в Folio заново.";
+}
+
+// Explicit confirmation of a Folio web login (#4). Reachable by any Telegram user — Folio users need
+// not be on the english-bot allowlist — so index.ts routes it BEFORE the isAllowed gate.
+export async function handleFolioConfirm(query: TgCallbackQuery): Promise<void> {
+  await answerCallbackQuery(query.id);
+  const token = query.data.slice("folio_confirm_".length);
+  const { id, first_name, username } = query.from;
+  const result = await confirmFolioLogin(token, id, first_name, username);
+  await editMessageText(query.message.chat.id, query.message.message_id, folioLoginReply(result));
+}
+
+// Decline a Folio web login request — nothing is confirmed.
+export async function handleFolioCancel(query: TgCallbackQuery): Promise<void> {
+  await answerCallbackQuery(query.id, "Отменено");
+  await editMessageText(
+    query.message.chat.id,
+    query.message.message_id,
+    "Вход отменён. Если это были не вы — всё в порядке, ничего не произошло.",
+  );
 }

@@ -17,7 +17,17 @@ export async function POST(request: NextRequest) {
     }
 
     const created = await createLoginToken(signupInviteId);
-    return NextResponse.json(created);
+    // Bind the token to THIS browser (#4): the nonce lives only in an httpOnly cookie; /session
+    // redeems the token only if it presents the matching cookie. Never returned in the JSON body.
+    const res = NextResponse.json({ token: created.token, deepLink: created.deepLink });
+    res.cookies.set("folio_login_nonce", created.nonce, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 5 * 60, // matches the token TTL
+    });
+    return res;
   } catch {
     return NextResponse.json({ error: "internal error" }, { status: 500 });
   }
