@@ -25,6 +25,7 @@ export interface AssignmentRow {
   id: string;
   status: string;
   due_date: string | null;
+  tutor_comment: string | null;
   student_name: string | null;
   template_topic: string | null;
   template_type: string | null;
@@ -34,6 +35,7 @@ interface AssignmentJoinRow {
   id: string;
   status: string;
   due_date: string | null;
+  tutor_comment: string | null;
   folio_students: { name: string } | { name: string }[] | null;
   folio_homework_templates: { topic: string; module_type: string } | { topic: string; module_type: string }[] | null;
 }
@@ -47,7 +49,7 @@ export async function listAssignments(): Promise<AssignmentRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("folio_homework_assignments")
-    .select("id, status, due_date, folio_students(name), folio_homework_templates(topic, module_type)")
+    .select("id, status, due_date, tutor_comment, folio_students(name), folio_homework_templates(topic, module_type)")
     .order("assigned_at", { ascending: false });
   if (error) throw new Error(`listAssignments failed: ${error.message}`);
   return ((data as AssignmentJoinRow[]) ?? []).map((r) => {
@@ -57,6 +59,7 @@ export async function listAssignments(): Promise<AssignmentRow[]> {
       id: r.id,
       status: r.status,
       due_date: r.due_date,
+      tutor_comment: r.tutor_comment,
       student_name: student?.name ?? null,
       template_topic: tpl?.topic ?? null,
       template_type: tpl?.module_type ?? null,

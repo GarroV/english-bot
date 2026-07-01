@@ -70,7 +70,9 @@
     "saved": "Сохранено",
     "saveError": "Не удалось сохранить",
     "archivedToast": "Ученик в архиве",
-    "restoredToast": "Ученик возвращён"
+    "restoredToast": "Ученик возвращён",
+    "cabinet": "Кабинет",
+    "cabinetCopied": "Ссылка на кабинет скопирована"
   },
   "Schedule": {
     "title": "Расписание",
@@ -132,6 +134,9 @@
     "pickStudents": "Выберите хотя бы одного ученика",
     "assignmentsTitle": "Назначения",
     "noAssignments": "Назначений пока нет",
+    "commentPlaceholder": "Комментарий ученику…",
+    "review": "Проверено",
+    "reviewedToast": "Отмечено «проверено»",
     "statusAssigned": "Назначено",
     "statusSubmitted": "Сдано",
     "statusReviewed": "Проверено",
@@ -218,5 +223,34 @@
     "createdAt": "Создан",
     "noWorkspaces": "Воркспейсов пока нет",
     "saveError": "Ошибка"
+  },
+  "Cabinet": {
+    "greeting": "Привет, {name}!",
+    "tutorLabel": "Репетитор",
+    "current": "Актуальные задания",
+    "completed": "Пройденные",
+    "lessons": "Ближайшие занятия",
+    "recentLessons": "Недавние занятия",
+    "noCurrent": "Пока нет активных заданий",
+    "noLessons": "Ближайших занятий нет",
+    "due": "Срок",
+    "noDue": "Без срока",
+    "statusAssigned": "назначено",
+    "statusSubmitted": "на проверке",
+    "statusReviewed": "проверено",
+    "markDone": "Я сделал",
+    "marking": "Отмечаю…",
+    "markedDone": "Отмечено «сделано»",
+    "markError": "Не удалось отметить. Обнови страницу.",
+    "downloadPdf": "Скачать PDF",
+    "showContent": "Показать задание",
+    "hideContent": "Скрыть",
+    "tutorComment": "Комментарий учителя",
+    "solo": "индивидуальное",
+    "group": "групповое",
+    "online": "онлайн",
+    "offline": "офлайн",
+    "invalidTitle": "Ссылка недействительна",
+    "invalidBody": "Возможно, ссылку обновили. Попроси у репетитора новую."
   }
 }

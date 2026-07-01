@@ -59,6 +59,7 @@ export default async function SchedulePage({
     showArchived: ts("showArchived"), showActive: ts("showActive"), archivedBadge: ts("archivedBadge"),
     saved: ts("saved"), saveError: ts("saveError"),
     archivedToast: ts("archivedToast"), restoredToast: ts("restoredToast"),
+    cabinet: ts("cabinet"), cabinetCopied: ts("cabinetCopied"),
   };
   const studentJournalLabels = {
     historyTitle: tj("historyTitle"), historyEmpty: tj("historyEmpty"),

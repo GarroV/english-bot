@@ -70,7 +70,9 @@
     "saved": "Saved",
     "saveError": "Could not save",
     "archivedToast": "Student archived",
-    "restoredToast": "Student restored"
+    "restoredToast": "Student restored",
+    "cabinet": "Cabinet",
+    "cabinetCopied": "Cabinet link copied"
   },
   "Schedule": {
     "title": "Schedule",
@@ -132,6 +134,9 @@
     "pickStudents": "Pick at least one student",
     "assignmentsTitle": "Assignments",
     "noAssignments": "No assignments yet",
+    "commentPlaceholder": "Comment for the student…",
+    "review": "Reviewed",
+    "reviewedToast": "Marked as reviewed",
     "statusAssigned": "Assigned",
     "statusSubmitted": "Submitted",
     "statusReviewed": "Reviewed",
@@ -218,5 +223,34 @@
     "createdAt": "Created",
     "noWorkspaces": "No workspaces yet",
     "saveError": "Error"
+  },
+  "Cabinet": {
+    "greeting": "Hi, {name}!",
+    "tutorLabel": "Tutor",
+    "current": "Current homework",
+    "completed": "Completed",
+    "lessons": "Upcoming lessons",
+    "recentLessons": "Recent lessons",
+    "noCurrent": "No active homework yet",
+    "noLessons": "No upcoming lessons",
+    "due": "Due",
+    "noDue": "No due date",
+    "statusAssigned": "assigned",
+    "statusSubmitted": "in review",
+    "statusReviewed": "reviewed",
+    "markDone": "Done",
+    "marking": "Marking…",
+    "markedDone": "Marked as done",
+    "markError": "Couldn't mark. Please refresh.",
+    "downloadPdf": "Download PDF",
+    "showContent": "Show homework",
+    "hideContent": "Hide",
+    "tutorComment": "Teacher's comment",
+    "solo": "one-on-one",
+    "group": "group",
+    "online": "online",
+    "offline": "offline",
+    "invalidTitle": "Link not valid",
+    "invalidBody": "The link may have been rotated. Ask your tutor for a new one."
   }
 }

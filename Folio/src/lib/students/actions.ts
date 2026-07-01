@@ -2,8 +2,10 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { studentInputSchema, type StudentInput } from "./schema";
+import { newCabinetToken } from "@/lib/cabinet/token";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
+export type TokenResult = { ok: true; token: string } | { ok: false; error: string };
 
 // Resolve the authenticated caller's workspace from their folio_users profile.
 // workspace_id is NEVER taken from the client.
@@ -95,4 +97,39 @@ export async function restoreStudent(id: string): Promise<ActionResult> {
   if (error) return { ok: false, error: error.message };
   if (!data || data.length === 0) return { ok: false, error: "not found" };
   return { ok: true };
+}
+
+// Return the student's cabinet token, creating one on first use. RLS scopes the update to the
+// caller's workspace (the student must be theirs). Idempotent: reuses an existing token.
+export async function ensureCabinetToken(studentId: string): Promise<TokenResult> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "not authenticated" };
+  const { data: existing } = await supabase
+    .from("folio_students").select("cabinet_token").eq("id", studentId).maybeSingle();
+  const current = existing?.cabinet_token as string | null | undefined;
+  if (current) return { ok: true, token: current };
+  const token = newCabinetToken();
+  const { data, error } = await supabase
+    .from("folio_students")
+    .update({ cabinet_token: token, updated_at: new Date().toISOString() })
+    .eq("id", studentId).select("id");
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: "not found" };
+  return { ok: true, token };
+}
+
+// Issue a fresh cabinet token — the old link stops working immediately.
+export async function rotateCabinetToken(studentId: string): Promise<TokenResult> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "not authenticated" };
+  const token = newCabinetToken();
+  const { data, error } = await supabase
+    .from("folio_students")
+    .update({ cabinet_token: token, updated_at: new Date().toISOString() })
+    .eq("id", studentId).select("id");
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: "not found" };
+  return { ok: true, token };
 }

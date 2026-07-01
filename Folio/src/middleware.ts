@@ -39,8 +39,8 @@ function withSecurityHeaders(res: NextResponse): NextResponse {
 }
 
 // Locale-aware path is like /ru/dashboard ; strip the locale prefix for matching.
-// Public: the locale root (landing), /login, and /invite/* (signup via invite link).
-const PUBLIC_FIRST_SEGMENTS = ["login", "invite"];
+// Public: the locale root (landing), /login, /invite/* (signup) and /s/* (student cabinet by token).
+const PUBLIC_FIRST_SEGMENTS = ["login", "invite", "s"];
 
 function isPublicPath(pathname: string): boolean {
   const parts = pathname.split("/").filter(Boolean); // ["ru","invite","tok"]

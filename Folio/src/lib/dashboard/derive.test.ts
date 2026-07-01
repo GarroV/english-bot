@@ -52,6 +52,7 @@ describe("homeworkBuckets", () => {
       id,
       status,
       due_date,
+      tutor_comment: null,
       student_name: "A",
       template_topic: "T",
       template_type: "READING_MODULE",

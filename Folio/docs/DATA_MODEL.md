@@ -31,6 +31,7 @@
 - `20260701100000_folio_rls_with_check_auth_invite.sql` — **security (#12)**: тот же lock-privesc паттерн для `folio_auth_methods` + `folio_invite_tokens` (из `folio_init` они были не тронуты): revoke insert/update/delete от anon/authenticated + `WITH CHECK` в их политики. Пишет только service-role.
 - `20260701101000_folio_lesson_billing_rpcs.sql` — **#9 атомарность денег**: RPC `folio_complete_lesson` / `folio_reopen_lesson` / `folio_cancel_lesson` / `folio_create_lesson` (все `SECURITY INVOKER`, RLS сохраняется, `FOR UPDATE` сериализует конкурентные смены статуса). Статус занятия и запись/откат леджера `folio_student_payments` — в одной транзакции; complete пересоздаёт charges по текущим ставкам (`coalesce(rate_override, default_rate, 0)`), чинит рассинхрон «урок состоялся без начисления» / «фантомный долг» и пересчёт после смены ставки. Server actions (`lib/lessons/actions.ts`) переведены на эти RPC; `lib/billing/charges.ts` удалён (логика в SQL).
 - `20260701102000_folio_login_token_nonce.sql` — **#4 login-CSRF (session-fixation)**: колонка `nonce_hash` в `folio_login_tokens`. `/api/auth/telegram/start` ставит httpOnly-cookie с nonce и хранит его SHA-256; `/api/auth/telegram/session` потребляет токен только при совпадающей cookie → токен нельзя redeem'ить в чужом браузере. Главная атака (жертва подтверждает чужой вход) закрыта на стороне бота явным подтверждением с предупреждением.
+- `20260701120000_folio_student_cabinet.sql` — **M8 кабинет ученика** (additive): `folio_students.cabinet_token` (ссылка-токен кабинета, ротируемый); `folio_homework_assignments.tutor_comment` (комментарий учителя) + `submitted_at` (ученик нажал «Я сделал»). Новых таблиц нет; кабинет `/[locale]/s/[token]` резолвит токен service-role'ом.
 
 ---
 
@@ -130,6 +131,7 @@ name            text not null
 email           text nullable
 telegram_id     bigint nullable
 default_rate    numeric(10,2) nullable               -- ставка за урок по умолчанию (RUB)
+cabinet_token   text unique nullable                 -- M8: персональный токен кабинета ученика (ротируемый)
 notes           text nullable                        -- заметки репетитора
 archived_at     timestamptz nullable                 -- soft archive (восстановимо)
 created_at      timestamptz
@@ -200,6 +202,8 @@ assigned_by     uuid FK → folio_users(id)
 due_date        date
 status          text DEFAULT 'assigned' CHECK (status IN ('assigned','submitted','reviewed'))
 note            text
+tutor_comment   text                                                         -- M8: комментарий учителя (виден ученику)
+submitted_at    timestamptz                                                  -- M8: ученик нажал «Я сделал» (assigned→submitted)
 assigned_at     timestamptz
 created_at      timestamptz
 updated_at      timestamptz

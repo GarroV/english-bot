@@ -60,7 +60,9 @@ export default async function HomeworkPage() {
   };
   const asgLabels = {
     assignmentsTitle: t("assignmentsTitle"), noAssignments: t("noAssignments"),
-    noDue: t("noDue"), saveError: t("saveError"), typeLabels, statusLabels,
+    noDue: t("noDue"), saveError: t("saveError"),
+    commentPlaceholder: t("commentPlaceholder"), review: t("review"), reviewedToast: t("reviewedToast"),
+    typeLabels, statusLabels,
   };
 
   return (
