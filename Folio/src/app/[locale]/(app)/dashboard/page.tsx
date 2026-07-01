@@ -65,7 +65,12 @@ export default async function DashboardPage() {
         generateTitle: d("generateTitle"), generateLead: d("generateLead"),
         draftTitle: d("draftTitle"), onReview: d("onReview"),
         fix: d("fix"), fixPlaceholder: d("fixPlaceholder"), applyFix: d("applyFix"),
-        fixing: d("fixing"), regenerate: d("regenerate"),
+        fixing: d("fixing"), regenerate: d("regenerate"), assign: d("assign"),
+      }}
+      genAssign={{
+        title: h("assignTitle"), students: h("students"), dueDate: h("dueDate"),
+        confirm: h("confirmAssign"), cancel: h("cancel"), assigned: h("assigned"),
+        pickStudents: h("pickStudents"), error: h("saveError"),
       }}
       headerLabels={{ addLesson: d("addLesson"), addPayment: d("addPayment") }}
       paymentLabels={{

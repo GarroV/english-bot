@@ -3,7 +3,7 @@ import type { LessonWithStudents } from "@/lib/lessons/queries";
 import type { Balance } from "@/lib/billing/queries";
 import type { AssignmentRow } from "@/lib/homework/queries";
 import { TodayLessons, type TodayLessonsLabels } from "./TodayLessons";
-import { GeneratePanel, type GenerateFormLabels, type GenerateDashLabels } from "./GeneratePanel";
+import { GeneratePanel, type GenerateFormLabels, type GenerateDashLabels, type GenerateAssignLabels } from "./GeneratePanel";
 import { MiniBlock } from "./MiniBlock";
 import { HeaderActions, type HeaderActionsLabels } from "./HeaderActions";
 import type { QuickPaymentLabels } from "../billing/QuickPaymentDialog";
@@ -25,6 +25,7 @@ export interface DashboardBentoProps {
   todayLabels: TodayLessonsLabels;
   genForm: GenerateFormLabels;
   genDash: GenerateDashLabels;
+  genAssign: GenerateAssignLabels;
   headerLabels: HeaderActionsLabels;
   paymentLabels: QuickPaymentLabels;
   hwLabels: { homework: string; onCheck: string; overdue: string; noHomework: string };
@@ -51,7 +52,7 @@ export function DashboardBento(p: DashboardBentoProps) {
 
         {/* Center: generate + proofread */}
         <div className="flex flex-col gap-5">
-          <GeneratePanel form={p.genForm} dash={p.genDash} />
+          <GeneratePanel form={p.genForm} dash={p.genDash} students={p.students} assign={p.genAssign} />
         </div>
 
         {/* Right: homework + debts (expandable) */}
