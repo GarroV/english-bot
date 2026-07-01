@@ -142,9 +142,15 @@ export async function handleInviteCode(message: TgMessage): Promise<void> {
     return;
   }
 
+  // Claim the code atomically BEFORE registering, so a race can't let one code register several users.
   const invitedBy = await getInviteCreator(code);
+  const claimed = await useInvite(code, id);
+  if (!claimed) {
+    await sendMessage(chatId, "Этот код только что использовали. Попробуй другой:");
+    return;
+  }
+
   await registerUser(id, username, first_name, invitedBy ?? undefined);
-  await useInvite(code, id);
   await setSession(id, "WAITING_REQUEST");
   await sendMessage(chatId, `Доступ открыт! ${WELCOME}`, mainMenu());
 }
