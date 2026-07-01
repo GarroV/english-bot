@@ -21,10 +21,17 @@ export async function handleDownloadPdf(query: TgCallbackQuery): Promise<void> {
     const studentFilename = makeFilename(studentText);
     await sendDocument(chatId, studentFilename, studentBytes, teacherText ? "Студенческая версия" : "Готово!");
 
+    // Teacher version is best-effort: the student PDF is already delivered, so a failure here must
+    // not surface as a PDF error nor skip the persistence/mirror below (sendDocument now throws).
     if (teacherText) {
-      const teacherBytes = await generatePdf(teacherText);
-      const teacherFilename = makeTeacherFilename(teacherText);
-      await sendDocument(chatId, teacherFilename, teacherBytes, "Версия для учителя");
+      try {
+        const teacherBytes = await generatePdf(teacherText);
+        const teacherFilename = makeTeacherFilename(teacherText);
+        await sendDocument(chatId, teacherFilename, teacherBytes, "Версия для учителя");
+      } catch (e) {
+        console.error("teacher PDF send failed:", e);
+        await sendMessage(chatId, "⚠️ Студенческий PDF готов, но версию для учителя отправить не удалось.");
+      }
     }
 
     // Save to DB after successful download — user approved this assignment

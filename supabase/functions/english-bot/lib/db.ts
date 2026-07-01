@@ -57,6 +57,13 @@ export async function registerUser(
   if (error) throw new Error(`registerUser failed: ${error.message}`);
 }
 
+// Remove a user row. Used to roll back a registration that then lost the atomic invite claim,
+// so account access always stays tied to a genuinely consumed invite code.
+export async function deleteUser(telegramId: number): Promise<void> {
+  const { error } = await supabase.from("eb_users").delete().eq("telegram_id", telegramId);
+  if (error) throw new Error(`deleteUser failed: ${error.message}`);
+}
+
 // Fetch the current session row for a Telegram user
 export async function getSession(telegramId: number): Promise<DbSession | null> {
   const { data } = await supabase
