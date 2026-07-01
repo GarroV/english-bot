@@ -28,6 +28,7 @@
 - `20260616142113_folio_signup_invites.sql` — таблица `folio_signup_invites` (M2 self-serve регистрация репетитора) + колонки `signup_invite_id`/`tg_username`/`tg_first_name` в `folio_login_tokens`; service-role only
 - `20260616155229_folio_register_tutor_rpc.sql` / `20260616180730_folio_register_tutor_rpc_fix.sql` — функция `folio_register_tutor()`: атомарное создание репетитора (consume инвайта + workspace + user + owner + auth_method в одной транзакции), execute только service_role
 - `20260616194059_folio_lock_privesc.sql` — **security**: revoke insert/update/delete на `folio_users` + `folio_workspaces` от anon/authenticated + добавлен `WITH CHECK` в их политики. Закрывает privilege-escalation (репетитор мог PATCH-ом выставить себе `role=super_admin`). Эти таблицы пишет только service-role. См. [[project_folio_rls_invariants]]
+- `20260701100000_folio_rls_with_check_auth_invite.sql` — **security (#12)**: тот же lock-privesc паттерн для `folio_auth_methods` + `folio_invite_tokens` (из `folio_init` они были не тронуты): revoke insert/update/delete от anon/authenticated + `WITH CHECK` в их политики. Пишет только service-role.
 
 ---
 
