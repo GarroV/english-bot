@@ -51,6 +51,11 @@ folio/
   из cookie/Accept-Language. **Используем `middleware.ts`, а не `proxy.ts`:** в Next 16
   `proxy.ts` жёстко привязан к Node-рантайму, который Cloudflare Workers (OpenNext) не
   исполняет; `middleware.ts` остаётся на Edge — его Workers поддерживают.
+- `middleware.ts` также ставит **security-заголовки** на все ответы: CSP, `X-Frame-Options: DENY`,
+  `X-Content-Type-Options: nosniff`, `Referrer-Policy`, HSTS, `Permissions-Policy`. CSP держит
+  `script-src 'unsafe-inline'` (nonce-CSP требует `proxy.ts`/Node — на Workers недоступен), жёсткие
+  директивы — `frame-ancestors 'none'` (кликджекинг), `object-src 'none'`, `base-uri`, `connect-src`
+  (только self + Supabase). Ужесточение `script-src` (SRI/nonce) — отдельный issue (#11 хвост), требует preview-деплоя.
 - Тексты — в `messages/{locale}.json`, ключи добавляются сразу на оба языка
 
 ---
@@ -240,8 +245,8 @@ Workspace-scoped CRUD ростера учеников репетитора: сп
 Учёт денег. Роут `/[locale]/billing` (`(app)/billing/`).
 
 - **Леджер** `folio_student_payments` (charge/payment). Остаток = Σcharge − Σpayment.
-- **Автоначисление как инвариант:** charge существует ⇔ занятие `completed`. Зашито в действия статуса занятия (`lib/lessons/actions.ts`): `completeLesson` → `chargeForCompletedLesson` (создаёт charge по ростеру, сумма = `rate_override ?? default_rate`); `reopenLesson`/`cancelLesson` → `reverseChargesForLesson`. Best-effort: если начисление упало, статус всё равно сменился (статус — источник правды, ошибка логируется). Идемпотентно через `unique(lesson_id, student_id)`.
-- **Слой** `lib/billing/`: `amount.ts` (чистая `chargeAmount`), `charges.ts` (create/reverse), `queries.ts` (`listBalances` — JS-агрегация леджера, `listLedgerEntries`), `actions.ts` (`recordPayment`, `deleteEntry`), `schema.ts` (zod оплаты).
+- **Автоначисление как инвариант:** charge существует ⇔ занятие `completed`. С 2026-07-01 — **атомарно через RPC** (`folio_complete_lesson` / `folio_reopen_lesson` / `folio_cancel_lesson`, `SECURITY INVOKER`, `FOR UPDATE`): смена статуса и запись/откат charge — в одной транзакции, либо оба, либо ничего (сбой начисления откатывает статус и возвращает ошибку, а не `ok:true`). `folio_complete_lesson` пересоздаёт charges по **текущим** ставкам (`coalesce(rate_override, default_rate, 0)`) → пересчёт после смены ставки работает. `folio_create_lesson` создаёт занятие+ростер атомарно. Вызовы — из `lib/lessons/actions.ts`. Идемпотентно через `unique(lesson_id, student_id)`.
+- **Слой** `lib/billing/`: `amount.ts` (чистая `chargeAmount` — канон правила ставки, зеркалимый в SQL RPC), `queries.ts` (`listBalances` — JS-агрегация леджера, `listLedgerEntries`), `actions.ts` (`recordPayment`, `deleteEntry`), `schema.ts` (zod оплаты). (`charges.ts` удалён — логика начисления/отката перенесена в атомарные RPC.)
 - **UI** — `BalancesList.tsx`: баланс по ученикам (начислено/оплачено/остаток, долги подсвечены), диалог «Записать оплату», раскрытие леджера с удалением операции (коррекция).
 
 Отложено: UI переопределения ставки в занятии (`rate_override` есть), фильтры по периоду, редактирование суммы charge, валюта. Таблица и RLS — в [[DATA_MODEL]] (`folio_student_payments`).

@@ -48,12 +48,20 @@ export async function registerUser(
   name: string,
   invitedBy?: number
 ): Promise<void> {
-  await supabase.from("eb_users").upsert({
+  const { error } = await supabase.from("eb_users").upsert({
     telegram_id: telegramId,
     username: username ?? null,
     name,
     invited_by: invitedBy ?? null,
   });
+  if (error) throw new Error(`registerUser failed: ${error.message}`);
+}
+
+// Remove a user row. Used to roll back a registration that then lost the atomic invite claim,
+// so account access always stays tied to a genuinely consumed invite code.
+export async function deleteUser(telegramId: number): Promise<void> {
+  const { error } = await supabase.from("eb_users").delete().eq("telegram_id", telegramId);
+  if (error) throw new Error(`deleteUser failed: ${error.message}`);
 }
 
 // Fetch the current session row for a Telegram user
@@ -73,12 +81,13 @@ export async function setSession(
   state: State,
   context: SessionContext = {}
 ): Promise<void> {
-  await supabase.from("eb_sessions").upsert({
+  const { error } = await supabase.from("eb_sessions").upsert({
     telegram_id: telegramId,
     state,
     context,
     updated_at: new Date().toISOString(),
   });
+  if (error) throw new Error(`setSession failed: ${error.message}`);
 }
 
 // Return true if the invite code exists and has not been used yet
@@ -101,12 +110,18 @@ export async function getInviteCreator(code: string): Promise<number | null> {
   return data?.created_by != null ? Number(data.created_by) : null;
 }
 
-// Mark an invite code as used by setting used_by and used_at
-export async function useInvite(code: string, telegramId: number): Promise<void> {
-  await supabase
+// Atomically claim an invite code for a user. The `.is('used_by', null)` guard makes the UPDATE
+// match at most one caller under concurrency (single-statement atomicity), closing the TOCTOU where
+// one code could register several users. Returns true if THIS call won the claim, false if already used.
+export async function useInvite(code: string, telegramId: number): Promise<boolean> {
+  const { data, error } = await supabase
     .from("eb_invitations")
     .update({ used_by: telegramId, used_at: new Date().toISOString() })
-    .eq("code", code.toUpperCase());
+    .eq("code", code.toUpperCase())
+    .is("used_by", null)
+    .select("code");
+  if (error) throw new Error(`useInvite failed: ${error.message}`);
+  return (data?.length ?? 0) > 0;
 }
 
 // Embed the assignment parameters and store the record with its vector in eb_assignments
@@ -121,7 +136,7 @@ export async function saveAssignment(params: {
 }): Promise<void> {
   const embeddingInput = `${params.level} ${params.topic} ${params.ageGroup}`;
   const embedding = await embed(embeddingInput);
-  await supabase.from("eb_assignments").insert({
+  const { error } = await supabase.from("eb_assignments").insert({
     telegram_id: params.telegramId,
     level: params.level,
     topic: params.topic,
@@ -131,6 +146,7 @@ export async function saveAssignment(params: {
     content: params.content,
     embedding,
   });
+  if (error) throw new Error(`saveAssignment failed: ${error.message}`);
 }
 
 // Use pgvector cosine similarity to find an existing assignment that closely matches the given parameters
@@ -165,7 +181,8 @@ export async function getAssignment(id: string): Promise<DbAssignment | null> {
 // Generate a unique invite code and insert it into eb_invitations
 export async function createInviteCode(createdBy: number): Promise<string> {
   const code = generateInviteCode();
-  await supabase.from("eb_invitations").insert({ code, created_by: createdBy });
+  const { error } = await supabase.from("eb_invitations").insert({ code, created_by: createdBy });
+  if (error) throw new Error(`createInviteCode failed: ${error.message}`);
   return code;
 }
 

@@ -2,6 +2,7 @@ import { sendMessage, mainMenu, siteLink, keyboard, editMessageText, answerCallb
 import {
   isAllowed,
   registerUser,
+  deleteUser,
   setSession,
   validateInvite,
   useInvite,
@@ -145,9 +146,21 @@ export async function handleInviteCode(message: TgMessage): Promise<void> {
     return;
   }
 
+  // Register first: eb_invitations.used_by has an FK to eb_users(telegram_id), so the atomic claim
+  // below can only set used_by once the user row exists. The claim (.is('used_by', null)) then
+  // prevents one code from registering several users.
   const invitedBy = await getInviteCreator(code);
   await registerUser(id, username, first_name, invitedBy ?? undefined);
-  await useInvite(code, id);
+
+  const claimed = await useInvite(code, id);
+  if (!claimed) {
+    // Rare race: the code was claimed by someone else between validate and claim. Roll back the
+    // just-created registration so access stays tied to a genuinely consumed code.
+    await deleteUser(id);
+    await sendMessage(chatId, "Этот код только что использовали. Попробуй другой:");
+    return;
+  }
+
   await setSession(id, "WAITING_REQUEST");
   await sendMessage(chatId, `Доступ открыт! ${WELCOME}`, mainMenu());
 }

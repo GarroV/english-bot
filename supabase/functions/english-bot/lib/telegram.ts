@@ -4,12 +4,32 @@ const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
 if (!token) throw new Error("TELEGRAM_BOT_TOKEN env var is not set");
 const BASE = `https://api.telegram.org/bot${token}`;
 
-async function call(method: string, body: object): Promise<void> {
-  await fetch(`${BASE}/${method}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+interface TgApiResponse {
+  ok: boolean;
+  description?: string;
+  error_code?: number;
+  result?: unknown;
+}
+
+// POST to the Telegram Bot API. Never throws on an expected API error — logs method/status/body
+// and returns the parsed response (or null on a network error) so callers can react (e.g. retry).
+async function call(method: string, body: object): Promise<TgApiResponse | null> {
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/${method}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    console.error(`Telegram ${method} network error:`, e);
+    return null;
+  }
+  const json = (await res.json().catch(() => null)) as TgApiResponse | null;
+  if (!res.ok || !json?.ok) {
+    console.error(`Telegram ${method} failed: HTTP ${res.status} — ${json?.description ?? "(no body)"}`);
+  }
+  return json;
 }
 
 export async function sendMessage(
@@ -17,12 +37,13 @@ export async function sendMessage(
   text: string,
   replyMarkup?: InlineKeyboard | ReplyKeyboardMarkup | ReplyKeyboardRemove
 ): Promise<void> {
-  await call("sendMessage", {
-    chat_id: chatId,
-    text,
-    parse_mode: "Markdown",
-    ...(replyMarkup && { reply_markup: replyMarkup }),
-  });
+  const markup = replyMarkup ? { reply_markup: replyMarkup } : {};
+  const res = await call("sendMessage", { chat_id: chatId, text, parse_mode: "Markdown", ...markup });
+  // splitIfLong can slice a Markdown entity pair across chunks → "can't parse entities" (HTTP 400).
+  // Retry the chunk as plain text so assignment content (and its keyboard) is never silently lost.
+  if (res && !res.ok && res.description?.includes("can't parse entities")) {
+    await call("sendMessage", { chat_id: chatId, text, ...markup });
+  }
 }
 
 export async function editMessageText(
@@ -57,9 +78,21 @@ export async function sendDocument(
 ): Promise<void> {
   const form = new FormData();
   form.append("chat_id", String(chatId));
-  form.append("document", new Blob([bytes]), filename);
+  // bytes.slice() yields a fresh ArrayBuffer-backed copy (not SharedArrayBuffer), satisfying BlobPart.
+  form.append("document", new Blob([bytes.slice()]), filename);
   if (caption) form.append("caption", caption);
-  await fetch(`${BASE}/sendDocument`, { method: "POST", body: form });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/sendDocument`, { method: "POST", body: form });
+  } catch (e) {
+    console.error("Telegram sendDocument network error:", e);
+    throw e;
+  }
+  if (!res.ok) {
+    const desc = await res.text().catch(() => "(no body)");
+    console.error(`Telegram sendDocument failed: HTTP ${res.status} — ${desc}`);
+    throw new Error(`sendDocument failed: HTTP ${res.status}`);
+  }
 }
 
 // Register bot commands that appear in the Telegram side menu

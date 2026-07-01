@@ -4,6 +4,18 @@
 
 ---
 
+## 2026-07-01
+
+### fix: HIGH-кластер бота — fail-closed webhook, тихие сбои Telegram/БД, атомарный инвайт, красный type-check
+
+Закрыт кластер HIGH из аудита 2026-06-30 (Issues #3, #5, #6, #7).
+
+- **#7 (деплой-гейт):** `deno check` снова зелёный. `edit.ts` — ранний возврат при отсутствии активного задания до платного `applyEdit` (снят TS18047 `session possibly null`); `telegram.ts:60` — `new Blob([bytes.slice()])` (снят TS2322 `Uint8Array`→`BlobPart`).
+- **#3 (security, fail-closed webhook):** `TELEGRAM_WEBHOOK_SECRET` теперь **обязателен** — `index.ts` бросает на импорте при его отсутствии (как `TELEGRAM_BOT_TOKEN`) и всегда сверяет заголовок. Убрана fail-open ветка, где незаданный секрет делал `from.id` спуфящимся → кросс-воркспейс запись в Folio. **Требует активации до/вместе с деплоем:** секрет не задан в проде — сначала перерегистрировать webhook с `secret_token`, затем `supabase secrets set TELEGRAM_WEBHOOK_SECRET=…`, потом деплой.
+- **#5 (тихая потеря заданий):** `call()`/`sendDocument()` в `telegram.ts` проверяют `res.ok`, логируют method/status/description и ловят сетевые сбои. `sendMessage` при Markdown parse-error (`can't parse entities` — рвётся на границе чанка `splitIfLong`) ретраит тот же чанк plain-text'ом, сохраняя клавиатуру — контент больше не теряется молча. Markdown сохранён для меню/справки. Добавлен `telegram.test.ts` (4 теста на ретрай).
+- **#6 (обход одноразовости инвайта):** write-функции `db.ts` (`registerUser`/`setSession`/`useInvite`/`saveAssignment`/`createInviteCode`) проверяют `{ error }` и бросают. `useInvite` — атомарный claim (`.is('used_by', null)` + `.select()`), возвращает `boolean`. `start.ts` регистрирует юзера, **затем** атомарно клеймит код (`eb_invitations.used_by` имеет FK на `eb_users` — `used_by` можно проставить только после создания строки юзера); при проигрыше гонки регистрация откатывается (`deleteUser`), так что доступ всегда привязан к реально израсходованному коду. Атомарный guard закрывает TOCTOU (один код ≠ несколько юзеров).
+- **Пост-ревью правки (adversarial review PR #26):** (1) исправлен CRITICAL — первоначальный порядок «claim до register» ломал FK `used_by`→`eb_users` и крашил онбординг каждого нового юзера; возвращён register-first. (2) в `pdf_download.ts` отправка учительского PDF обёрнута в свой try/catch: `sendDocument` теперь бросает, и её сбой ПОСЛЕ доставленного студенческого PDF не должен давать ложную «ошибку PDF» и пропускать `saveAssignment`/Folio-mirror.
+
 ## 2026-06-30
 
 ### docs: синхронизация документации с кодом (без изменений кода)

@@ -18,7 +18,12 @@ export async function handleApplyEdit(message: TgMessage): Promise<void> {
   const editRequest = message.text?.trim() ?? "";
 
   const session = await getSession(userId);
-  const original = session?.context.current_assignment ?? "";
+  const original = session?.context.current_assignment;
+  // No active assignment to edit — bail out before the paid applyEdit call.
+  if (!session || !original) {
+    await sendMessage(chatId, "Нечего править — сначала создай задание («🆕 Новое задание»).");
+    return;
+  }
 
   await sendMessage(chatId, "Вношу правки...");
 

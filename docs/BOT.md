@@ -147,7 +147,7 @@ wiz_age_*    → set ageGroup → генерация сразу → POST_GENERAT
 
 **Кэш**: embedding = `level + topic + ageGroup` через `gte-small` (Supabase AI). Задание попадает в `eb_assignments` при скачивании PDF (пользователь одобрил) и доступно через `/history`. Инфраструктура семантического поиска (`match_assignments` RPC — косинус, порог 0.85, фильтр `module_type`; `findSimilarAssignment`) присутствует, но в текущем визард-флоу **не вызывается** — кэш-оффер «использовать похожее / сгенерировать новое» отключён (мёртвый путь, см. машину состояний и `BACKLOG.md`).
 
-**Мост бот→веб**: при скачивании PDF задание дополнительно зеркалится в `folio_homework_templates` репетитора (`source='bot'`), если Telegram связан с Folio-репетитором (через `folio_auth_methods`). Best-effort: сбой записи в Folio логируется и не ломает выдачу PDF. Воркспейс берётся из верифицированной Telegram-связки, не из тела запроса; аутентичность вебхука — `TELEGRAM_WEBHOOK_SECRET`.
+**Мост бот→веб**: при скачивании PDF задание дополнительно зеркалится в `folio_homework_templates` репетитора (`source='bot'`), если Telegram связан с Folio-репетитором (через `folio_auth_methods`). Best-effort: сбой записи в Folio логируется и не ломает выдачу PDF. Воркспейс берётся из верифицированной Telegram-связки, не из тела запроса; аутентичность вебхука обязательна (`TELEGRAM_WEBHOOK_SECRET`, fail-closed).
 
 ---
 
@@ -174,7 +174,7 @@ wiz_age_*    → set ageGroup → генерация сразу → POST_GENERAT
 | `SUPABASE_URL` | URL проекта (auto-injected) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Ключ Supabase (auto-injected) |
 | `FOLIO_WEB_URL` | (опц.) URL веб-кабинета Folio для кнопки «Открыть Folio»; дефолт — прод-URL |
-| `TELEGRAM_WEBHOOK_SECRET` | (security) секрет для проверки `X-Telegram-Bot-Api-Secret-Token`; должен совпадать с `secret_token` в setWebhook. Без него вебхук не аутентифицирован (fail-open + warn в логах) |
+| `TELEGRAM_WEBHOOK_SECRET` | (security, **обязателен**) секрет для проверки `X-Telegram-Bot-Api-Secret-Token`; должен совпадать с `secret_token` в setWebhook. **Fail-closed**: без него функция не стартует (бросает на импорте, как `TELEGRAM_BOT_TOKEN`) — задать секрет и перерегистрировать webhook до деплоя |
 
 ---
 
