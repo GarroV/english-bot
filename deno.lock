@@ -3,6 +3,7 @@
   "specifiers": {
     "jsr:@std/assert@*": "1.0.19",
     "jsr:@std/internal@^1.0.12": "1.0.13",
+    "jsr:@std/yaml@*": "1.1.2",
     "npm:@anthropic-ai/sdk@*": "0.104.1",
     "npm:@pdf-lib/fontkit@*": "1.1.1",
     "npm:@supabase/supabase-js@2": "2.110.0",
@@ -17,6 +18,9 @@
     },
     "@std/internal@1.0.13": {
       "integrity": "2f9546691d4ac2d32859c82dff284aaeac980ddeca38430d07941e7e288725c0"
+    },
+    "@std/yaml@1.1.2": {
+      "integrity": "de612653c036749ba2044165e316f52412b0f0698afffb7ee80b5331d6d2abae"
     }
   },
   "npm": {

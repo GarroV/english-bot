@@ -1,0 +1,52 @@
+name: CI
+
+# Type-check + test gate before merge/deploy (audit #21). Both projects live in one repo:
+# the Telegram bot (Deno / Supabase Edge Function) and Folio (Next.js). A red check here is
+# exactly the class of bug #7 was — a broken `deno check` that reached main unnoticed.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bot:
+    name: bot (deno check + test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check
+        run: deno check supabase/functions/english-bot/index.ts supabase/functions/english-bot/handlers/*.ts supabase/functions/english-bot/lib/*.ts
+      - name: Test
+        run: deno test supabase/functions/english-bot/lib/ --allow-env
+
+  folio:
+    name: folio (tsc + vitest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Folio
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: Folio/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Type-check
+        run: npx tsc --noEmit
+      - name: Test
+        run: npm test
