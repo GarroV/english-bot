@@ -21,10 +21,17 @@ export async function handleDownloadPdf(query: TgCallbackQuery): Promise<void> {
     const studentFilename = makeFilename(studentText);
     await sendDocument(chatId, studentFilename, studentBytes, teacherText ? "Студенческая версия" : "Готово!");
 
+    // Teacher version is best-effort: the student PDF is already delivered, so a failure here must
+    // not surface as a PDF error nor skip the persistence/mirror below (sendDocument now throws).
     if (teacherText) {
-      const teacherBytes = await generatePdf(teacherText);
-      const teacherFilename = makeTeacherFilename(teacherText);
-      await sendDocument(chatId, teacherFilename, teacherBytes, "Версия для учителя");
+      try {
+        const teacherBytes = await generatePdf(teacherText);
+        const teacherFilename = makeTeacherFilename(teacherText);
+        await sendDocument(chatId, teacherFilename, teacherBytes, "Версия для учителя");
+      } catch (e) {
+        console.error("teacher PDF send failed:", e);
+        await sendMessage(chatId, "⚠️ Студенческий PDF готов, но версию для учителя отправить не удалось.");
+      }
     }
 
     // Save to DB after successful download — user approved this assignment
@@ -33,15 +40,21 @@ export async function handleDownloadPdf(query: TgCallbackQuery): Promise<void> {
     const moduleType = session?.context.module_type ?? "READING_MODULE";
     const topic = extractTopic(studentText);
 
-    await saveAssignment({
-      telegramId: userId,
-      level,
-      topic,
-      ageGroup,
-      moduleType,
-      requestText: topic,
-      content: studentText,
-    });
+    // Best-effort persistence: the PDF is already delivered, so a cache-write failure must not
+    // surface as a PDF error. Isolate it like the Folio mirror below.
+    try {
+      await saveAssignment({
+        telegramId: userId,
+        level,
+        topic,
+        ageGroup,
+        moduleType,
+        requestText: topic,
+        content: studentText,
+      });
+    } catch (e) {
+      console.error("saveAssignment failed:", e);
+    }
 
     // Bridge: mirror into the tutor's Folio library (source='bot') so it is visible/assignable
     // in the web. Best-effort and isolated — a Folio write must never break PDF delivery.
