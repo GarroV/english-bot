@@ -1,6 +1,6 @@
 import { sendMessage, answerCallbackQuery, keyboard } from "../lib/telegram.ts";
-import { setSession } from "../lib/db.ts";
-import { generateModuleContent, generateTeacherGuide } from "../lib/claude.ts";
+import { setSession, logLlmUsage } from "../lib/db.ts";
+import { generateModuleContent, generateTeacherGuide, MODEL } from "../lib/claude.ts";
 import { splitIfLong } from "../lib/utils.ts";
 import type { TgCallbackQuery, ModuleType, ClarifyingParams } from "../lib/types.ts";
 
@@ -25,7 +25,8 @@ export async function generateAndSend(params: {
   const { userId, chatId, userInput, moduleType } = params;
   const clrParams = params.params;
 
-  const studentContent = await generateModuleContent(moduleType, clrParams, userInput);
+  const studentContent = await generateModuleContent(moduleType, clrParams, userInput,
+    (u) => logLlmUsage({ source: "bot", refId: String(userId), action: "module", model: MODEL, usage: u }));
 
   // Teacher guide: only for content modules, only when requested
   let teacherContent: string | undefined;
@@ -33,7 +34,8 @@ export async function generateAndSend(params: {
     clrParams.version === "teacher" &&
     (moduleType === "READING_MODULE" || moduleType === "VOCABULARY_MODULE")
   ) {
-    teacherContent = await generateTeacherGuide(studentContent);
+    teacherContent = await generateTeacherGuide(studentContent,
+      (u) => logLlmUsage({ source: "bot", refId: String(userId), action: "teacher_guide", model: MODEL, usage: u }));
   }
 
   await setSession(userId, "POST_GENERATION", {

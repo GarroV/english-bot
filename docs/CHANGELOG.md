@@ -6,6 +6,12 @@
 
 ## 2026-07-02
 
+### feat: учёт расхода LLM — захват usage + /usage в админке (#23 Фаза 1)
+
+Фундамент счётчика генераций. Движок `_shared/generate.ts` теперь опционально репортит токены из ответа Anthropic через `onUsage`-колбэк (обратно совместимо — `folio-generate` и `claude.ts` не тронуты). Бот пишет расход по каждому вызову (`module` / `teacher_guide` / `edit`) в новую таблицу `eb_llm_usage` (`ref_id` = telegram_id) через `logLlmUsage` (не бросает — учёт не ломает генерацию; колбэк awaited до возврата, чтобы запись успела в рамках запроса). Новая admin-команда `/usage` — сводка за текущий месяц по пользователям (генераций / токенов / ~$), стоимость считается на чтении через `usageCostUsd` (`lib/pricing.ts`, Sonnet-4-6 $3/$15 за 1M, cache read/write учтены). Таблица под RLS без политик (только service-role). Миграция `20260702130000_eb_llm_usage`.
+
+Фаза 2 (квоты/кредиты) и учёт Folio-генерации (нужен проброс воркспейса в `folio-generate` + admin-UI) — отложены. deno check (бот + folio-generate + folio-homework-pdf) 0, deno test — 38 passed.
+
 ### chore: техдолг бота — удалён мёртвый кэш-оффер, дедуп, fail-fast ADMIN_ID
 
 Закрыты техдолговые Issues #14 и #15 (аудит 2026-06-30).

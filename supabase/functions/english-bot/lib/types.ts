@@ -21,6 +21,25 @@ export interface ClarifyingParams {
   targetVerb?: string; // e.g. "must / have to"
 }
 
+// Token usage from an Anthropic response — metered per LLM call (#23 usage counter).
+export interface LlmUsage {
+  input_tokens: number;
+  output_tokens: number;
+  cache_creation_input_tokens: number;
+  cache_read_input_tokens: number;
+}
+
+// One eb_llm_usage row (subset read for the /usage readout).
+export interface DbLlmUsage {
+  ref_id: string;
+  action: string;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  cache_creation_input_tokens: number;
+  cache_read_input_tokens: number;
+}
+
 export type State =
   | "REGISTERING"
   | "WAITING_REQUEST"
