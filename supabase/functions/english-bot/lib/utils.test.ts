@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert";
-import { makeFilename, makeTeacherFilename, splitIfLong, normalizeRequest, generateInviteCode, extractTopic, timingSafeEqual } from "./utils.ts";
+import { makeFilename, makeTeacherFilename, splitIfLong, generateInviteCode, extractTopic, timingSafeEqual } from "./utils.ts";
 
 Deno.test("makeFilename: extracts level and topic", () => {
   const text = "Level: A2 · Topic: Food and Restaurants · Age group: Teenager\n\nSome text";
@@ -29,13 +29,6 @@ Deno.test("splitIfLong: splits into multiple chunks when over limit", () => {
   assertEquals(parts.length > 1, true);
   assertEquals(parts.join(""), text);
   assertEquals(parts.every((p) => p.length <= 4096), true);
-});
-
-Deno.test("normalizeRequest: lowercases and removes punctuation", () => {
-  assertEquals(
-    normalizeRequest("A2, Еда и Рестораны, Подросток!"),
-    "a2 еда и рестораны подросток"
-  );
 });
 
 Deno.test("generateInviteCode: returns 6-char uppercase alphanumeric", () => {

@@ -53,10 +53,4 @@
 
 ## Технический долг
 
-- **Мёртвый путь кэш-оффера** — `findSimilarAssignment` (`db.ts`), состояние `CACHE_OFFER` и `WAITING_TOPIC` (`types.ts`), callback'и `use_cached`/`generate_new` с хендлерами `handleUseCached`/`handleGenerateNew` (`generate.ts`) и их роуты в `index.ts` — недостижимы в текущем визард-флоу (кнопки кэш-оффера нигде не создаются, `findSimilarAssignment` не вызывается). Решить: либо вернуть кэш-оффер в визард, либо удалить весь путь целиком и привести `BOT.md` в соответствие (рекомендуется удалить — YAGNI).
-- `friendlyError` дублируется в `clarify.ts` и `generate.ts` — вынести в общий `lib/` модуль
-- `MODULE_LABELS` дублируется в `clarify.ts` и `history.ts` с уже разъехавшимися значениями («Translation (тексты)» vs «Перевод (тексты)») — единый источник в `lib/types.ts`
-- `ADMIN_USER_ID` читается в нескольких файлах (`start.ts`, `admin.ts`) через `Number(...!)` (NaN тихо отключает admin-гейт) — вынести в общую константу с fail-fast
-- Висящий дубль RPC `match_assignments`: старая 3-арг версия без фильтра `module_type` (`20260513000000_init.sql`) не удалена — актуальная 4-арг в `20260525000001_match_assignments_module_filter.sql`. Дропнуть старую миграцией (`DROP FUNCTION match_assignments(vector(384),float,int)`)
-- `deno.json` task `test` гоняет только `utils.test.ts` — `module_detect.test.ts` и `folio_login.test.ts` молча пропускаются; расширить на каталог `lib/`
-- Мёртвые экспорты: `removeKeyboard` (`telegram.ts`), `normalizeRequest` (`utils.ts`) — удалить
+_Пусто. Техдолг из аудита 2026-06-30 закрыт (2026-07-02, Issues #14/#15): мёртвый кэш-оффер удалён целиком, `friendlyError`/`MODULE_LABELS`/`ADMIN_ID` вынесены в общие модули (`errors.ts`/`types.ts`/`config.ts`, последний — fail-fast), дубль RPC `match_assignments` дропнут миграцией, `deno.json` test-таск расширен на `lib/`, мёртвые экспорты (`removeKeyboard`, `normalizeRequest`) удалены._

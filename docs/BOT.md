@@ -23,9 +23,11 @@ supabase/functions/english-bot/
 │   ├── types.ts                — все TypeScript-типы (State, ModuleType, TgUpdate и др.)
 │   ├── telegram.ts             — обёртки Telegram API (sendMessage, editMessageText, keyboard, mainMenu)
 │   ├── claude.ts               — тонкий ре-экспорт движка генерации из `_shared/generate.ts` (см. примечание ниже)
+│   ├── config.ts               — конфиг из env: ADMIN_ID (fail-fast при отсутствии/невалидном ADMIN_USER_ID)
+│   ├── errors.ts               — friendlyError(): маппинг ошибок LLM в короткое сообщение пользователю
 │   ├── db.ts                   — Supabase-запросы (сессии, пользователи, задания, инвайты; мост в Folio: resolveFolioWorkspace, saveFolioTemplateFromBot)
 │   ├── pdf.ts                  — генерация PDF через pdf-lib (A4, PT Sans, поддержка кириллицы)
-│   ├── utils.ts                — makeFilename, makeTeacherFilename, splitIfLong, generateInviteCode, normalizeRequest, extractTopic, timingSafeEqual
+│   ├── utils.ts                — makeFilename, makeTeacherFilename, splitIfLong, generateInviteCode, extractTopic, timingSafeEqual
 │   ├── module_detect.ts        — detectModule(), extractParams(), extractVerb() из свободного текста пользователя
 │   ├── folio_login.ts          — parseLoginPayload(): разбор deep-link `folio_login_<token>` для входа в Folio
 │   ├── utils.test.ts           — тесты utils
@@ -34,8 +36,8 @@ supabase/functions/english-bot/
 └── handlers/
     ├── start.ts                — /start (регистрация + инвайт-код), /help, /new; на payload `folio_login_` шлёт запрос-подтверждение (кнопки); handleFolioConfirm/handleFolioCancel → confirmFolioLogin (#4)
     ├── request.ts              — WAITING_REQUEST: detectModule/extractParams → CLARIFYING (старт визарда); handleChangeRequest
-    ├── clarify.ts              — визард параметров: buildWizardMessage, handleWizardStep (wiz_*); handleTopicInput, handleVerbInput
-    ├── generate.ts             — generateAndSend, sendAssignment, handleNewAssignment; handleUseCached/handleGenerateNew (кэш-оффер — мёртвый путь, см. ниже)
+    ├── clarify.ts              — визард параметров: buildWizardMessage, handleWizardStep (wiz_*); handleVerbInput
+    ├── generate.ts             — generateAndSend, sendAssignment, handleNewAssignment
     ├── edit.ts                 — EDITING: применить правки через Claude
     ├── pdf_download.ts         — отправка PDF(ов) + сохранение в кэш eb_assignments + зеркалирование в библиотеку Folio (мост бот→веб)
     ├── history.ts              — /history: список последних 5 заданий + повторное скачивание PDF
@@ -59,7 +61,7 @@ POST_GENERATION  — задание показано, ждёт действия 
 EDITING          — ждёт текст с правками к заданию
 ```
 
-> **Мёртвые состояния:** `WAITING_TOPIC` и `CACHE_OFFER` объявлены в типе `State`, но в текущем флоу недостижимы — как и callback'и `use_cached`/`generate_new` (хендлеры `handleUseCached`/`handleGenerateNew` существуют и роутятся в `index.ts`, но кнопки кэш-оффера нигде не создаются, а `findSimilarAssignment` не вызывается). Это мёртвый путь, помеченный к удалению — см. `BACKLOG.md`. Кэш `eb_assignments` пишется при скачивании PDF, но обратно в диалог не предлагается.
+> **MODULE_LABELS** (человекочитаемые имена типов) — единый источник в `lib/types.ts`, общий для визарда и истории. Путь «кэш-оффер» (состояния `WAITING_TOPIC`/`CACHE_OFFER`, callback'и `use_cached`/`generate_new`, `findSimilarAssignment`) удалён как неиспользуемый. Кэш `eb_assignments` по-прежнему пишется при скачивании PDF (для `/history`), но обратно в диалог не предлагается.
 
 Переходы:
 
@@ -145,7 +147,7 @@ wiz_age_*    → set ageGroup → генерация сразу → POST_GENERAT
 | `folio_signup_invites` | Signup-инвайты Folio (общая с Folio); бот **читает** при подтверждении инвайт-токена, чтобы разрешить регистрацию нового репетитора |
 | `folio_homework_templates` | Библиотека шаблонов Folio (общая с Folio); бот **пишет** (`source='bot'`) сгенерированное задание в воркспейс репетитора при скачивании PDF — мост бот→веб (`resolveFolioWorkspace` + `saveFolioTemplateFromBot`) |
 
-**Кэш**: embedding = `level + topic + ageGroup` через `gte-small` (Supabase AI). Задание попадает в `eb_assignments` при скачивании PDF (пользователь одобрил) и доступно через `/history`. Инфраструктура семантического поиска (`match_assignments` RPC — косинус, порог 0.85, фильтр `module_type`; `findSimilarAssignment`) присутствует, но в текущем визард-флоу **не вызывается** — кэш-оффер «использовать похожее / сгенерировать новое» отключён (мёртвый путь, см. машину состояний и `BACKLOG.md`).
+**Кэш/история**: при скачивании PDF задание сохраняется в `eb_assignments` (embedding = `level + topic + ageGroup` через `gte-small`, Supabase AI) и доступно через `/history`. Семантический поиск похожего задания (`match_assignments` RPC + `findSimilarAssignment`) и кэш-оффер удалены как неиспользуемые (миграция `20260702120000_drop_match_assignments`); embedding-колонка пишется, но для поиска сейчас не используется.
 
 **Мост бот→веб**: при скачивании PDF задание дополнительно зеркалится в `folio_homework_templates` репетитора (`source='bot'`), если Telegram связан с Folio-репетитором (через `folio_auth_methods`). Best-effort: сбой записи в Folio логируется и не ломает выдачу PDF. Воркспейс берётся из верифицированной Telegram-связки, не из тела запроса; аутентичность вебхука обязательна (`TELEGRAM_WEBHOOK_SECRET`, fail-closed).
 
@@ -208,6 +210,6 @@ supabase functions logs english-bot --tail
 ## Известные особенности
 
 - `eb_sessions` не имеет FK на `eb_users` намеренно: неавторизованные пользователи тоже получают сессию `REGISTERING`
-- Embedding может вернуть `null` если Supabase AI недоступен — в этом случае кэш пропускается, генерируется новое задание
+- Embedding может вернуть `null` если Supabase AI недоступен — тогда `eb_assignments.embedding` пишется как `null` (задание всё равно сохраняется; поиск по вектору сейчас не используется)
 - После редактирования (`EDITING`) teacher content сбрасывается: кнопка PDF не показывает "студент + учитель"
 - Шрифт PT Sans кешируется в памяти инстанса Edge Function (`cachedFontBytes`)

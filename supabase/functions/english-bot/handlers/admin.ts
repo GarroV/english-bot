@@ -1,8 +1,7 @@
 import { sendMessage, setMyCommands } from "../lib/telegram.ts";
 import { createInviteCode, listUsers } from "../lib/db.ts";
+import { ADMIN_ID } from "../lib/config.ts";
 import type { TgMessage } from "../lib/types.ts";
-
-const ADMIN_ID = Number(Deno.env.get("ADMIN_USER_ID")!);
 
 function isAdmin(userId: number): boolean {
   return userId === ADMIN_ID;

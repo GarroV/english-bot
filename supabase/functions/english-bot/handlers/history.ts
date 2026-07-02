@@ -2,15 +2,8 @@ import { answerCallbackQuery, sendDocument, sendMessage, keyboard } from "../lib
 import { getUserAssignments, getAssignment } from "../lib/db.ts";
 import { generatePdf } from "../lib/pdf.ts";
 import { makeFilename } from "../lib/utils.ts";
-import type { TgMessage, TgCallbackQuery } from "../lib/types.ts";
-
-const MODULE_LABELS: Record<string, string> = {
-  READING_MODULE: "Reading",
-  VOCABULARY_MODULE: "Vocabulary",
-  TRANSLATION_TEXTS: "Перевод (тексты)",
-  TRANSLATION_SENTENCES: "Перевод (пред.)",
-  VERB_SENTENCES: "Глаголы (пред.)",
-};
+import { MODULE_LABELS } from "../lib/types.ts";
+import type { TgMessage, TgCallbackQuery, ModuleType } from "../lib/types.ts";
 
 // Format ISO date as DD.MM.YY
 function formatDate(iso: string): string {
@@ -34,7 +27,7 @@ export async function handleHistory(message: TgMessage): Promise<void> {
   const rows: [string, string][][] = [];
 
   assignments.forEach((a, i) => {
-    const typeLabel = MODULE_LABELS[a.module_type] ?? a.module_type;
+    const typeLabel = MODULE_LABELS[a.module_type as ModuleType] ?? a.module_type;
     const date = formatDate(a.created_at);
     text += `${i + 1}. ${typeLabel} · ${a.level ?? "?"} · ${date}\n`;
     if (a.topic) text += `   _${a.topic}_\n`;

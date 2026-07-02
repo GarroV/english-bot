@@ -10,9 +10,8 @@ import {
   confirmFolioLogin,
 } from "../lib/db.ts";
 import { parseLoginPayload } from "../lib/folio_login.ts";
+import { ADMIN_ID } from "../lib/config.ts";
 import type { TgMessage, TgCallbackQuery } from "../lib/types.ts";
-
-const ADMIN_ID = Number(Deno.env.get("ADMIN_USER_ID")!);
 
 // Follow-up message with an inline button that opens the Folio web app.
 // Sent as a separate message because the persistent reply keyboard (mainMenu) and an

@@ -121,12 +121,7 @@ export function mainMenu(): ReplyKeyboardMarkup {
   };
 }
 
-// Removes the persistent reply keyboard from the user's screen
-export function removeKeyboard(): ReplyKeyboardRemove {
-  return { remove_keyboard: true };
-}
-
-// keyboard([["✅ Use this", "use_cached"], ["🔄 New", "generate_new"]])
+// keyboard([[["✏️ Поправить", "edit_assignment"], ["🆕 Новое", "new_assignment"]]])
 // Each inner array is one row of buttons.
 export function keyboard(rows: [string, string][][]): InlineKeyboard {
   return {

@@ -4,6 +4,17 @@
 
 ---
 
+## 2026-07-02
+
+### chore: техдолг бота — удалён мёртвый кэш-оффер, дедуп, fail-fast ADMIN_ID
+
+Закрыты техдолговые Issues #14 и #15 (аудит 2026-06-30).
+
+- **#14 (мёртвый кэш-оффер):** удалён неиспользуемый путь целиком — `findSimilarAssignment` (`db.ts`), состояния `WAITING_TOPIC`/`CACHE_OFFER` (`types.ts`), callback'и `use_cached`/`generate_new` с хендлерами `handleUseCached`/`handleGenerateNew` (`generate.ts`), `handleTopicInput` (`clarify.ts`) и их роуты (`index.ts`). Дубль RPC `match_assignments` (обе перегрузки — 3-арг из init и 4-арг с фильтром) дропнут миграцией `20260702120000_drop_match_assignments` — применяется после деплоя бота (код-без-вызова уже в проде, two-step safe).
+- **#15 (дедуп + латентные баги):** `friendlyError` → общий `lib/errors.ts` (был продублирован в `clarify.ts`/`generate.ts`); `MODULE_LABELS` → канонический в `lib/types.ts` (значения разъехались: «Translation (тексты)» vs «Перевод (тексты)», «предложения» vs «пред.»); `ADMIN_ID` → `lib/config.ts` с **fail-fast** — прежний `Number(Deno.env.get("ADMIN_USER_ID")!)` при незаданном секрете давал `NaN`, а `id === NaN` всегда `false` → admin-гейт тихо запирался для всех; `deno.json` test-таск теперь гоняет весь `lib/` (раньше — только `utils.test.ts`, `module_detect`/`folio_login`/`telegram` молча пропускались); удалены мёртвые экспорты `removeKeyboard` (`telegram.ts`), `normalizeRequest` (`utils.ts`) + её тест.
+
+`deno check` 0, `deno test lib/` — 34 passed.
+
 ## 2026-07-01
 
 ### fix: HIGH-кластер бота — fail-closed webhook, тихие сбои Telegram/БД, атомарный инвайт, красный type-check

@@ -1,63 +1,8 @@
-import {
-  sendMessage,
-  editMessageText,
-  answerCallbackQuery,
-  keyboard,
-} from "../lib/telegram.ts";
-import {
-  getSession,
-  setSession,
-  getAssignment,
-} from "../lib/db.ts";
+import { sendMessage, answerCallbackQuery, keyboard } from "../lib/telegram.ts";
+import { setSession } from "../lib/db.ts";
 import { generateModuleContent, generateTeacherGuide } from "../lib/claude.ts";
 import { splitIfLong } from "../lib/utils.ts";
 import type { TgCallbackQuery, ModuleType, ClarifyingParams } from "../lib/types.ts";
-
-// Handle "✅ Использовать это" button: display cached assignment from DB
-export async function handleUseCached(query: TgCallbackQuery): Promise<void> {
-  await answerCallbackQuery(query.id);
-
-  const userId = query.from.id;
-  const chatId = query.message.chat.id;
-  const session = await getSession(userId);
-  const assignment = await getAssignment(session?.context.cached_assignment_id ?? "");
-
-  if (!assignment) {
-    await sendMessage(chatId, "Не нашёл задание. Генерирую новое...");
-    const userInput = session?.context.last_request ?? "";
-    const moduleType = (session?.context.module_type ?? "READING_MODULE") as ModuleType;
-    const params: ClarifyingParams = session?.context.params ?? {};
-    await generateAndSend({ userId, chatId, userInput, moduleType, params });
-    return;
-  }
-
-  await setSession(userId, "POST_GENERATION", {
-    current_assignment: assignment.content,
-    module_type: session?.context.module_type,
-    params: session?.context.params,
-  });
-  await sendAssignment(chatId, assignment.content);
-}
-
-// Handle "🔄 Сгенерировать новое" button: generate fresh, bypassing the cache
-export async function handleGenerateNew(query: TgCallbackQuery): Promise<void> {
-  await answerCallbackQuery(query.id);
-
-  const userId = query.from.id;
-  const chatId = query.message.chat.id;
-  const session = await getSession(userId);
-  const userInput = session?.context.last_request ?? "";
-  const moduleType = (session?.context.module_type ?? "READING_MODULE") as ModuleType;
-  const params: ClarifyingParams = session?.context.params ?? {};
-
-  await sendMessage(chatId, "Генерирую задание, подожди 10–30 секунд...");
-  try {
-    await generateAndSend({ userId, chatId, userInput, moduleType, params });
-  } catch (e) {
-    console.error("generateAndSend failed:", e);
-    await sendMessage(chatId, friendlyError(e));
-  }
-}
 
 // Handle "🆕 Новое задание" button: reset state and prompt for a new request
 export async function handleNewAssignment(query: TgCallbackQuery): Promise<void> {
@@ -120,18 +65,4 @@ async function sendAssignment(
       await sendMessage(chatId, parts[i]);
     }
   }
-}
-
-function friendlyError(e: unknown): string {
-  const msg = String(e);
-  if (msg.includes("credit balance") || msg.includes("too low")) {
-    return "На счёте закончились кредиты Anthropic. Пополни баланс и попробуй снова.";
-  }
-  if (msg.includes("rate_limit") || msg.includes("429")) {
-    return "Слишком много запросов. Подожди минуту и попробуй снова.";
-  }
-  if (msg.includes("401") || msg.includes("authentication")) {
-    return "Ошибка авторизации API. Обратись к администратору.";
-  }
-  return "Что-то пошло не так. Попробуй ещё раз через минуту.";
 }

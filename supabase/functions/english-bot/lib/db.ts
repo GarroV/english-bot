@@ -149,25 +149,6 @@ export async function saveAssignment(params: {
   if (error) throw new Error(`saveAssignment failed: ${error.message}`);
 }
 
-// Use pgvector cosine similarity to find an existing assignment that closely matches the given parameters
-export async function findSimilarAssignment(
-  level: string,
-  topic: string,
-  ageGroup: string,
-  moduleType: string
-): Promise<DbAssignment | null> {
-  const embeddingInput = `${level} ${topic} ${ageGroup}`;
-  const embedding = await embed(embeddingInput);
-  if (!embedding) return null; // AI unavailable — skip cache, generate fresh
-  const { data } = await supabase.rpc("match_assignments", {
-    query_embedding: embedding,
-    match_threshold: 0.85,
-    match_count: 1,
-    filter_module_type: moduleType,
-  });
-  return (data?.[0] as DbAssignment) ?? null;
-}
-
 // Fetch a single assignment row by its UUID
 export async function getAssignment(id: string): Promise<DbAssignment | null> {
   const { data } = await supabase
