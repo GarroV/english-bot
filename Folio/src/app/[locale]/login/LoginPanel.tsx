@@ -24,6 +24,10 @@ export function LoginPanel({ labels, inviteToken, redirectTo }: {
   // The poll loop reschedules itself through this ref so it never references its own
   // binding before declaration (react-hooks/immutability) — kept in sync below.
   const pollRef = useRef<(token: string) => void>(() => {});
+  // The script-opened tab that took the user to Telegram. On success we close it so focus returns
+  // to this (original) tab, which by then has minted the session and is navigating (#36). Guarded:
+  // null on mobile (deep-link opens the app) or if the popup was blocked — .close() is then a no-op.
+  const tgWindow = useRef<Window | null>(null);
 
   // Stop the polling loop and drop any pending timer when the panel unmounts.
   useEffect(() => {
@@ -51,7 +55,7 @@ export function LoginPanel({ labels, inviteToken, redirectTo }: {
           body: JSON.stringify({ token }),
         });
         if (cancelled.current) return;
-        if (s.ok) { router.push(redirectTo ?? "/dashboard"); return; }
+        if (s.ok) { tgWindow.current?.close(); router.push(redirectTo ?? "/dashboard"); return; }
         setPhase("error");
         return;
       }
@@ -76,7 +80,7 @@ export function LoginPanel({ labels, inviteToken, redirectTo }: {
       if (!res.ok) { setPhase("error"); return; }
       const { token, deepLink } = await res.json();
       if (!token || !deepLink) { setPhase("error"); return; }
-      window.open(deepLink, "_blank");
+      tgWindow.current = window.open(deepLink, "_blank");
       poll(token);
     } catch {
       setPhase("error");
