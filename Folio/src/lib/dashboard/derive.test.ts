@@ -9,6 +9,7 @@ const lesson = (id: string, scheduled_at: string, status = "scheduled") => ({
   status: status as "scheduled" | "completed" | "cancelled",
   location_type: "online" as const,
   notes: null,
+  rate_override: null,
   students: [{ id: "s1", name: "Аня" }],
 });
 

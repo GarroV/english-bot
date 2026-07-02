@@ -6,6 +6,8 @@ export const lessonInputSchema = z.object({
   locationType: z.enum(["online", "offline"]),
   studentIds: z.array(z.string().uuid()).min(1),
   notes: z.string().trim().optional(),
+  // Per-lesson rate override (₽). Omitted → student's default_rate applies at billing (#20).
+  rateOverride: z.number().min(0).max(1_000_000).optional(),
 });
 
 export type LessonInput = z.infer<typeof lessonInputSchema>;

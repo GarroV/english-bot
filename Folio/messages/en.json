@@ -87,6 +87,7 @@
     "offline": "Offline",
     "students": "Students",
     "notes": "Notes",
+    "rateOverride": "Rate for this lesson (₽)",
     "save": "Save",
     "cancel": "Cancel",
     "cancelLesson": "Cancel lesson",

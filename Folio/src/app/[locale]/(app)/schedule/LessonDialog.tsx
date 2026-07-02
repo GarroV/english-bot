@@ -21,7 +21,7 @@ export interface LessonDialogState {
 
 interface Labels {
   newLesson: string; editLesson: string; datetime: string; duration: string;
-  location: string; online: string; offline: string; students: string; notes: string;
+  location: string; online: string; offline: string; students: string; notes: string; rateOverride: string;
   save: string; cancel: string; cancelLesson: string; complete: string;
   saved: string; saveError: string; pickStudents: string; journal: string;
 }
@@ -43,6 +43,7 @@ export function LessonDialog({
   const [duration, setDuration] = useState("60");
   const [location, setLocation] = useState<"online" | "offline">("online");
   const [notes, setNotes] = useState("");
+  const [rate, setRate] = useState("");
   const [picked, setPicked] = useState<string[]>([]);
   const [seededFor, setSeededFor] = useState<string | null>(null);
   const seedKey = state ? `${state.mode}:${state.lesson?.id ?? state.datetimeLocal}` : null;
@@ -52,6 +53,7 @@ export function LessonDialog({
     setDuration(String(state.lesson?.duration_min ?? 60));
     setLocation(state.lesson?.location_type ?? "online");
     setNotes(state.lesson?.notes ?? "");
+    setRate(state.lesson?.rate_override != null ? String(state.lesson.rate_override) : "");
     setPicked(state.lesson ? state.lesson.students.map((s) => s.id) : []);
   } else if (!open && seededFor !== null) {
     // Reset on close so reopening the same slot re-seeds instead of showing stale state.
@@ -65,6 +67,13 @@ export function LessonDialog({
   async function submit() {
     if (!state) return;
     if (state.mode === "create" && picked.length === 0) { toast.error(labels.pickStudents); return; }
+    // Empty → no override (null). RU tutors type "1,5" — normalize the decimal comma before parsing.
+    // Reject non-numeric / negative before hitting the server.
+    const rateStr = rate.trim().replace(",", ".");
+    const parsedRate = rateStr === "" ? null : Number(rateStr);
+    if (parsedRate !== null && (!Number.isFinite(parsedRate) || parsedRate < 0)) {
+      toast.error(labels.saveError); return;
+    }
     setPending(true);
     try {
       const res = state.mode === "create"
@@ -74,12 +83,14 @@ export function LessonDialog({
             locationType: location,
             studentIds: picked,
             notes: notes.trim() || undefined,
+            rateOverride: parsedRate ?? undefined,
           })
         : await updateLesson(state.lesson!.id, {
             scheduledAt: fromDatetimeLocal(datetime),
             durationMin: Number(duration),
             locationType: location,
             notes: notes.trim() || undefined,
+            rateOverride: parsedRate,
           });
       if (res.ok) { toast.success(labels.saved); onClose(); router.refresh(); }
       else toast.error(`${labels.saveError}: ${res.error}`);
@@ -154,6 +165,10 @@ export function LessonDialog({
           <div className="flex flex-col gap-1">
             <Label htmlFor="ls-notes">{labels.notes}</Label>
             <Input id="ls-notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="ls-rate">{labels.rateOverride}</Label>
+            <Input id="ls-rate" inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="—" />
           </div>
         </div>
         <DialogFooter className="flex-wrap gap-2">
