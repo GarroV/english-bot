@@ -281,7 +281,7 @@ Workspace-scoped CRUD ростера учеников репетитора: сп
 ## Hosting (Cloudflare Workers + OpenNext)
 
 Веб-Folio задеплоен на **Cloudflare Workers** через адаптер **OpenNext** (`@opennextjs/cloudflare`):
-`https://folio.vasiliy-garro.workers.dev` (2026-06-16, M-host). **Аккаунт Cloudflare:** `vasiliy.garro@gmail.com` (id `ea112105dc90594bac815e2e277aedea`) — тот же личный аккаунт, что и Supabase-проект `btlglelwxazdxfqdmcti` (English_bot). Полная карта аккаунтов и предупреждение о проекте-двойнике — корневой `docs/README.md` § «Инфраструктура и аккаунты».
+`https://folio.vasiliy-garro.workers.dev` (2026-06-16, M-host). **Аккаунт Cloudflare:** `vasiliy.garro@gmail.com` (id `ea112105dc90594bac815e2e277aedea`) — тот же личный аккаунт, что и Supabase-проект `btlglelwxazdxfqdmcti` (English_bot). Полная карта аккаунтов/деплоя и предупреждение о проекте-двойнике — корневой [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md).
 
 - **Сборка/деплой:** `npm run cf:deploy` (= `opennextjs-cloudflare build && deploy`). Конфиг — `wrangler.jsonc` (`nodejs_compat`, assets-binding `ASSETS` → `.open-next/assets`, observability). `.open-next/` и `.wrangler/` в `.gitignore`.
 - **Middleware:** используем `middleware.ts` (Edge), НЕ `proxy.ts` — Next 16 привязывает `proxy` к Node-рантайму, который Workers не исполняет.
