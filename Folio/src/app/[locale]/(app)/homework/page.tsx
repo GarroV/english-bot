@@ -17,7 +17,9 @@ const TYPE_KEY: Record<string, string> = {
 const STATUS_KEY: Record<string, string> = {
   assigned: "statusAssigned",
   submitted: "statusSubmitted",
-  reviewed: "statusReviewed",
+  returned: "statusReturned",
+  accepted: "statusAccepted",
+  reviewed: "statusAccepted", // legacy rows map onto the new terminal label
 };
 
 export default async function HomeworkPage() {
@@ -61,7 +63,12 @@ export default async function HomeworkPage() {
   const asgLabels = {
     assignmentsTitle: t("assignmentsTitle"), noAssignments: t("noAssignments"),
     noDue: t("noDue"), saveError: t("saveError"),
-    commentPlaceholder: t("commentPlaceholder"), review: t("review"), reviewedToast: t("reviewedToast"),
+    reviewOpen: t("reviewOpen"), reviewTitle: t("reviewTitle"), loading: t("loading"),
+    studentAnswer: t("studentAnswer"), noAnswer: t("noAnswer"),
+    commentPlaceholder: t("commentPlaceholder"), saveComment: t("saveComment"), commentSaved: t("commentSaved"),
+    returnBtn: t("returnBtn"), returned: t("returnedToast"),
+    acceptBtn: t("acceptBtn"), accepted: t("acceptedToast"),
+    acceptedReadonly: t("acceptedReadonly"),
     typeLabels, statusLabels,
   };
 

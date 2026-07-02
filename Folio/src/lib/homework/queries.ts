@@ -44,6 +44,76 @@ function one<T>(v: T | T[] | null): T | null {
   return Array.isArray(v) ? (v[0] ?? null) : v;
 }
 
+// One itemized question with the student's answer + the tutor's per-item comment (live-doc Ф2 review).
+export interface ReviewItem {
+  id: string;
+  idx: number;
+  taskLabel: string | null;
+  questionText: string;
+  studentAnswer: string | null;
+  tutorComment: string | null;
+}
+
+export interface AssignmentReview {
+  id: string;
+  status: string;
+  studentName: string | null;
+  templateTopic: string | null;
+  items: ReviewItem[];
+}
+
+interface ReviewItemRow {
+  id: string;
+  idx: number;
+  task_label: string | null;
+  question_text: string;
+  student_answer: string | null;
+  tutor_comment: string | null;
+}
+
+// The itemized review payload for one assignment (RLS-scoped to the caller's workspace, both the
+// assignment and its items). Returns null when the id is not in the caller's workspace.
+export async function getAssignmentReview(id: string): Promise<AssignmentReview | null> {
+  const supabase = await createClient();
+  const { data: asg, error: aErr } = await supabase
+    .from("folio_homework_assignments")
+    .select("id, status, folio_students(name), folio_homework_templates(topic)")
+    .eq("id", id)
+    .maybeSingle();
+  if (aErr) throw new Error(`getAssignmentReview failed: ${aErr.message}`);
+  if (!asg) return null;
+
+  const { data: itemData, error: iErr } = await supabase
+    .from("folio_homework_items")
+    .select("id, idx, task_label, question_text, student_answer, tutor_comment")
+    .eq("assignment_id", id)
+    .order("idx", { ascending: true });
+  if (iErr) throw new Error(`getAssignmentReview items failed: ${iErr.message}`);
+
+  const row = asg as unknown as {
+    id: string;
+    status: string;
+    folio_students: { name: string } | { name: string }[] | null;
+    folio_homework_templates: { topic: string } | { topic: string }[] | null;
+  };
+  const student = one(row.folio_students);
+  const tpl = one(row.folio_homework_templates);
+  return {
+    id: row.id,
+    status: row.status,
+    studentName: student?.name ?? null,
+    templateTopic: tpl?.topic ?? null,
+    items: ((itemData as ReviewItemRow[]) ?? []).map((it) => ({
+      id: it.id,
+      idx: it.idx,
+      taskLabel: it.task_label,
+      questionText: it.question_text,
+      studentAnswer: it.student_answer,
+      tutorComment: it.tutor_comment,
+    })),
+  };
+}
+
 // Workspace assignments (RLS-scoped) with student name + template topic/type, newest first.
 export async function listAssignments(): Promise<AssignmentRow[]> {
   const supabase = await createClient();

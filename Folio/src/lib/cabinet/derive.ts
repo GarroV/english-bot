@@ -1,7 +1,7 @@
 // Pure shaping for the student cabinet — no I/O, unit-tested independently of Supabase.
 
 // One itemized question of a live-doc assignment (live-doc Ф1b). Answer is editable by the student
-// while the assignment is 'assigned'; tutorComment is read-only here (written by the tutor in Ф2).
+// while the assignment is 'assigned' or 'returned'; tutorComment is read-only here (written by the tutor).
 export interface CabItem {
   id: string;
   idx: number;
@@ -18,7 +18,7 @@ export interface CabAssignment {
   level: string | null;
   moduleType: string;
   content: string;
-  status: string; // assigned | submitted | reviewed
+  status: string; // assigned | submitted | returned | accepted (legacy: reviewed)
   dueDate: string | null;
   tutorComment: string | null;
   submittedAt: string | null;
@@ -34,11 +34,15 @@ export interface CabLesson {
   status: string; // scheduled | completed | cancelled
 }
 
-// Current = still in play (assigned or submitted); Completed = reviewed by the tutor.
+// Current = still in the review cycle (assigned | submitted | returned).
+// Completed = accepted (terminal). Legacy 'reviewed' rows (pre-Ф2 terminal) also count as completed
+// in case any survived the status migration.
 export function splitAssignments(rows: CabAssignment[]): { current: CabAssignment[]; completed: CabAssignment[] } {
+  const current = new Set(["assigned", "submitted", "returned"]);
+  const completed = new Set(["accepted", "reviewed"]);
   return {
-    current: rows.filter((r) => r.status === "assigned" || r.status === "submitted"),
-    completed: rows.filter((r) => r.status === "reviewed"),
+    current: rows.filter((r) => current.has(r.status)),
+    completed: rows.filter((r) => completed.has(r.status)),
   };
 }
 

@@ -91,7 +91,9 @@ function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     assigned: { label: t("statusAssigned"), cls: "bg-primary/12 text-primary" },
     submitted: { label: t("statusSubmitted"), cls: "bg-amber-500/15 text-amber-500" },
-    reviewed: { label: t("statusReviewed"), cls: "bg-emerald-500/15 text-emerald-500" },
+    returned: { label: t("statusReturned"), cls: "bg-orange-500/15 text-orange-500" },
+    accepted: { label: t("statusAccepted"), cls: "bg-emerald-500/15 text-emerald-500" },
+    reviewed: { label: t("statusAccepted"), cls: "bg-emerald-500/15 text-emerald-500" }, // legacy
   };
   const s = map[status] ?? map.assigned;
   return <span className={`flex-none rounded-full px-2.5 py-0.5 text-xs font-bold ${s.cls}`}>{s.label}</span>;
@@ -114,7 +116,8 @@ function AssignmentCard({ a, token, pdfBase }: { a: CabAssignment; token: string
 
   const pdfUrl = `${pdfBase}?token=${encodeURIComponent(token)}&a=${encodeURIComponent(a.id)}`;
   const hasItems = a.items.length > 0;
-  const editable = a.status === "assigned";
+  // Editable while assigned (first pass) or returned (tutor sent it back); frozen once submitted/accepted.
+  const editable = a.status === "assigned" || a.status === "returned";
 
   return (
     <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
@@ -137,7 +140,7 @@ function AssignmentCard({ a, token, pdfBase }: { a: CabAssignment; token: string
       {/* Live-doc Ф1b: structured questions with per-item answer fields (autosave). Falls back to the
           plain-text "show homework" toggle for assignments generated before itemization. */}
       {hasItems && (
-        <ItemsEditor items={a.items} token={token} editable={editable} />
+        <ItemsEditor items={a.items} token={token} editable={editable} status={a.status} />
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -150,10 +153,10 @@ function AssignmentCard({ a, token, pdfBase }: { a: CabAssignment; token: string
         <a href={pdfUrl} className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition-colors hover:border-primary">
           📄 {t("downloadPdf")}
         </a>
-        {a.status === "assigned" && (
+        {editable && (
           <button type="button" onClick={onDone} disabled={pending}
             className="ml-auto rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition-opacity disabled:opacity-50">
-            {pending ? t("marking") : `✓ ${t("markDone")}`}
+            {pending ? t("marking") : `✓ ${a.status === "returned" ? t("resubmit") : t("markDone")}`}
           </button>
         )}
       </div>
@@ -168,16 +171,25 @@ function AssignmentCard({ a, token, pdfBase }: { a: CabAssignment; token: string
 }
 
 // Renders itemized questions grouped by task_label. Each question has an answer textarea that
-// autosaves (debounced) via saveAnswer. When not editable (status ≠ assigned) fields are read-only.
-function ItemsEditor({ items, token, editable }: { items: CabItem[]; token: string; editable: boolean }) {
+// autosaves (debounced) via saveAnswer. When not editable (submitted/accepted) fields are read-only;
+// the lock notice explains why — waiting for review vs finally accepted.
+function ItemsEditor({ items, token, editable, status }: {
+  items: CabItem[]; token: string; editable: boolean; status: string;
+}) {
   const t = useTranslations("Cabinet");
   const groups = groupByLabel(items);
+  const isAccepted = status === "accepted" || status === "reviewed";
+  const lockNotice = isAccepted ? t("answersAccepted") : t("answersLocked");
 
   return (
     <div className="mt-3 flex flex-col gap-4">
       {!editable && (
-        <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-600 dark:text-amber-400">
-          {t("answersLocked")}
+        <p className={`rounded-lg px-3 py-2 text-xs font-medium ${
+          isAccepted
+            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+            : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+        }`}>
+          {lockNotice}
         </p>
       )}
       {groups.map((g) => (
