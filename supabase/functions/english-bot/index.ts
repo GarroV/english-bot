@@ -9,14 +9,9 @@ import {
 import { handleRequest, handleChangeRequest } from "./handlers/request.ts";
 import {
   handleWizardStep,
-  handleTopicInput,
   handleVerbInput,
 } from "./handlers/clarify.ts";
-import {
-  handleUseCached,
-  handleGenerateNew,
-  handleNewAssignment,
-} from "./handlers/generate.ts";
+import { handleNewAssignment } from "./handlers/generate.ts";
 import { handleEditAssignment, handleApplyEdit } from "./handlers/edit.ts";
 import { handleDownloadPdf } from "./handlers/pdf_download.ts";
 import { handleHistory, handleHistoryDownload } from "./handlers/history.ts";
@@ -78,8 +73,6 @@ async function route(update: TgUpdate): Promise<void> {
     if (data.startsWith("hist_pdf_")) return handleHistoryDownload(query);
 
     if (data === "change_request") return handleChangeRequest(query);
-    if (data === "use_cached") return handleUseCached(query);
-    if (data === "generate_new") return handleGenerateNew(query);
     if (data === "edit_assignment") return handleEditAssignment(query);
     if (data === "download_pdf") return handleDownloadPdf(query);
     if (data === "new_assignment") return handleNewAssignment(query);
@@ -112,7 +105,6 @@ async function route(update: TgUpdate): Promise<void> {
 
     const state = session?.state ?? "WAITING_REQUEST";
     if (state === "WAITING_REQUEST") return handleRequest(message);
-    if (state === "WAITING_TOPIC") return handleTopicInput(message);
     if (state === "WAITING_VERB") return handleVerbInput(message);
     if (state === "EDITING") return handleApplyEdit(message);
   }

@@ -5,6 +5,15 @@ export type ModuleType =
   | "TRANSLATION_SENTENCES"
   | "VERB_SENTENCES";
 
+// Canonical human-readable module names. Single source shared by the wizard and history views.
+export const MODULE_LABELS: Record<ModuleType, string> = {
+  READING_MODULE: "Reading",
+  VOCABULARY_MODULE: "Vocabulary",
+  TRANSLATION_TEXTS: "Перевод (тексты)",
+  TRANSLATION_SENTENCES: "Перевод (предложения)",
+  VERB_SENTENCES: "Глаголы (предложения)",
+};
+
 export interface ClarifyingParams {
   level?: string;      // "A2" | "B1" | "B2" | "C1" | "C2"
   ageGroup?: string;   // "teen" | "young_adult" | "adult"
@@ -16,9 +25,7 @@ export type State =
   | "REGISTERING"
   | "WAITING_REQUEST"
   | "CLARIFYING"
-  | "WAITING_TOPIC"
   | "WAITING_VERB"
-  | "CACHE_OFFER"
   | "POST_GENERATION"
   | "EDITING";
 
@@ -35,7 +42,6 @@ export interface SessionContext {
   last_request?: string;
   current_assignment?: string;
   current_assignment_teacher?: string;
-  cached_assignment_id?: string;
   invite_pending?: boolean;
   module_type?: ModuleType;
   params?: ClarifyingParams;

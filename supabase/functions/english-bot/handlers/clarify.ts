@@ -1,15 +1,8 @@
 import { answerCallbackQuery, editMessageText, sendMessage, keyboard } from "../lib/telegram.ts";
 import { getSession, setSession } from "../lib/db.ts";
+import { MODULE_LABELS } from "../lib/types.ts";
+import { friendlyError } from "../lib/errors.ts";
 import type { TgCallbackQuery, TgMessage, ModuleType, ClarifyingParams, InlineKeyboard } from "../lib/types.ts";
-
-// Human-readable module names for display
-const MODULE_LABELS: Record<ModuleType, string> = {
-  READING_MODULE: "Reading",
-  VOCABULARY_MODULE: "Vocabulary",
-  TRANSLATION_TEXTS: "Translation (тексты)",
-  TRANSLATION_SENTENCES: "Перевод (предложения)",
-  VERB_SENTENCES: "Глаголы (предложения)",
-};
 
 // Build a single wizard step keyboard and summary text.
 // Each step renders only the choices relevant to that step.
@@ -145,42 +138,6 @@ export async function handleWizardStep(query: TgCallbackQuery): Promise<void> {
       console.error("handleWizardStep failed:", e);
       await sendMessage(chatId, friendlyError(e));
     }
-  }
-}
-
-function friendlyError(e: unknown): string {
-  const msg = String(e);
-  if (msg.includes("credit balance") || msg.includes("too low")) {
-    return "На счёте закончились кредиты Anthropic. Пополни баланс и попробуй снова.";
-  }
-  if (msg.includes("rate_limit") || msg.includes("429")) {
-    return "Слишком много запросов. Подожди минуту и попробуй снова.";
-  }
-  if (msg.includes("401") || msg.includes("authentication")) {
-    return "Ошибка авторизации API. Обратись к администратору.";
-  }
-  return "Что-то пошло не так. Попробуй ещё раз через минуту.";
-}
-
-// Handle topic input in WAITING_TOPIC state: generate with stored params
-export async function handleTopicInput(message: TgMessage): Promise<void> {
-  const topic = message.text?.trim() ?? "";
-  const userId = message.from.id;
-  const chatId = message.chat.id;
-
-  const session = await getSession(userId);
-  if (!session) return;
-
-  const moduleType = (session.context.module_type ?? "READING_MODULE") as ModuleType;
-  const params: ClarifyingParams = session.context.params ?? {};
-
-  await sendMessage(chatId, "Генерирую задание, подожди 10–30 секунд...");
-  const { generateAndSend } = await import("./generate.ts");
-  try {
-    await generateAndSend({ userId, chatId, userInput: topic, moduleType, params });
-  } catch (e) {
-    console.error("generateAndSend failed:", e);
-    await sendMessage(chatId, friendlyError(e));
   }
 }
 

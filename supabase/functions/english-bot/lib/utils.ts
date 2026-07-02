@@ -24,15 +24,6 @@ export function splitIfLong(text: string, limit = 4096): string[] {
   return parts;
 }
 
-// Lowercase and strip punctuation from a user request string for comparison
-export function normalizeRequest(userInput: string): string {
-  return userInput
-    .toLowerCase()
-    .replace(/[,\.!?]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 // Generate a random 6-character uppercase alphanumeric invite code
 export function generateInviteCode(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
