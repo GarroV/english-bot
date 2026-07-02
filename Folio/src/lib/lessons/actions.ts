@@ -15,7 +15,7 @@ export async function createLesson(input: LessonInput): Promise<ActionResult> {
 
   const v = parsed.data;
   // Atomic RPC: lesson row + roster in one transaction (RLS-enforced workspace + student checks).
-  const { error } = await supabase.rpc("folio_create_lesson", {
+  const { data: lessonId, error } = await supabase.rpc("folio_create_lesson", {
     p_type: lessonTypeFor(v.studentIds),
     p_scheduled_at: v.scheduledAt,
     p_duration_min: v.durationMin,
@@ -24,12 +24,22 @@ export async function createLesson(input: LessonInput): Promise<ActionResult> {
     p_student_ids: v.studentIds,
   });
   if (error) return { ok: false, error: error.message };
+
+  // Per-lesson rate override (#20): rate_override lives on the roster rows (folio_lesson_students,
+  // per student). One "rate for this lesson" applies to every rostered student. The create RPC has a
+  // fixed signature, so set it in a follow-up update (RLS-scoped via the parent lesson's workspace).
+  // Billing reads coalesce(ls.rate_override, default_rate, 0) at completion.
+  if (v.rateOverride != null && typeof lessonId === "string") {
+    const { error: rErr } = await supabase
+      .from("folio_lesson_students").update({ rate_override: v.rateOverride }).eq("lesson_id", lessonId);
+    if (rErr) return { ok: false, error: rErr.message };
+  }
   return { ok: true };
 }
 
 export async function updateLesson(
   id: string,
-  fields: { scheduledAt: string; durationMin: number; locationType: "online" | "offline"; notes?: string },
+  fields: { scheduledAt: string; durationMin: number; locationType: "online" | "offline"; notes?: string; rateOverride?: number | null },
 ): Promise<ActionResult> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -48,6 +58,12 @@ export async function updateLesson(
     .select("id");
   if (error) return { ok: false, error: error.message };
   if (!data || data.length === 0) return { ok: false, error: "not found" };
+
+  // rate_override lives per roster row (folio_lesson_students) — apply the lesson's rate to all
+  // rostered students; null clears back to each student's default_rate at billing. #20.
+  const { error: rErr } = await supabase
+    .from("folio_lesson_students").update({ rate_override: fields.rateOverride ?? null }).eq("lesson_id", id);
+  if (rErr) return { ok: false, error: rErr.message };
   return { ok: true };
 }
 

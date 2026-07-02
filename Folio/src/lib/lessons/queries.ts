@@ -13,6 +13,7 @@ export interface LessonWithStudents {
   status: "scheduled" | "completed" | "cancelled";
   location_type: "online" | "offline";
   notes: string | null;
+  rate_override: number | null;
   students: StudentOption[];
 }
 
@@ -25,8 +26,8 @@ interface LessonRow {
   location_type: "online" | "offline";
   notes: string | null;
   // PostgREST embeds a to-one relation as an object, but supabase-js infers an array;
-  // accept either shape and normalize in the map below.
-  folio_lesson_students: { folio_students: StudentOption | StudentOption[] | null }[] | null;
+  // accept either shape and normalize in the map below. rate_override is per roster row.
+  folio_lesson_students: { rate_override: number | null; folio_students: StudentOption | StudentOption[] | null }[] | null;
 }
 
 // Lessons whose scheduled_at is within [fromISO, toISO), with each lesson's students.
@@ -35,7 +36,7 @@ export async function listLessonsInRange(fromISO: string, toISO: string): Promis
   const { data, error } = await supabase
     .from("folio_lessons")
     .select(
-      "id, type, scheduled_at, duration_min, status, location_type, notes, folio_lesson_students(folio_students(id, name))",
+      "id, type, scheduled_at, duration_min, status, location_type, notes, folio_lesson_students(rate_override, folio_students(id, name))",
     )
     .gte("scheduled_at", fromISO)
     .lt("scheduled_at", toISO)
@@ -50,6 +51,8 @@ export async function listLessonsInRange(fromISO: string, toISO: string): Promis
     status: row.status,
     location_type: row.location_type,
     notes: row.notes,
+    // One override per lesson in the UI → roster rows are uniform; surface the first set value.
+    rate_override: (row.folio_lesson_students ?? []).map((ls) => ls.rate_override).find((r) => r != null) ?? null,
     students: (row.folio_lesson_students ?? [])
       .flatMap((ls) => {
         const fs = ls.folio_students;

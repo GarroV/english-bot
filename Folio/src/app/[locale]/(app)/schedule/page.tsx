@@ -40,7 +40,7 @@ export default async function SchedulePage({
     dialog: {
       newLesson: t("newLesson"), editLesson: t("editLesson"), datetime: t("datetime"),
       duration: t("duration"), location: t("location"), online: t("online"), offline: t("offline"),
-      students: t("students"), notes: t("notes"), save: t("save"), cancel: t("cancel"),
+      students: t("students"), notes: t("notes"), rateOverride: t("rateOverride"), save: t("save"), cancel: t("cancel"),
       cancelLesson: t("cancelLesson"), complete: t("complete"),
       saved: t("saved"), saveError: t("saveError"), pickStudents: t("pickStudents"),
       journal: t("journal"),

@@ -172,7 +172,7 @@ unique(lesson_id, student_id)
 -- index on (lesson_id)
 ```
 
-> Реализовано в `20260612192152_folio_lessons.sql`. Join-таблица урок ↔ ученик; `unique(lesson_id, student_id)` исключает дубли в ростере. `rate_override` / `amount_charged` — задел под M5 (Billing). RLS `workspace_isolation` `FOR ALL` **через родителя** (у таблицы нет своего `workspace_id`): `lesson_id in (select id from folio_lessons where workspace_id = folio_current_workspace_id())`.
+> Реализовано в `20260612192152_folio_lessons.sql`. Join-таблица урок ↔ ученик; `unique(lesson_id, student_id)` исключает дубли в ростере. `rate_override` (переопределение ставки за занятие, #20 — выставляется на все ростер-строки из диалога занятия, биллинг читает `coalesce(rate_override, default_rate, 0)`) / `amount_charged` (задел под M5). RLS `workspace_isolation` `FOR ALL` **через родителя** (у таблицы нет своего `workspace_id`): `lesson_id in (select id from folio_lessons where workspace_id = folio_current_workspace_id())`.
 
 ### folio_homework_templates ✅
 ```sql
