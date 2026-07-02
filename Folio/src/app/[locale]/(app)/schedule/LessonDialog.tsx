@@ -67,8 +67,10 @@ export function LessonDialog({
   async function submit() {
     if (!state) return;
     if (state.mode === "create" && picked.length === 0) { toast.error(labels.pickStudents); return; }
-    // Empty → no override (null). Reject non-numeric / negative before hitting the server.
-    const parsedRate = rate.trim() === "" ? null : Number(rate);
+    // Empty → no override (null). RU tutors type "1,5" — normalize the decimal comma before parsing.
+    // Reject non-numeric / negative before hitting the server.
+    const rateStr = rate.trim().replace(",", ".");
+    const parsedRate = rateStr === "" ? null : Number(rateStr);
     if (parsedRate !== null && (!Number.isFinite(parsedRate) || parsedRate < 0)) {
       toast.error(labels.saveError); return;
     }
