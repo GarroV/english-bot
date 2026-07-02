@@ -15,7 +15,7 @@
 - **Cloudflare** (хостинг Folio): аккаунт `vasiliy.garro@gmail.com` (id `ea112105dc90594bac815e2e277aedea`), воркер `folio` → `folio.vasiliy-garro.workers.dev`.
 - **Telegram-бот:** `@garro_oracle_bot` (id `8080425387`).
 
-Полная карта (деплой-команды, GitHub-репо, `.env`-креды) — `docs/README.md` § «Инфраструктура и аккаунты» (единый источник).
+Полная карта (деплой-команды, GitHub-репо, `.env`-креды, чек-лист перед деплоем, грабли) — **единый источник** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ---
 

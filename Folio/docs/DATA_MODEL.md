@@ -314,7 +314,7 @@ updated_at      timestamptz
 id              uuid PK
 workspace_id    uuid FK → workspaces.id
 student_id      uuid FK → students.id
-title           text                        -- генерируется OpenAI
+title           text                        -- генерируется LLM (Anthropic Claude; таблица V2, не реализована — OpenAI в проекте не используется)
 emoji           text
 description     text
 source_type     enum('homework','journal')
