@@ -1,5 +1,17 @@
 // Pure shaping for the student cabinet — no I/O, unit-tested independently of Supabase.
 
+// One itemized question of a live-doc assignment (live-doc Ф1b). Answer is editable by the student
+// while the assignment is 'assigned'; tutorComment is read-only here (written by the tutor in Ф2).
+export interface CabItem {
+  id: string;
+  idx: number;
+  taskLabel: string | null;
+  questionText: string;
+  itemType: string; // tf | mcq | open | gap | other
+  studentAnswer: string | null;
+  tutorComment: string | null;
+}
+
 export interface CabAssignment {
   id: string;
   topic: string;
@@ -10,6 +22,7 @@ export interface CabAssignment {
   dueDate: string | null;
   tutorComment: string | null;
   submittedAt: string | null;
+  items: CabItem[]; // itemized questions (empty → fall back to plain content)
 }
 
 export interface CabLesson {

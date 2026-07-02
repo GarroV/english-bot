@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { splitAssignments, partitionLessons, type CabAssignment, type CabLesson } from "./derive";
+import { splitAssignments, partitionLessons, type CabAssignment, type CabItem, type CabLesson } from "./derive";
 
 export interface CabinetData {
   student: { id: string; name: string };
@@ -40,6 +40,16 @@ interface LessonJoin {
 interface LessonStudentRow {
   folio_lessons: LessonJoin | LessonJoin[] | null;
 }
+interface ItemRow {
+  id: string;
+  assignment_id: string;
+  idx: number;
+  task_label: string | null;
+  question_text: string;
+  item_type: string;
+  student_answer: string | null;
+  tutor_comment: string | null;
+}
 
 // Resolve a cabinet token → the student's full cabinet, all scoped by the token (service-role).
 // Returns null for an unknown/rotated token. Never accepts student_id from the caller.
@@ -70,7 +80,34 @@ export async function getCabinet(token: string, nowISO: string): Promise<Cabinet
   if (aRes.error) throw new Error(`getCabinet assignments failed: ${aRes.error.message}`);
   if (lRes.error) throw new Error(`getCabinet lessons failed: ${lRes.error.message}`);
 
-  const assignments: CabAssignment[] = ((aRes.data as AssignmentJoinRow[]) ?? []).map((r) => {
+  const assignmentRows = (aRes.data as AssignmentJoinRow[]) ?? [];
+
+  // Fetch itemized questions for exactly this student's assignments (service-role, scoped by token→student→assignment).
+  const assignmentIds = assignmentRows.map((r) => r.id);
+  const itemsByAssignment = new Map<string, CabItem[]>();
+  if (assignmentIds.length > 0) {
+    const { data: itemData, error: iErr } = await admin
+      .from("folio_homework_items")
+      .select("id, assignment_id, idx, task_label, question_text, item_type, student_answer, tutor_comment")
+      .in("assignment_id", assignmentIds)
+      .order("idx", { ascending: true });
+    if (iErr) throw new Error(`getCabinet items failed: ${iErr.message}`);
+    for (const it of (itemData as ItemRow[]) ?? []) {
+      const list = itemsByAssignment.get(it.assignment_id) ?? [];
+      list.push({
+        id: it.id,
+        idx: it.idx,
+        taskLabel: it.task_label,
+        questionText: it.question_text,
+        itemType: it.item_type,
+        studentAnswer: it.student_answer,
+        tutorComment: it.tutor_comment,
+      });
+      itemsByAssignment.set(it.assignment_id, list);
+    }
+  }
+
+  const assignments: CabAssignment[] = assignmentRows.map((r) => {
     const t = one(r.folio_homework_templates);
     return {
       id: r.id,
@@ -82,6 +119,7 @@ export async function getCabinet(token: string, nowISO: string): Promise<Cabinet
       dueDate: r.due_date,
       tutorComment: r.tutor_comment,
       submittedAt: r.submitted_at,
+      items: itemsByAssignment.get(r.id) ?? [],
     };
   });
 

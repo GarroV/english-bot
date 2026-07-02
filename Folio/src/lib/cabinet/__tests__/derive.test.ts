@@ -3,7 +3,7 @@ import { splitAssignments, partitionLessons, type CabAssignment, type CabLesson 
 
 const asg = (id: string, status: string): CabAssignment => ({
   id, topic: "T", level: "B1", moduleType: "READING_MODULE", content: "c",
-  status, dueDate: null, tutorComment: null, submittedAt: null,
+  status, dueDate: null, tutorComment: null, submittedAt: null, items: [],
 });
 
 describe("splitAssignments", () => {
