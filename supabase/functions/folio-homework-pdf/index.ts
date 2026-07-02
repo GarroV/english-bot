@@ -6,6 +6,29 @@ import { makeFilename } from "../english-bot/lib/utils.ts";
 // Public (no session) — the token is the capability, exactly like the cabinet page. Everything is
 // scoped by token→student; the assignment must belong to that student. Reuses the bot's pdf.ts.
 Deno.serve(async (req) => {
+  // POST: secret-authed content→PDF for the tutor (Folio server proxies the draft here). No token.
+  if (req.method === "POST") {
+    if (req.headers.get("x-folio-secret") !== Deno.env.get("FOLIO_GENERATE_SECRET")) {
+      return new Response("unauthorized", { status: 401 });
+    }
+    const body = (await req.json().catch(() => null)) as { content?: unknown } | null;
+    const content = typeof body?.content === "string" ? body.content : "";
+    if (!content.trim() || content.length > 20000) return new Response("bad request", { status: 400 });
+    try {
+      const bytes = await generatePdf(content);
+      return new Response(bytes.slice(), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `attachment; filename="${makeFilename(content)}"`,
+          "Cache-Control": "no-store",
+        },
+      });
+    } catch (e) {
+      return new Response(`pdf failed: ${e instanceof Error ? e.message : String(e)}`, { status: 500 });
+    }
+  }
+
   if (req.method !== "GET") return new Response("Method Not Allowed", { status: 405 });
 
   const url = new URL(req.url);

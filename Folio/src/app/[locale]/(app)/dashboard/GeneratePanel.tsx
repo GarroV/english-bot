@@ -22,6 +22,7 @@ export interface GenerateFormLabels {
 export interface GenerateDashLabels {
   generateTitle: string; generateLead: string; draftTitle: string; onReview: string;
   fix: string; fixPlaceholder: string; applyFix: string; fixing: string; regenerate: string; assign: string;
+  downloadPdf: string;
 }
 export interface GenerateAssignLabels {
   title: string; students: string; dueDate: string; confirm: string; cancel: string;
@@ -108,6 +109,21 @@ export function GeneratePanel({
     setPending(true);
     try { const id = await ensureSaved(); if (id) toast.success(form.saved); }
     finally { setPending(false); }
+  }
+
+  // Download the current (possibly hand-edited) draft as a PDF via the tutor-gated server route.
+  async function onDownloadPdf() {
+    setPending(true);
+    try {
+      const res = await fetch("/api/homework/pdf", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content }),
+      });
+      if (!res.ok) { toast.error(form.saveError); return; }
+      const url = URL.createObjectURL(await res.blob());
+      const a = document.createElement("a");
+      a.href = url; a.download = "homework.pdf"; document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    } catch { toast.error(form.saveError); } finally { setPending(false); }
   }
 
   async function onAssignConfirm() {
@@ -210,6 +226,10 @@ export function GeneratePanel({
             <button type="button" onClick={() => { setPicked([]); setDue(""); setAssignOpen(true); }} disabled={pending}
               className="rounded-lg bg-[color:var(--brand-coral)]/15 px-3 py-2 text-xs font-semibold text-[color:var(--brand-coral)] transition-opacity hover:opacity-80 disabled:opacity-50">
               ＋ {dash.assign}
+            </button>
+            <button type="button" onClick={onDownloadPdf} disabled={pending}
+              className="rounded-lg border border-border px-3 py-2 text-xs font-semibold transition-colors hover:border-primary disabled:opacity-50">
+              📄 {dash.downloadPdf}
             </button>
             <button type="button" onClick={() => { setContent(""); setGeneratedInput(null); setSavedId(null); setFixText(""); }} disabled={pending}
               className="rounded-lg border border-border px-3 py-2 text-xs font-semibold transition-colors hover:border-primary disabled:opacity-50">
