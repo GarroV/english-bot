@@ -64,6 +64,7 @@ export default async function DashboardPage() {
         draftTitle: d("draftTitle"), onReview: d("onReview"),
         fix: d("fix"), fixPlaceholder: d("fixPlaceholder"), applyFix: d("applyFix"),
         fixing: d("fixing"), regenerate: d("regenerate"), assign: d("assign"),
+        downloadPdf: d("downloadPdf"),
       }}
       genAssign={{
         title: h("assignTitle"), students: h("students"), dueDate: h("dueDate"),
