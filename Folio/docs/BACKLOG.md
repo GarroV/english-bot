@@ -81,6 +81,7 @@
 - [ ] **Хардкод `locale:"ru"`** в auth-редиректах страниц `(app)` — EN-юзера кидает на `/ru/login` (i18n, pre-existing)
 - [ ] **Активировать webhook secret бота** — `index.ts` сверяет `X-Telegram-Bot-Api-Secret-Token` с `TELEGRAM_WEBHOOK_SECRET`, но пока fail-open (секрет не задан). Задать секрет + перерегистрировать webhook с `secret_token`; иначе `from.id` спуфится → межтенантная запись через мост бот→веб. (security-review M7, 2026-06-18, **CRITICAL** — было задеплоено живым) [[project_folio_rls_invariants]]
 - [ ] **Defense-in-depth для bot-bridge** (опц.; ревью M7 отклонило как неэксплуатируемое при текущих ограничениях): композитная проверка `created_by`↔`workspace_id` на уровне БД; сверка `provider_uid`↔`folio_users.telegram_id` в `resolveFolioWorkspace`.
+- [ ] **Интеграционные тесты server-actions живого документа ДЗ** (security-review Ф2, 2026-07-03) — сейчас юнит-тесты покрывают только чистую логику (`derive.ts`, `assignments-schema.ts`). Добавить смоук против локального Supabase на кросс-тенант/кросс-ученик и гейты стейт-машины: `commentOnItem`/`returnAssignment`/`acceptAssignment`/`loadReview` (репетитор чужого воркспейса → `not found`), `saveAnswer`/`markSubmitted` (чужой токен/чужой assignmentId → `not found`; заморозка правки в `submitted`/`accepted`). Это ключевое security-свойство фичи — юнит-тесты на `derive.ts` его не ловят.
 
 ### Hosting / деплой
 

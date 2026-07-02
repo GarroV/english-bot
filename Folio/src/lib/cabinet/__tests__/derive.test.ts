@@ -7,12 +7,18 @@ const asg = (id: string, status: string): CabAssignment => ({
 });
 
 describe("splitAssignments", () => {
-  it("puts assigned and submitted into current, reviewed into completed", () => {
+  it("puts assigned/submitted/returned into current, accepted into completed", () => {
     const { current, completed } = splitAssignments([
-      asg("1", "assigned"), asg("2", "submitted"), asg("3", "reviewed"),
+      asg("1", "assigned"), asg("2", "submitted"), asg("3", "returned"), asg("4", "accepted"),
     ]);
-    expect(current.map((a) => a.id)).toEqual(["1", "2"]);
-    expect(completed.map((a) => a.id)).toEqual(["3"]);
+    expect(current.map((a) => a.id)).toEqual(["1", "2", "3"]);
+    expect(completed.map((a) => a.id)).toEqual(["4"]);
+  });
+
+  it("treats legacy 'reviewed' as completed", () => {
+    const { current, completed } = splitAssignments([asg("1", "reviewed")]);
+    expect(current).toEqual([]);
+    expect(completed.map((a) => a.id)).toEqual(["1"]);
   });
 
   it("handles empty input", () => {

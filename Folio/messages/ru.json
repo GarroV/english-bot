@@ -136,13 +136,24 @@
     "pickStudents": "Выберите хотя бы одного ученика",
     "assignmentsTitle": "Назначения",
     "noAssignments": "Назначений пока нет",
-    "commentPlaceholder": "Комментарий ученику…",
-    "review": "Проверено",
-    "reviewedToast": "Отмечено «проверено»",
     "statusAssigned": "Назначено",
     "statusSubmitted": "Сдано",
-    "statusReviewed": "Проверено",
-    "noDue": "без срока"
+    "noDue": "без срока",
+    "statusReturned": "На доработке",
+    "statusAccepted": "Принято",
+    "reviewOpen": "Проверить",
+    "reviewTitle": "Проверка задания",
+    "loading": "Загрузка…",
+    "studentAnswer": "Ответ ученика",
+    "noAnswer": "Ответ не заполнен",
+    "commentPlaceholder": "Комментарий к ответу…",
+    "saveComment": "Сохранить комментарий",
+    "commentSaved": "Сохранено",
+    "returnBtn": "Вернуть на доработку",
+    "returnedToast": "Возвращено на доработку",
+    "acceptBtn": "Принять",
+    "acceptedToast": "Задание принято",
+    "acceptedReadonly": "Задание принято — только просмотр."
   },
   "Nav": {
     "dashboard": "Панель",
@@ -239,7 +250,6 @@
     "noDue": "Без срока",
     "statusAssigned": "назначено",
     "statusSubmitted": "на проверке",
-    "statusReviewed": "проверено",
     "markDone": "Я сделал",
     "marking": "Отмечаю…",
     "markedDone": "Отмечено «сделано»",
@@ -259,6 +269,10 @@
     "online": "онлайн",
     "offline": "офлайн",
     "invalidTitle": "Ссылка недействительна",
-    "invalidBody": "Возможно, ссылку обновили. Попроси у репетитора новую."
+    "invalidBody": "Возможно, ссылку обновили. Попроси у репетитора новую.",
+    "statusReturned": "на доработке",
+    "statusAccepted": "принято",
+    "resubmit": "Отправить снова",
+    "answersAccepted": "Задание принято — редактирование недоступно."
   }
 }

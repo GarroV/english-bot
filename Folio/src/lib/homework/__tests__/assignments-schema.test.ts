@@ -23,8 +23,13 @@ describe("assignInputSchema", () => {
 });
 
 describe("assignmentStatusSchema", () => {
-  it("accepts known statuses", () => {
-    expect(assignmentStatusSchema.safeParse("submitted").success).toBe(true);
+  it("accepts review-cycle statuses", () => {
+    for (const s of ["assigned", "submitted", "returned", "accepted"]) {
+      expect(assignmentStatusSchema.safeParse(s).success).toBe(true);
+    }
+  });
+  it("accepts the legacy 'reviewed' status for backward compatibility", () => {
+    expect(assignmentStatusSchema.safeParse("reviewed").success).toBe(true);
   });
   it("rejects unknown status", () => {
     expect(assignmentStatusSchema.safeParse("done").success).toBe(false);

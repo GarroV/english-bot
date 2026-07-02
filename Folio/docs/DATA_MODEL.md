@@ -201,17 +201,19 @@ template_id     uuid not null FK → folio_homework_templates(id) ON DELETE CASC
 student_id      uuid not null FK → folio_students(id) ON DELETE CASCADE
 assigned_by     uuid FK → folio_users(id)
 due_date        date
-status          text DEFAULT 'assigned' CHECK (status IN ('assigned','submitted','reviewed'))
+status          text DEFAULT 'assigned' CHECK (status IN ('assigned','submitted','reviewed','returned','accepted'))
 note            text
-tutor_comment   text                                                         -- M8: комментарий учителя (виден ученику)
-submitted_at    timestamptz                                                  -- M8: ученик нажал «Я сделал» (assigned→submitted)
+tutor_comment   text                                                         -- M8: общий комментарий учителя (виден ученику; per-item — в folio_homework_items)
+submitted_at    timestamptz                                                  -- M8: ученик нажал «Я сделал/Сдать» (→submitted)
 assigned_at     timestamptz
 created_at      timestamptz
 updated_at      timestamptz
 -- unique(template_id, student_id); index on (workspace_id, template_id) and (student_id)
 ```
 
-> Реализовано в `20260615151554_folio_homework_assignments.sql` (M7b). Назначение шаблона ученику (репетитор управляет статусом вручную). Один шаблон назначается ученику не более одного раза (`unique(template_id, student_id)`; повторное назначение — no-op через upsert). Workspace RLS `workspace_isolation` `FOR ALL`: `USING` по `workspace_id`, а `WITH CHECK` дополнительно требует, чтобы `template_id` и `student_id` принадлежали тому же workspace (защита от кросс-workspace ссылок — как у `folio_lesson_students`). Доставка ученику пока ручная (репетитор копирует контент шаблона); авто-доставка — M7c.
+> Реализовано в `20260615151554_folio_homework_assignments.sql` (M7b). Назначение шаблона ученику. Один шаблон назначается ученику не более одного раза (`unique(template_id, student_id)`; повторное назначение — no-op через upsert). Workspace RLS `workspace_isolation` `FOR ALL`: `USING` по `workspace_id`, а `WITH CHECK` дополнительно требует, чтобы `template_id` и `student_id` принадлежали тому же workspace (защита от кросс-workspace ссылок — как у `folio_lesson_students`).
+>
+> **Стейт-машина статуса (живой документ ДЗ, Ф2 — `20260703120000_folio_assignment_review_cycle.sql`):** `assigned → submitted ⇄ returned → accepted`. Ученик редактирует ответы и сдаёт в `assigned`/`returned`; в `submitted`/`accepted` ответы заморожены. Репетитор: «Вернуть на доработку» (`submitted→returned`) и «Принять» (`submitted|returned→accepted`, терминал, read-only). Legacy-значение `reviewed` оставлено в CHECK-суперсете для обратной совместимости на окно между миграцией и деплоем; существующие `reviewed`-строки перенесены в `accepted`. `derive.ts`: current = `assigned|submitted|returned`, completed = `accepted` (+ legacy `reviewed`).
 
 ### folio_homework_items ✅ (живой документ ДЗ, Ф1a)
 
@@ -227,7 +229,7 @@ tutor_comment  text                     -- 💬 репетитор per-item (Ф2
 updated_at     timestamptz
 ```
 
-> Реализовано в `20260702204525_folio_homework_items.sql`. Вопросы задания после LLM-итемизации (`folio-generate` action `itemize` → `itemizeHomework` в общем движке; толерантный JSON-парс, best-effort — при неудаче назначение создаётся без items). Заполняется при назначении: `assignTemplate` итемизирует контент шаблона один раз и вставляет одинаковые items для каждого **нового** назначения (`upsert ignoreDuplicates + .select` возвращает только вставленные → дублей при переназначении нет). RLS `workspace_isolation` `FOR ALL` через родителя: `assignment_id in (select id from folio_homework_assignments where workspace_id = folio_current_workspace_id())`. `student_answer`/`tutor_comment` — задел под Ф1b/Ф2 (пока не пишутся). Дизайн: `docs/superpowers/specs/2026-07-02-homework-live-doc-design.md`.
+> Реализовано в `20260702204525_folio_homework_items.sql`. Вопросы задания после LLM-итемизации (`folio-generate` action `itemize` → `itemizeHomework` в общем движке; толерантный JSON-парс, best-effort — при неудаче назначение создаётся без items). Заполняется при назначении: `assignTemplate` итемизирует контент шаблона один раз и вставляет одинаковые items для каждого **нового** назначения (`upsert ignoreDuplicates + .select` возвращает только вставленные → дублей при переназначении нет). RLS `workspace_isolation` `FOR ALL` через родителя: `assignment_id in (select id from folio_homework_assignments where workspace_id = folio_current_workspace_id())`. `student_answer` пишет ученик через кабинет (Ф1b, service-role + скоуп token→student→assignment, гейт по статусу `assigned|returned`); `tutor_comment` пишет репетитор per-item (Ф2, `commentOnItem`, сессия + workspace RLS). Разные колонки → одновременная правка не затирается. Дизайн: `docs/superpowers/specs/2026-07-02-homework-live-doc-design.md`.
 
 ### lesson_journal_entries
 ```sql
