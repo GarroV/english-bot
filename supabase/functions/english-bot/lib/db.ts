@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import type { State, DbSession, DbUser, DbAssignment, SessionContext } from "./types.ts";
+import type { State, DbSession, DbUser, DbAssignment, SessionContext, LlmUsage, DbLlmUsage } from "./types.ts";
 import { generateInviteCode } from "./utils.ts";
 
 const supabase = createClient(
@@ -176,6 +176,38 @@ export async function getUserAssignments(telegramId: number, limit = 5): Promise
     .order("created_at", { ascending: false })
     .limit(limit);
   return (data as DbAssignment[]) ?? [];
+}
+
+// Record one LLM call's token usage (#23 counter). Never throws — usage logging must not break generation.
+export async function logLlmUsage(rec: {
+  source: string;
+  refId: string;
+  action: string;
+  model: string;
+  usage: LlmUsage;
+}): Promise<void> {
+  const { error } = await supabase.from("eb_llm_usage").insert({
+    source: rec.source,
+    ref_id: rec.refId,
+    action: rec.action,
+    model: rec.model,
+    input_tokens: rec.usage.input_tokens,
+    output_tokens: rec.usage.output_tokens,
+    cache_creation_input_tokens: rec.usage.cache_creation_input_tokens,
+    cache_read_input_tokens: rec.usage.cache_read_input_tokens,
+  });
+  if (error) console.error("logLlmUsage failed:", error.message);
+}
+
+// Fetch this calendar month's (UTC) LLM usage rows for the /usage admin readout.
+export async function getUsageThisMonth(): Promise<DbLlmUsage[]> {
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+  const { data } = await supabase
+    .from("eb_llm_usage")
+    .select("ref_id, action, model, input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens")
+    .gte("created_at", monthStart);
+  return (data as DbLlmUsage[]) ?? [];
 }
 
 // Return all users ordered by registration date, newest first

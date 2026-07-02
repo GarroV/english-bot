@@ -1,11 +1,11 @@
 import Anthropic from "npm:@anthropic-ai/sdk";
-import type { ModuleType, ClarifyingParams } from "../english-bot/lib/types.ts";
+import type { ModuleType, ClarifyingParams, LlmUsage } from "../english-bot/lib/types.ts";
 
 const anthropic = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_KEY") });
 
 // Current Anthropic model — single source of truth (was claude-sonnet-4-20250514, which
 // the API retired with a 404 not_found_error, breaking generation in both bot and web).
-const MODEL = "claude-sonnet-4-6";
+export const MODEL = "claude-sonnet-4-6";
 
 // ─── Prompts ──────────────────────────────────────────────────────────────────
 
@@ -209,13 +209,36 @@ function buildPrompt(
     .replace(/{VERB}/g, verb);
 }
 
+// Normalize the Anthropic response usage into our LlmUsage shape. The SDK types cache fields as
+// `number | null`, so accept null/undefined and fold both to 0 via `?? 0`.
+function toUsage(message: {
+  usage?: {
+    input_tokens?: number | null;
+    output_tokens?: number | null;
+    cache_creation_input_tokens?: number | null;
+    cache_read_input_tokens?: number | null;
+  } | null;
+}): LlmUsage {
+  const u = message.usage ?? {};
+  return {
+    input_tokens: u.input_tokens ?? 0,
+    output_tokens: u.output_tokens ?? 0,
+    cache_creation_input_tokens: u.cache_creation_input_tokens ?? 0,
+    cache_read_input_tokens: u.cache_read_input_tokens ?? 0,
+  };
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
+// Optional `onUsage` reports token usage from the Anthropic response (input/output/cache tokens)
+// so callers can meter spend per user. Awaited before returning so the record is written within the
+// request lifecycle; callers must make it non-throwing (usage logging must never break generation).
 
 // Generate student assignment content for the given module type and parameters
 export async function generateModuleContent(
   moduleType: ModuleType,
   params: ClarifyingParams,
-  userInput: string
+  userInput: string,
+  onUsage?: (u: LlmUsage) => void | Promise<void>
 ): Promise<string> {
   const prompt = buildPrompt(moduleType, params, userInput);
   const message = await anthropic.messages.create({
@@ -223,24 +246,30 @@ export async function generateModuleContent(
     max_tokens: 4000,
     messages: [{ role: "user", content: prompt }],
   });
+  await onUsage?.(toUsage(message));
   return (message.content[0] as { text: string }).text;
 }
 
 // Generate teacher guide from existing student content
-export async function generateTeacherGuide(studentContent: string): Promise<string> {
+export async function generateTeacherGuide(
+  studentContent: string,
+  onUsage?: (u: LlmUsage) => void | Promise<void>
+): Promise<string> {
   const prompt = TEACHER_GUIDE_PROMPT.replace("{STUDENT_CONTENT}", studentContent);
   const message = await anthropic.messages.create({
     model: MODEL,
     max_tokens: 4000,
     messages: [{ role: "user", content: prompt }],
   });
+  await onUsage?.(toUsage(message));
   return (message.content[0] as { text: string }).text;
 }
 
 // Apply targeted edits to an existing assignment
 export async function applyEdit(
   original: string,
-  editRequest: string
+  editRequest: string,
+  onUsage?: (u: LlmUsage) => void | Promise<void>
 ): Promise<string> {
   const message = await anthropic.messages.create({
     model: MODEL,
@@ -250,5 +279,6 @@ export async function applyEdit(
       content: `Вот задание по английскому:\n\n${original}\n\nВнеси следующие правки: ${editRequest}\n\nВерни полное исправленное задание, сохранив всю структуру и форматирование.`,
     }],
   });
+  await onUsage?.(toUsage(message));
   return (message.content[0] as { text: string }).text;
 }

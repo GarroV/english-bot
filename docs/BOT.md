@@ -22,10 +22,11 @@ supabase/functions/english-bot/
 ├── lib/
 │   ├── types.ts                — все TypeScript-типы (State, ModuleType, TgUpdate и др.)
 │   ├── telegram.ts             — обёртки Telegram API (sendMessage, editMessageText, keyboard, mainMenu)
-│   ├── claude.ts               — тонкий ре-экспорт движка генерации из `_shared/generate.ts` (см. примечание ниже)
+│   ├── claude.ts               — тонкий ре-экспорт движка генерации из `_shared/generate.ts` (generateModuleContent/generateTeacherGuide/applyEdit + MODEL)
 │   ├── config.ts               — конфиг из env: ADMIN_ID (fail-fast при отсутствии/невалидном ADMIN_USER_ID)
 │   ├── errors.ts               — friendlyError(): маппинг ошибок LLM в короткое сообщение пользователю
-│   ├── db.ts                   — Supabase-запросы (сессии, пользователи, задания, инвайты; мост в Folio: resolveFolioWorkspace, saveFolioTemplateFromBot)
+│   ├── pricing.ts              — usageCostUsd(model, usage): стоимость вызова LLM по токенам (#23 учёт)
+│   ├── db.ts                   — Supabase-запросы (сессии, пользователи, задания, инвайты; учёт LLM: logLlmUsage, getUsageThisMonth; мост в Folio: resolveFolioWorkspace, saveFolioTemplateFromBot)
 │   ├── pdf.ts                  — генерация PDF через pdf-lib (A4, PT Sans, поддержка кириллицы)
 │   ├── utils.ts                — makeFilename, makeTeacherFilename, splitIfLong, generateInviteCode, extractTopic, timingSafeEqual
 │   ├── module_detect.ts        — detectModule(), extractParams(), extractVerb() из свободного текста пользователя
@@ -41,10 +42,10 @@ supabase/functions/english-bot/
     ├── edit.ts                 — EDITING: применить правки через Claude
     ├── pdf_download.ts         — отправка PDF(ов) + сохранение в кэш eb_assignments + зеркалирование в библиотеку Folio (мост бот→веб)
     ├── history.ts              — /history: список последних 5 заданий + повторное скачивание PDF
-    └── admin.ts                — /invite, /users, /setup (только ADMIN_USER_ID)
+    └── admin.ts                — /invite, /users, /usage, /setup (только ADMIN_USER_ID)
 ```
 
-> **Движок генерации (shared с Folio):** промпты + `generateModuleContent` / `generateTeacherGuide` / `applyEdit` вынесены в `supabase/functions/_shared/generate.ts` (Deno + Anthropic). `lib/claude.ts` — тонкий ре-экспорт из `_shared`. Тот же движок выставлен по HTTP для веб-Folio через Edge Function `folio-generate` — оба потребителя гоняют идентичный код, без дрейфа промптов.
+> **Движок генерации (shared с Folio):** промпты + `generateModuleContent` / `generateTeacherGuide` / `applyEdit` вынесены в `supabase/functions/_shared/generate.ts` (Deno + Anthropic). `lib/claude.ts` — тонкий ре-экспорт из `_shared`. Тот же движок выставлен по HTTP для веб-Folio через Edge Function `folio-generate` — оба потребителя гоняют идентичный код, без дрейфа промптов. Все три функции принимают опциональный `onUsage`-колбэк (токены из ответа Anthropic, awaited до возврата) — бот пишет расход в `eb_llm_usage` (#23); `folio-generate` колбэк пока не передаёт.
 
 ---
 
@@ -143,6 +144,7 @@ wiz_age_*    → set ageGroup → генерация сразу → POST_GENERAT
 | `eb_sessions` | Текущая сессия пользователя (state + context JSON) |
 | `eb_assignments` | Кэш сгенерированных заданий с pgvector embedding (vector 384) |
 | `eb_invitations` | Инвайт-коды (code, created_by, used_by, used_at) |
+| `eb_llm_usage` | Учёт расхода LLM (#23): source, ref_id, action, model, in/out/cache токены. Пишет service-role (бот); RLS enabled без политик (только service-role). Читалка — `/usage` |
 | `folio_login_tokens` | Токены входа в Folio (общая с Folio); бот пишет подтверждение (`confirmed`) при deep-link `folio_login_<token>` |
 | `folio_signup_invites` | Signup-инвайты Folio (общая с Folio); бот **читает** при подтверждении инвайт-токена, чтобы разрешить регистрацию нового репетитора |
 | `folio_homework_templates` | Библиотека шаблонов Folio (общая с Folio); бот **пишет** (`source='bot'`) сгенерированное задание в воркспейс репетитора при скачивании PDF — мост бот→веб (`resolveFolioWorkspace` + `saveFolioTemplateFromBot`) |

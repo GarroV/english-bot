@@ -1,6 +1,6 @@
 import { sendMessage, answerCallbackQuery, keyboard } from "../lib/telegram.ts";
-import { getSession, setSession } from "../lib/db.ts";
-import { applyEdit } from "../lib/claude.ts";
+import { getSession, setSession, logLlmUsage } from "../lib/db.ts";
+import { applyEdit, MODEL } from "../lib/claude.ts";
 import { splitIfLong } from "../lib/utils.ts";
 import type { TgCallbackQuery, TgMessage } from "../lib/types.ts";
 
@@ -27,7 +27,8 @@ export async function handleApplyEdit(message: TgMessage): Promise<void> {
 
   await sendMessage(chatId, "Вношу правки...");
 
-  const edited = await applyEdit(original, editRequest);
+  const edited = await applyEdit(original, editRequest,
+    (u) => logLlmUsage({ source: "bot", refId: String(userId), action: "edit", model: MODEL, usage: u }));
 
   await setSession(userId, "POST_GENERATION", {
     ...session.context,
