@@ -21,6 +21,16 @@ export interface ClarifyingParams {
   targetVerb?: string; // e.g. "must / have to"
 }
 
+// Allowed item types for an itemized homework question (live-doc Ф1a).
+export type HomeworkItemType = "tf" | "mcq" | "open" | "gap" | "other";
+
+// One structured homework question, produced by LLM itemization of free-text content (live-doc Ф1a).
+export interface HomeworkItem {
+  task_label: string;    // e.g. "Task 1 · True/False"
+  question_text: string;
+  item_type: HomeworkItemType;
+}
+
 // Token usage from an Anthropic response — metered per LLM call (#23 usage counter).
 export interface LlmUsage {
   input_tokens: number;

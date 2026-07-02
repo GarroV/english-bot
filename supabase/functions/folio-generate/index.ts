@@ -1,4 +1,4 @@
-import { generateModuleContent, applyEdit } from "../_shared/generate.ts";
+import { generateModuleContent, applyEdit, itemizeHomework } from "../_shared/generate.ts";
 
 const MODULE_TYPES = [
   "READING_MODULE", "VOCABULARY_MODULE", "TRANSLATION_TEXTS", "TRANSLATION_SENTENCES", "VERB_SENTENCES",
@@ -28,6 +28,16 @@ Deno.serve(async (req) => {
       }
       const edited = await applyEdit(content, edit);
       return json({ content: edited });
+    }
+
+    // Itemize action — разбор текста задания на структурированные вопросы (live-doc Ф1a).
+    if (body.action === "itemize") {
+      const { content } = body;
+      if (typeof content !== "string" || !content.trim() || content.length > 20000) {
+        return json({ error: "bad request" }, 400);
+      }
+      const items = await itemizeHomework(content);
+      return json({ items });
     }
 
     // Generate action (default).
