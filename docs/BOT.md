@@ -9,7 +9,7 @@ Telegram → webhook → Supabase Edge Function (english-bot) → Anthropic API
 ```
 
 **Деплой:** `supabase functions deploy english-bot --no-verify-jwt`
-**Проект:** `btlglelwxazdxfqdmcti` (production)
+**Проект:** `btlglelwxazdxfqdmcti` (**English_bot**, production; аккаунт `vasiliy.garro@gmail.com`, орг `lvfrdaovqwbuakyujbtg`). ⚠️ НЕ путать со вторым проектом того же аккаунта `vbqglndbxkpmreccpqmr` («GarroV's Project»). Полная карта аккаунтов — `docs/README.md` § «Инфраструктура и аккаунты».
 **Webhook URL:** `https://btlglelwxazdxfqdmcti.supabase.co/functions/v1/english-bot`
 
 ---

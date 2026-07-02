@@ -7,6 +7,16 @@
 
 Оба проекта делят один Supabase-проект (`btlglelwxazdxfqdmcti`) и общий LLM-движок (`supabase/functions/_shared/generate.ts`).
 
+## Инфраструктура и аккаунты (сверять ПЕРЕД каждым деплоем/миграцией)
+
+Всё на **личном** аккаунте `vasiliy.garro@gmail.com` — это НЕ рабочий dodobrands (`v.garro@dodobrands.io` встречается только как email супер-админа в данных Folio, не как аккаунт хостинга/БД).
+
+- **Supabase:** проект `btlglelwxazdxfqdmcti` (**English_bot**, орг `lvfrdaovqwbuakyujbtg`, регион `eu-central-1`). ⚠️ В ТОМ ЖЕ аккаунте есть второй проект `vbqglndbxkpmreccpqmr` («GarroV's Project») — **это НЕ он**. Всегда `--project-ref btlglelwxazdxfqdmcti`; сверяй ref в каждой команде и в URL Management-API.
+- **Cloudflare** (хостинг Folio): аккаунт `vasiliy.garro@gmail.com` (id `ea112105dc90594bac815e2e277aedea`), воркер `folio` → `folio.vasiliy-garro.workers.dev`.
+- **Telegram-бот:** `@garro_oracle_bot` (id `8080425387`).
+
+Полная карта (деплой-команды, GitHub-репо, `.env`-креды) — `docs/README.md` § «Инфраструктура и аккаунты» (единый источник).
+
 ---
 
 ## Стек (English Bot)
