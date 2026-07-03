@@ -4,9 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
-import { markSubmitted, saveAnswer } from "@/lib/cabinet/actions";
+import { markSubmitted, saveAnswer, postStudentMessage, listStudentMessages } from "@/lib/cabinet/actions";
 import type { CabinetData } from "@/lib/cabinet/queries";
 import type { CabAssignment, CabItem, CabLesson } from "@/lib/cabinet/derive";
+import type { ChatMessage } from "@/lib/homework/queries";
+import { ChatThread } from "@/components/homework/ChatThread";
 
 const AUTOSAVE_DEBOUNCE_MS = 800;
 
@@ -104,6 +106,25 @@ function AssignmentCard({ a, token, pdfBase }: { a: CabAssignment; token: string
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+
+  // Load the chat thread once on mount; ChatThread then polls via listStudentMessages. Best-effort —
+  // a failed initial load leaves an empty thread that polling will fill.
+  useEffect(() => {
+    let active = true;
+    listStudentMessages(token, a.id)
+      .then((res) => { if (active && res.ok) setChatMessages(res.messages); })
+      .catch(() => { /* transient — polling retries */ });
+    return () => { active = false; };
+  }, [token, a.id]);
+
+  // Throw on failure so ChatThread's polling .catch() keeps the current thread on a transient blip
+  // (returning [] would blank the thread every failed poll). Matches the tutor side's getMessages.
+  async function refreshChat(): Promise<ChatMessage[]> {
+    const res = await listStudentMessages(token, a.id);
+    if (!res.ok) throw new Error(res.error);
+    return res.messages;
+  }
 
   async function onDone() {
     setPending(true);
@@ -166,6 +187,18 @@ function AssignmentCard({ a, token, pdfBase }: { a: CabAssignment; token: string
           {a.content}
         </div>
       )}
+
+      <ChatThread
+        messages={chatMessages}
+        mine="student"
+        onSend={(body) => postStudentMessage(token, a.id, body)}
+        onRefresh={refreshChat}
+        labels={{
+          title: t("chatTitle"), placeholder: t("chatPlaceholder"), send: t("chatSend"),
+          sending: t("chatSending"), empty: t("chatEmpty"), sendError: t("chatSendError"),
+          tutorLabel: t("chatTutor"), studentLabel: t("chatStudent"),
+        }}
+      />
     </article>
   );
 }

@@ -8,9 +8,11 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
-  loadReview, commentOnItem, returnAssignment, acceptAssignment,
+  loadReview, commentOnItem, returnAssignment, acceptAssignment, postTutorMessage,
 } from "@/lib/homework/assignments";
-import type { AssignmentRow, AssignmentReview, ReviewItem } from "@/lib/homework/queries";
+import { getMessages } from "@/lib/homework/queries";
+import type { AssignmentRow, AssignmentReview, ReviewItem, ChatMessage } from "@/lib/homework/queries";
+import { ChatThread, type ChatLabels } from "@/components/homework/ChatThread";
 import { formatDate } from "@/lib/format/date";
 
 interface Labels {
@@ -20,6 +22,7 @@ interface Labels {
   saveComment: string; commentSaved: string;
   returnBtn: string; returned: string; acceptBtn: string; accepted: string;
   acceptedReadonly: string;
+  chat: ChatLabels;
   typeLabels: Record<string, string>;
   statusLabels: Record<string, string>;
 }
@@ -80,18 +83,20 @@ function ReviewDialog({ reviewId, onClose, labels }: {
   const [review, setReview] = useState<AssignmentReview | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   function onOpenChange(open: boolean) {
-    if (!open) { onClose(); setReview(null); }
+    if (!open) { onClose(); setReview(null); setMessages([]); }
   }
 
-  // Load the itemized payload whenever a new assignment is opened for review; ignore a stale response
-  // if the dialog was closed / switched before it resolved.
+  // Load the itemized payload + chat thread whenever a new assignment is opened for review; ignore a
+  // stale response if the dialog was closed / switched before it resolved.
   useEffect(() => {
     if (!reviewId) return;
     let active = true;
     setLoading(true);
     setReview(null);
+    setMessages([]);
     loadReview(reviewId)
       .then((res) => {
         if (!active) return;
@@ -100,6 +105,9 @@ function ReviewDialog({ reviewId, onClose, labels }: {
       })
       .catch(() => { if (active) toast.error(labels.saveError); })
       .finally(() => { if (active) setLoading(false); });
+    getMessages(reviewId)
+      .then((msgs) => { if (active) setMessages(msgs); })
+      .catch(() => { /* thread loads best-effort; polling retries */ });
     return () => { active = false; };
   }, [reviewId, labels.saveError]);
 
@@ -169,6 +177,15 @@ function ReviewDialog({ reviewId, onClose, labels }: {
                 </Button>
               </div>
             )}
+
+            {/* Chat stays open in every status, including after accept (discussion continues). */}
+            <ChatThread
+              messages={messages}
+              mine="tutor"
+              onSend={(body) => postTutorMessage(review.id, body)}
+              onRefresh={() => getMessages(review.id)}
+              labels={labels.chat}
+            />
           </div>
         )}
       </DialogContent>

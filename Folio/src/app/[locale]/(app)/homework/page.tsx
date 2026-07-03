@@ -69,6 +69,11 @@ export default async function HomeworkPage() {
     returnBtn: t("returnBtn"), returned: t("returnedToast"),
     acceptBtn: t("acceptBtn"), accepted: t("acceptedToast"),
     acceptedReadonly: t("acceptedReadonly"),
+    chat: {
+      title: t("chatTitle"), placeholder: t("chatPlaceholder"), send: t("chatSend"),
+      sending: t("chatSending"), empty: t("chatEmpty"), sendError: t("chatSendError"),
+      tutorLabel: t("chatTutor"), studentLabel: t("chatStudent"),
+    },
     typeLabels, statusLabels,
   };
 

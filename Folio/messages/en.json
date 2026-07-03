@@ -153,7 +153,15 @@
     "returnedToast": "Returned for revision",
     "acceptBtn": "Accept",
     "acceptedToast": "Homework accepted",
-    "acceptedReadonly": "Homework accepted — view only."
+    "acceptedReadonly": "Homework accepted — view only.",
+    "chatTitle": "Chat",
+    "chatPlaceholder": "Write a message…",
+    "chatSend": "Send",
+    "chatSending": "Sending…",
+    "chatEmpty": "No messages yet",
+    "chatSendError": "Failed to send",
+    "chatTutor": "Tutor",
+    "chatStudent": "Student"
   },
   "Nav": {
     "dashboard": "Dashboard",
@@ -273,6 +281,14 @@
     "statusReturned": "returned",
     "statusAccepted": "accepted",
     "resubmit": "Submit again",
-    "answersAccepted": "Homework accepted — editing is disabled."
+    "answersAccepted": "Homework accepted — editing is disabled.",
+    "chatTitle": "Chat",
+    "chatPlaceholder": "Write a message…",
+    "chatSend": "Send",
+    "chatSending": "Sending…",
+    "chatEmpty": "No messages yet",
+    "chatSendError": "Failed to send",
+    "chatTutor": "Tutor",
+    "chatStudent": "You"
   }
 }

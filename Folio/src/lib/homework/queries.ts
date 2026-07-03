@@ -114,6 +114,39 @@ export async function getAssignmentReview(id: string): Promise<AssignmentReview 
   };
 }
 
+// One chat message on an assignment thread (live-doc Ф3). `author` is set server-side from context.
+export interface ChatMessage {
+  id: string;
+  author: "student" | "tutor";
+  body: string;
+  createdAt: string;
+}
+
+interface ChatMessageRow {
+  id: string;
+  author: "student" | "tutor";
+  body: string;
+  created_at: string;
+}
+
+// The chat thread for one assignment (RLS-scoped to the caller's workspace through the parent
+// assignment), oldest first. A forged id from another workspace matches no row → empty thread.
+export async function getMessages(assignmentId: string): Promise<ChatMessage[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("folio_homework_messages")
+    .select("id, author, body, created_at")
+    .eq("assignment_id", assignmentId)
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(`getMessages failed: ${error.message}`);
+  return ((data as ChatMessageRow[]) ?? []).map((m) => ({
+    id: m.id,
+    author: m.author,
+    body: m.body,
+    createdAt: m.created_at,
+  }));
+}
+
 // Workspace assignments (RLS-scoped) with student name + template topic/type, newest first.
 export async function listAssignments(): Promise<AssignmentRow[]> {
   const supabase = await createClient();
