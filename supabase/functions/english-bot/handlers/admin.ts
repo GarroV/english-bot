@@ -1,6 +1,7 @@
 import { sendMessage, setMyCommands } from "../lib/telegram.ts";
-import { createInviteCode, listUsers, getUsageThisMonth } from "../lib/db.ts";
+import { createInviteCode, listUsers, getUsageThisMonth, revokeAccess, restoreAccess } from "../lib/db.ts";
 import { usageCostUsd } from "../lib/pricing.ts";
+import { parseTargetTelegramId } from "../lib/utils.ts";
 import { ADMIN_ID } from "../lib/config.ts";
 import type { TgMessage } from "../lib/types.ts";
 
@@ -45,9 +46,52 @@ export async function handleUsers(message: TgMessage): Promise<void> {
     return;
   }
   const lines = users.map(
-    (u) => `• ${u.name}${u.username ? ` (@${u.username})` : ""} — ${u.telegram_id}`
+    (u) =>
+      `• ${u.name}${u.username ? ` (@${u.username})` : ""} — ${u.telegram_id}` +
+      (u.disabled_at ? " — 🚫 отключён" : "")
   );
   await sendMessage(message.chat.id, `Пользователи (${users.length}):\n\n${lines.join("\n")}`);
+}
+
+// /revoke <telegram_id> — soft-revoke a user's access to both the bot and Folio (admin only).
+// Reversible: /restore re-activates. No data is deleted.
+export async function handleRevoke(message: TgMessage): Promise<void> {
+  if (!isAdmin(message.from.id)) {
+    await sendMessage(message.chat.id, "Нет доступа.");
+    return;
+  }
+  const targetId = parseTargetTelegramId(message.text ?? "");
+  if (targetId === null) {
+    await sendMessage(message.chat.id, "Формат: `/revoke <telegram_id>`\nНапр.: `/revoke 123456789`");
+    return;
+  }
+  const { bot, folio } = await revokeAccess(targetId);
+  if (!bot && !folio) {
+    await sendMessage(message.chat.id, `Пользователь \`${targetId}\` не найден ни в боте, ни в Folio.`);
+    return;
+  }
+  const parts = [bot ? "бот" : null, folio ? "Folio" : null].filter(Boolean).join(" и ");
+  await sendMessage(message.chat.id, `Доступ отозван (${parts}) для \`${targetId}\`. Обратимо: /restore ${targetId}`);
+}
+
+// /restore <telegram_id> — mirror of /revoke: re-activate a previously revoked user (admin only).
+export async function handleRestore(message: TgMessage): Promise<void> {
+  if (!isAdmin(message.from.id)) {
+    await sendMessage(message.chat.id, "Нет доступа.");
+    return;
+  }
+  const targetId = parseTargetTelegramId(message.text ?? "");
+  if (targetId === null) {
+    await sendMessage(message.chat.id, "Формат: `/restore <telegram_id>`\nНапр.: `/restore 123456789`");
+    return;
+  }
+  const { bot, folio } = await restoreAccess(targetId);
+  if (!bot && !folio) {
+    await sendMessage(message.chat.id, `Пользователь \`${targetId}\` не найден ни в боте, ни в Folio.`);
+    return;
+  }
+  const parts = [bot ? "бот" : null, folio ? "Folio" : null].filter(Boolean).join(" и ");
+  await sendMessage(message.chat.id, `Доступ восстановлен (${parts}) для \`${targetId}\`.`);
 }
 
 // /usage — сводка расхода LLM за текущий месяц по пользователям (admin only, #23 Фаза 1)

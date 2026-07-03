@@ -31,12 +31,26 @@ async function embed(text: string): Promise<number[] | null> {
   }
 }
 
-// Check whether a Telegram user is registered in the allowlist
+// Check whether a Telegram user is registered AND active (not soft-revoked).
+// Row must exist and disabled_at must be null — a revoked user fails the gate like an unregistered one.
 export async function isAllowed(telegramId: number): Promise<boolean> {
   const { data } = await supabase
     .from("eb_users")
     .select("telegram_id")
     .eq("telegram_id", telegramId)
+    .is("disabled_at", null)
+    .maybeSingle();
+  return data !== null;
+}
+
+// True if the user IS registered but their access was revoked (row exists AND disabled_at not null).
+// Lets the gate tell "access revoked" apart from "never registered" for a clearer message.
+export async function isDisabled(telegramId: number): Promise<boolean> {
+  const { data } = await supabase
+    .from("eb_users")
+    .select("telegram_id")
+    .eq("telegram_id", telegramId)
+    .not("disabled_at", "is", null)
     .maybeSingle();
   return data !== null;
 }
@@ -53,6 +67,10 @@ export async function registerUser(
     username: username ?? null,
     name,
     invited_by: invitedBy ?? null,
+    // NB: disabled_at intentionally NOT set here. A brand-new row defaults to null (active); a
+    // re-registering revoked user (already blocked at handleStart) keeps disabled_at via the upsert's
+    // partial SET — so an invite code can never silently self-reactivate a revoked user.
+    // Re-activation is admin-only via /restore.
   });
   if (error) throw new Error(`registerUser failed: ${error.message}`);
 }
@@ -62,6 +80,76 @@ export async function registerUser(
 export async function deleteUser(telegramId: number): Promise<void> {
   const { error } = await supabase.from("eb_users").delete().eq("telegram_id", telegramId);
   if (error) throw new Error(`deleteUser failed: ${error.message}`);
+}
+
+// Resolve the folio_users.id linked to a Telegram id via the verified telegram auth method, or null.
+async function folioUserIdForTelegram(telegramId: number): Promise<string | null> {
+  const { data } = await supabase
+    .from("folio_auth_methods")
+    .select("user_id")
+    .eq("provider", "telegram")
+    .eq("provider_uid", String(telegramId))
+    .maybeSingle();
+  return data?.user_id != null ? String(data.user_id) : null;
+}
+
+// Soft-revoke access for a user: stamp disabled_at=now() in BOTH eb_users (bot gate) and, if linked,
+// folio_users (Folio gate — RLS then hides their workspace immediately). No DELETE; data is kept.
+// Returns which surfaces were actually flipped (bot=row existed; folio=linked folio user found).
+export async function revokeAccess(
+  telegramId: number,
+): Promise<{ bot: boolean; folio: boolean }> {
+  const now = new Date().toISOString();
+
+  const { data: botRows, error: botErr } = await supabase
+    .from("eb_users")
+    .update({ disabled_at: now })
+    .eq("telegram_id", telegramId)
+    .select("telegram_id");
+  if (botErr) throw new Error(`revokeAccess (bot) failed: ${botErr.message}`);
+  const bot = (botRows?.length ?? 0) > 0;
+
+  let folio = false;
+  const folioUserId = await folioUserIdForTelegram(telegramId);
+  if (folioUserId) {
+    const { data: folioRows, error: folioErr } = await supabase
+      .from("folio_users")
+      .update({ disabled_at: now })
+      .eq("id", folioUserId)
+      .select("id");
+    if (folioErr) throw new Error(`revokeAccess (folio) failed: ${folioErr.message}`);
+    folio = (folioRows?.length ?? 0) > 0;
+  }
+
+  return { bot, folio };
+}
+
+// Mirror of revokeAccess: clear disabled_at (=null) in both eb_users and the linked folio_users,
+// restoring access. Returns which surfaces were re-activated.
+export async function restoreAccess(
+  telegramId: number,
+): Promise<{ bot: boolean; folio: boolean }> {
+  const { data: botRows, error: botErr } = await supabase
+    .from("eb_users")
+    .update({ disabled_at: null })
+    .eq("telegram_id", telegramId)
+    .select("telegram_id");
+  if (botErr) throw new Error(`restoreAccess (bot) failed: ${botErr.message}`);
+  const bot = (botRows?.length ?? 0) > 0;
+
+  let folio = false;
+  const folioUserId = await folioUserIdForTelegram(telegramId);
+  if (folioUserId) {
+    const { data: folioRows, error: folioErr } = await supabase
+      .from("folio_users")
+      .update({ disabled_at: null })
+      .eq("id", folioUserId)
+      .select("id");
+    if (folioErr) throw new Error(`restoreAccess (folio) failed: ${folioErr.message}`);
+    folio = (folioRows?.length ?? 0) > 0;
+  }
+
+  return { bot, folio };
 }
 
 // Fetch the current session row for a Telegram user
@@ -228,7 +316,7 @@ export async function confirmFolioLogin(
   telegramId: number,
   firstName?: string,
   username?: string,
-): Promise<"confirmed" | "not_linked" | "invite_expired" | "invalid"> {
+): Promise<"confirmed" | "not_linked" | "invite_expired" | "invalid" | "disabled"> {
   // 1) token must exist, be pending, and not expired (also read the optional signup invite)
   const { data: tok } = await supabase
     .from("folio_login_tokens")
@@ -237,6 +325,30 @@ export async function confirmFolioLogin(
     .maybeSingle();
   if (!tok || tok.status !== "pending" || Date.parse(tok.expires_at) <= Date.now()) {
     return "invalid";
+  }
+
+  // 1b) block soft-revoked users up front — do NOT confirm the token for them. A revoked bot user
+  // (eb_users.disabled_at set) or a revoked linked Folio user (folio_users.disabled_at set) is denied.
+  const { data: ebUser } = await supabase
+    .from("eb_users")
+    .select("disabled_at")
+    .eq("telegram_id", telegramId)
+    .maybeSingle();
+  if (ebUser?.disabled_at) return "disabled";
+
+  const { data: linkedMethod } = await supabase
+    .from("folio_auth_methods")
+    .select("user_id")
+    .eq("provider", "telegram")
+    .eq("provider_uid", String(telegramId))
+    .maybeSingle();
+  if (linkedMethod) {
+    const { data: folioUser } = await supabase
+      .from("folio_users")
+      .select("disabled_at")
+      .eq("id", linkedMethod.user_id)
+      .maybeSingle();
+    if (folioUser?.disabled_at) return "disabled";
   }
 
   const tgInfo = {
@@ -300,10 +412,10 @@ export async function resolveFolioWorkspace(
 
   const { data: user } = await supabase
     .from("folio_users")
-    .select("id, workspace_id, role, archived_at")
+    .select("id, workspace_id, role, archived_at, disabled_at")
     .eq("id", method.user_id)
     .maybeSingle();
-  if (!user || user.archived_at || user.role === "student") return null;
+  if (!user || user.archived_at || user.disabled_at || user.role === "student") return null;
 
   return { workspaceId: String(user.workspace_id), userId: String(user.id) };
 }

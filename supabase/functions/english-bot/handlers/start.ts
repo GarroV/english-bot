@@ -1,6 +1,7 @@
 import { sendMessage, mainMenu, siteLink, keyboard, editMessageText, answerCallbackQuery } from "../lib/telegram.ts";
 import {
   isAllowed,
+  isDisabled,
   registerUser,
   deleteUser,
   setSession,
@@ -108,6 +109,13 @@ export async function handleStart(message: TgMessage): Promise<void> {
     return;
   }
 
+  // Soft-revoked user (row exists, disabled_at set): show the revoke message and STOP — never funnel
+  // them into re-registration. Re-activation is admin-only via /restore, not self-service by invite.
+  if (await isDisabled(id)) {
+    await sendMessage(chatId, "Ваш доступ отозван. Обратитесь к администратору.");
+    return;
+  }
+
   // Already registered
   if (await isAllowed(id)) {
     await setSession(id, "WAITING_REQUEST");
@@ -168,11 +176,13 @@ export async function handleInviteCode(message: TgMessage): Promise<void> {
 function folioLoginReply(result: Awaited<ReturnType<typeof confirmFolioLogin>>): string {
   return result === "confirmed"
     ? "✅ Вход в Folio подтверждён. Вернись на сайт."
-    : result === "invite_expired"
-      ? "Приглашение истекло или уже использовано. Запроси новую ссылку."
-      : result === "not_linked"
-        ? "Этот Telegram не привязан к Folio."
-        : "Ссылка устарела. Открой вход в Folio заново.";
+    : result === "disabled"
+      ? "Ваш доступ к Folio отозван. Обратитесь к администратору."
+      : result === "invite_expired"
+        ? "Приглашение истекло или уже использовано. Запроси новую ссылку."
+        : result === "not_linked"
+          ? "Этот Telegram не привязан к Folio."
+          : "Ссылка устарела. Открой вход в Folio заново.";
 }
 
 // Explicit confirmation of a Folio web login (#4). Reachable by any Telegram user — Folio users need

@@ -90,6 +90,7 @@ export interface DbUser {
   name: string;
   invited_by?: number;
   created_at: string;
+  disabled_at?: string | null; // null = активен; дата = доступ отозван (мягко, обратимо)
 }
 
 export interface DbAssignment {

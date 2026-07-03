@@ -47,6 +47,15 @@ export function extractTopic(text: string): string {
   return topicMatch ? topicMatch[1].trim() : firstLine.slice(0, 80).trim();
 }
 
+// Parse the target Telegram id argument from an admin command like "/revoke 123456789".
+// Returns the positive integer id, or null if the argument is missing / not a valid integer id.
+export function parseTargetTelegramId(text: string): number | null {
+  const arg = text.trim().split(/\s+/)[1];
+  if (!arg || !/^\d+$/.test(arg)) return null;
+  const id = Number(arg);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
 // Constant-time string comparison for secret/token checks — avoids early-exit timing leaks.
 // Length mismatch folds into the result, so it never short-circuits on the first differing byte.
 export function timingSafeEqual(a: string, b: string): boolean {

@@ -15,8 +15,8 @@ import { handleNewAssignment } from "./handlers/generate.ts";
 import { handleEditAssignment, handleApplyEdit } from "./handlers/edit.ts";
 import { handleDownloadPdf } from "./handlers/pdf_download.ts";
 import { handleHistory, handleHistoryDownload } from "./handlers/history.ts";
-import { handleInvite, handleUsers, handleSetup, handleUsage } from "./handlers/admin.ts";
-import { isAllowed, getSession } from "./lib/db.ts";
+import { handleInvite, handleUsers, handleSetup, handleUsage, handleRevoke, handleRestore } from "./handlers/admin.ts";
+import { isAllowed, isDisabled, getSession } from "./lib/db.ts";
 import { sendMessage } from "./lib/telegram.ts";
 import { timingSafeEqual } from "./lib/utils.ts";
 import type { TgUpdate } from "./lib/types.ts";
@@ -93,12 +93,20 @@ async function route(update: TgUpdate): Promise<void> {
     if (text === "/users") return handleUsers(message);
     if (text === "/usage") return handleUsage(message);
     if (text === "/setup") return handleSetup(message);
+    if (text === "/revoke" || text.startsWith("/revoke ")) return handleRevoke(message);
+    if (text === "/restore" || text.startsWith("/restore ")) return handleRestore(message);
 
     const session = await getSession(userId);
 
     if (!(await isAllowed(userId))) {
+      // A soft-revoked user (row exists, disabled_at set) gets a clear "access revoked" message,
+      // distinct from a never-registered user who is prompted to /start. Registration in progress wins.
       if (session?.state === "REGISTERING") {
         return handleInviteCode(message);
+      }
+      if (await isDisabled(userId)) {
+        await sendMessage(chatId, "Ваш доступ к боту отозван. Обратитесь к администратору.");
+        return;
       }
       await sendMessage(chatId, "Привет! Напиши /start чтобы начать.");
       return;
