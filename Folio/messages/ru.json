@@ -153,7 +153,15 @@
     "returnedToast": "Возвращено на доработку",
     "acceptBtn": "Принять",
     "acceptedToast": "Задание принято",
-    "acceptedReadonly": "Задание принято — только просмотр."
+    "acceptedReadonly": "Задание принято — только просмотр.",
+    "chatTitle": "Чат",
+    "chatPlaceholder": "Написать сообщение…",
+    "chatSend": "Отправить",
+    "chatSending": "Отправка…",
+    "chatEmpty": "Пока нет сообщений",
+    "chatSendError": "Не удалось отправить",
+    "chatTutor": "Репетитор",
+    "chatStudent": "Ученик"
   },
   "Nav": {
     "dashboard": "Панель",
@@ -273,6 +281,14 @@
     "statusReturned": "на доработке",
     "statusAccepted": "принято",
     "resubmit": "Отправить снова",
-    "answersAccepted": "Задание принято — редактирование недоступно."
+    "answersAccepted": "Задание принято — редактирование недоступно.",
+    "chatTitle": "Чат",
+    "chatPlaceholder": "Написать сообщение…",
+    "chatSend": "Отправить",
+    "chatSending": "Отправка…",
+    "chatEmpty": "Пока нет сообщений",
+    "chatSendError": "Не удалось отправить",
+    "chatTutor": "Репетитор",
+    "chatStudent": "Вы"
   }
 }

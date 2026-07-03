@@ -33,6 +33,7 @@
 - `20260701102000_folio_login_token_nonce.sql` — **#4 login-CSRF (session-fixation)**: колонка `nonce_hash` в `folio_login_tokens`. `/api/auth/telegram/start` ставит httpOnly-cookie с nonce и хранит его SHA-256; `/api/auth/telegram/session` потребляет токен только при совпадающей cookie → токен нельзя redeem'ить в чужом браузере. Главная атака (жертва подтверждает чужой вход) закрыта на стороне бота явным подтверждением с предупреждением.
 - `20260701120000_folio_student_cabinet.sql` — **M8 кабинет ученика** (additive): `folio_students.cabinet_token` (ссылка-токен кабинета, ротируемый); `folio_homework_assignments.tutor_comment` (комментарий учителя) + `submitted_at` (ученик нажал «Я сделал»). Новых таблиц нет; кабинет `/[locale]/s/[token]` резолвит токен service-role'ом.
 - `20260702204525_folio_homework_items.sql` — **живой документ ДЗ, Ф1a** (additive): таблица `folio_homework_items` (итемизация задания — вопрос + ответ ученика + per-item комментарий репетитора), RLS через родителя-назначение. Заполняется при назначении через LLM-итемизацию (`folio-generate` action `itemize`).
+- `20260703130000_folio_homework_messages.sql` — **живой документ ДЗ, Ф3** (additive): таблица `folio_homework_messages` (чат по назначению — тред сообщений, пишут оба: репетитор и ученик). RLS через родителя-назначение. Обновление поллингом.
 
 ---
 
@@ -230,6 +231,19 @@ updated_at     timestamptz
 ```
 
 > Реализовано в `20260702204525_folio_homework_items.sql`. Вопросы задания после LLM-итемизации (`folio-generate` action `itemize` → `itemizeHomework` в общем движке; толерантный JSON-парс, best-effort — при неудаче назначение создаётся без items). Заполняется при назначении: `assignTemplate` итемизирует контент шаблона один раз и вставляет одинаковые items для каждого **нового** назначения (`upsert ignoreDuplicates + .select` возвращает только вставленные → дублей при переназначении нет). RLS `workspace_isolation` `FOR ALL` через родителя: `assignment_id in (select id from folio_homework_assignments where workspace_id = folio_current_workspace_id())`. `student_answer` пишет ученик через кабинет (Ф1b, service-role + скоуп token→student→assignment, гейт по статусу `assigned|returned`); `tutor_comment` пишет репетитор per-item (Ф2, `commentOnItem`, сессия + workspace RLS). Разные колонки → одновременная правка не затирается. Дизайн: `docs/superpowers/specs/2026-07-02-homework-live-doc-design.md`.
+
+### folio_homework_messages ✅ (живой документ ДЗ, Ф3)
+
+```
+id             uuid pk
+assignment_id  uuid not null FK → folio_homework_assignments(id) ON DELETE CASCADE
+author         text not null CHECK (author IN ('student','tutor'))
+body           text not null
+created_at     timestamptz not null DEFAULT now()
+-- index on (assignment_id, created_at)
+```
+
+> Реализовано в `20260703130000_folio_homework_messages.sql`. Чат по назначению — отдельный тред сообщений на конкретное `folio_homework_assignments`, помимо per-item комментариев из `folio_homework_items`. Пишут обе стороны. RLS `workspace_isolation` `FOR ALL` через родителя (RLS-through-parent, как у `folio_homework_items`): `assignment_id in (select id from folio_homework_assignments where workspace_id = folio_current_workspace_id())`. **Репетитор** читает/пишет под сессией (`getMessages` / `postTutorMessage` в `lib/homework/`, RLS воркспейс-изоляция + `.select()` подтверждает вставку). **Ученик** читает/пишет только через серверные экшены на service-role (`listStudentMessages` / `postStudentMessage` в `lib/cabinet/actions.ts`), скоуп token→student→assignment (как `saveAnswer`/`markSubmitted`); прямого клиентского доступа к таблице нет. `author` всегда выставляется на сервере из контекста (`'tutor'` в session-экшене, `'student'` в cabinet-экшене) — **никогда не из тела запроса**. Чат открыт в любом статусе, включая `accepted` (обсуждение остаётся) — гейта по статусу нет. Обновление — поллингом (каждые 10 сек, вебсокетов на Cloudflare Workers нет). Общий UI-компонент — `src/components/homework/ChatThread.tsx` (весь текст — экранированный JSX, без `dangerouslySetInnerHTML`). Дизайн: `docs/superpowers/specs/2026-07-02-homework-live-doc-design.md`.
 
 ### lesson_journal_entries
 ```sql

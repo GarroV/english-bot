@@ -9,6 +9,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type AssignResult = { ok: true } | { ok: false; error: string };
 
 const MAX_COMMENT_LEN = 5000;
+const MAX_MESSAGE_LEN = 5000;
 
 // Assignment states in which the tutor may still add/edit per-item feedback. 'accepted' (and legacy
 // 'reviewed') are terminal & read-only — commenting is refused there so finished feedback can't be
@@ -150,6 +151,32 @@ export async function returnAssignment(id: string): Promise<AssignResult> {
 // Accept an assignment — final approval, terminal & read-only (submitted|returned → accepted).
 export async function acceptAssignment(id: string): Promise<AssignResult> {
   return transition(id, ["submitted", "returned"], "accepted");
+}
+
+// Post a tutor message onto an assignment's chat thread (live-doc Ф3). Security: session + workspace
+// RLS — the insert relies on the RLS `with_check` through the parent assignment, so a forged
+// assignmentId from another workspace is rejected. `author` is hard-set to 'tutor' from context, never
+// taken from the client. `.select("id")` confirms a row landed; an empty result (RLS refused a foreign
+// assignmentId) is an explicit failure, never a silent ok. Chat stays open in every status, including
+// after 'accepted' (discussion continues) — no status gate here by design.
+export async function postTutorMessage(assignmentId: string, body: string): Promise<AssignResult> {
+  if (!assignmentId || typeof assignmentId !== "string") return { ok: false, error: "bad input" };
+  if (typeof body !== "string") return { ok: false, error: "bad input" };
+  const trimmed = body.trim();
+  if (!trimmed) return { ok: false, error: "empty message" };
+  if (trimmed.length > MAX_MESSAGE_LEN) return { ok: false, error: "message too long" };
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "not authenticated" };
+
+  const { data, error } = await supabase
+    .from("folio_homework_messages")
+    .insert({ assignment_id: assignmentId, author: "tutor", body: trimmed })
+    .select("id");
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: "not found" };
+  return { ok: true };
 }
 
 // Server-action wrapper so the client review dialog can load the itemized review payload on demand.
