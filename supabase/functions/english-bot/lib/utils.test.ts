@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert";
-import { makeFilename, makeTeacherFilename, splitIfLong, generateInviteCode, extractTopic, timingSafeEqual } from "./utils.ts";
+import { makeFilename, makeTeacherFilename, splitIfLong, generateInviteCode, extractTopic, timingSafeEqual, parseTargetTelegramId } from "./utils.ts";
 
 Deno.test("makeFilename: extracts level and topic", () => {
   const text = "Level: A2 · Topic: Food and Restaurants · Age group: Teenager\n\nSome text";
@@ -81,4 +81,36 @@ Deno.test("timingSafeEqual: different lengths do not match", () => {
 
 Deno.test("timingSafeEqual: two empty strings match", () => {
   assertEquals(timingSafeEqual("", ""), true);
+});
+
+Deno.test("parseTargetTelegramId: parses a valid numeric id from /revoke", () => {
+  assertEquals(parseTargetTelegramId("/revoke 123456789"), 123456789);
+});
+
+Deno.test("parseTargetTelegramId: parses a valid numeric id from /restore", () => {
+  assertEquals(parseTargetTelegramId("/restore 8080425387"), 8080425387);
+});
+
+Deno.test("parseTargetTelegramId: tolerates extra whitespace", () => {
+  assertEquals(parseTargetTelegramId("  /revoke    42  "), 42);
+});
+
+Deno.test("parseTargetTelegramId: returns null when the id argument is missing", () => {
+  assertEquals(parseTargetTelegramId("/revoke"), null);
+});
+
+Deno.test("parseTargetTelegramId: returns null for a non-numeric argument", () => {
+  assertEquals(parseTargetTelegramId("/revoke abc"), null);
+});
+
+Deno.test("parseTargetTelegramId: returns null for a mixed-format argument", () => {
+  assertEquals(parseTargetTelegramId("/revoke 123abc"), null);
+});
+
+Deno.test("parseTargetTelegramId: returns null for zero", () => {
+  assertEquals(parseTargetTelegramId("/revoke 0"), null);
+});
+
+Deno.test("parseTargetTelegramId: ignores a trailing second argument", () => {
+  assertEquals(parseTargetTelegramId("/revoke 42 55"), 42);
 });

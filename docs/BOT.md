@@ -26,9 +26,9 @@ supabase/functions/english-bot/
 │   ├── config.ts               — конфиг из env: ADMIN_ID (fail-fast при отсутствии/невалидном ADMIN_USER_ID)
 │   ├── errors.ts               — friendlyError(): маппинг ошибок LLM в короткое сообщение пользователю
 │   ├── pricing.ts              — usageCostUsd(model, usage): стоимость вызова LLM по токенам (#23 учёт)
-│   ├── db.ts                   — Supabase-запросы (сессии, пользователи, задания, инвайты; учёт LLM: logLlmUsage, getUsageThisMonth; мост в Folio: resolveFolioWorkspace, saveFolioTemplateFromBot)
+│   ├── db.ts                   — Supabase-запросы (сессии, пользователи, задания, инвайты; гейт: isAllowed/isDisabled; отзыв доступа: revokeAccess/restoreAccess; учёт LLM: logLlmUsage, getUsageThisMonth; мост в Folio: resolveFolioWorkspace, saveFolioTemplateFromBot)
 │   ├── pdf.ts                  — генерация PDF через pdf-lib (A4, PT Sans, поддержка кириллицы)
-│   ├── utils.ts                — makeFilename, makeTeacherFilename, splitIfLong, generateInviteCode, extractTopic, timingSafeEqual
+│   ├── utils.ts                — makeFilename, makeTeacherFilename, splitIfLong, generateInviteCode, extractTopic, timingSafeEqual, parseTargetTelegramId
 │   ├── module_detect.ts        — detectModule(), extractParams(), extractVerb() из свободного текста пользователя
 │   ├── folio_login.ts          — parseLoginPayload(): разбор deep-link `folio_login_<token>` для входа в Folio
 │   ├── utils.test.ts           — тесты utils
@@ -42,7 +42,7 @@ supabase/functions/english-bot/
     ├── edit.ts                 — EDITING: применить правки через Claude
     ├── pdf_download.ts         — отправка PDF(ов) + сохранение в кэш eb_assignments + зеркалирование в библиотеку Folio (мост бот→веб)
     ├── history.ts              — /history: список последних 5 заданий + повторное скачивание PDF
-    └── admin.ts                — /invite, /users, /usage, /setup (только ADMIN_USER_ID)
+    └── admin.ts                — /invite, /users, /usage, /setup, /revoke, /restore (только ADMIN_USER_ID)
 ```
 
 > **Движок генерации (shared с Folio):** промпты + `generateModuleContent` / `generateTeacherGuide` / `applyEdit` вынесены в `supabase/functions/_shared/generate.ts` (Deno + Anthropic). `lib/claude.ts` — тонкий ре-экспорт из `_shared`. Тот же движок выставлен по HTTP для веб-Folio через Edge Function `folio-generate` — оба потребителя гоняют идентичный код, без дрейфа промптов. Все три функции принимают опциональный `onUsage`-колбэк (токены из ответа Anthropic, awaited до возврата) — бот пишет расход в `eb_llm_usage` (#23); `folio-generate` колбэк пока не передаёт.
@@ -74,7 +74,9 @@ EDITING          — ждёт текст с правками к заданию
                          — защита от login-CSRF (#4). confirmFolioLogin вызывается только по нажатию
                          «Подтвердить» (handleFolioConfirm). Если Telegram не привязан, но токен несёт
                          валидный signup-инвайт — подтверждает для регистрации репетитора
-                         (исход invite_expired, если инвайт протух). Иначе обычный путь /start
+                         (исход invite_expired, если инвайт протух). Отозванный пользователь
+                         (eb_users.disabled_at или folio_users.disabled_at) → исход disabled, токен
+                         НЕ подтверждается. Иначе обычный путь /start
 folio_confirm_<token> / folio_cancel_<token> → роутятся в index.ts ДО гейта isAllowed
                          (Folio-юзер может быть не в allowlist бота)
 ввод инвайт-кода (REGISTERING) → WAITING_REQUEST
@@ -94,6 +96,28 @@ wiz_age_*    → set ageGroup → генерация сразу → POST_GENERAT
 "📄 Скачать PDF" (download_pdf) → остаётся POST_GENERATION, шлёт файл(ы) + пишет кэш + мост в Folio
 "🆕 Новое задание" (new_assignment) → WAITING_REQUEST
 ```
+
+---
+
+## Гейт доступа и отзыв (revoke)
+
+**Гейт бота.** `index.ts` пропускает обычные сообщения только через `isAllowed(from.id)` — строка в `eb_users` есть **и** `disabled_at IS NULL`. Админ-команды (`/invite`, `/users`, `/usage`, `/setup`, `/revoke`, `/restore`) роутятся ДО гейта и само-гейтятся через `isAdmin` (`ADMIN_USER_ID`).
+
+**Мягкий отзыв доступа (обратимый, данные сохраняются).** Раньше отозвать можно было только неиспользованный инвайт; после регистрации способа не было. Теперь:
+
+- `/revoke <telegram_id>` (admin) → `revokeAccess`: ставит `disabled_at = now()` в **обеих** таблицах — `eb_users` (гейт бота) и, если Telegram связан с Folio (`folio_auth_methods`→`folio_users`), `folio_users` (гейт Folio). Никаких DELETE. Отвечает, что реально отключено (бот / Folio / оба / не найдено).
+- `/restore <telegram_id>` (admin) → `restoreAccess`: зеркально снимает `disabled_at` (=null) в обеих таблицах.
+- Аргумент разбирается чистой `parseTargetTelegramId` (положительное целое; иначе подсказка формата).
+- `/users` помечает отключённых строкой « — 🚫 отключён».
+
+**Каскад блокировки:**
+1. **Бот** — `isAllowed` возвращает false для отключённого. Гейт различает «отозван» и «не зарегистрирован»: `isDisabled` (строка есть И `disabled_at` не null) → сообщение «Ваш доступ к боту отозван. Обратитесь к администратору.» вместо общего приглашения.
+2. **Новый логин Folio** — `confirmFolioLogin` в начале проверяет `eb_users.disabled_at` и `folio_users.disabled_at`; при любом из них возвращает исход `disabled` и НЕ подтверждает токен.
+3. **Активная сессия Folio** — блокируется немедленно через RLS: `folio_current_workspace_id()` теперь `... where id = auth.uid() and disabled_at is null`. Отключённый репетитор не резолвит воркспейс → все RLS-запросы пусты (Folio деградирует чисто: пустые состояния / редирект по `!user`, без падений). JWT не инвалидируется принудительно — RLS-null делает access-token бесполезным для данных воркспейса (полная инвалидация refresh-токенов — в беклоге).
+
+**Реактивация.** Перерегистрация по новому инвайту (`registerUser` с `disabled_at: null` в upsert) также снимает отзыв на стороне бота.
+
+Defense-in-depth: `resolveFolioWorkspace` (мост бот→веб) тоже возвращает null для `disabled_at` (как для `archived_at` / `role='student'`).
 
 ---
 
@@ -140,7 +164,7 @@ wiz_age_*    → set ageGroup → генерация сразу → POST_GENERAT
 
 | Таблица | Назначение |
 |---------|-----------|
-| `eb_users` | Зарегистрированные пользователи (telegram_id, name, username, invited_by) |
+| `eb_users` | Зарегистрированные пользователи (telegram_id, name, username, invited_by, **disabled_at**). `disabled_at` null = активен; дата = доступ отозван (мягко, обратимо) — исключается из гейта `isAllowed` |
 | `eb_sessions` | Текущая сессия пользователя (state + context JSON) |
 | `eb_assignments` | Кэш сгенерированных заданий с pgvector embedding (vector 384) |
 | `eb_invitations` | Инвайт-коды (code, created_by, used_by, used_at) |

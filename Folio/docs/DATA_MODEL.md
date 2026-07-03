@@ -34,6 +34,7 @@
 - `20260701120000_folio_student_cabinet.sql` — **M8 кабинет ученика** (additive): `folio_students.cabinet_token` (ссылка-токен кабинета, ротируемый); `folio_homework_assignments.tutor_comment` (комментарий учителя) + `submitted_at` (ученик нажал «Я сделал»). Новых таблиц нет; кабинет `/[locale]/s/[token]` резолвит токен service-role'ом.
 - `20260702204525_folio_homework_items.sql` — **живой документ ДЗ, Ф1a** (additive): таблица `folio_homework_items` (итемизация задания — вопрос + ответ ученика + per-item комментарий репетитора), RLS через родителя-назначение. Заполняется при назначении через LLM-итемизацию (`folio-generate` action `itemize`).
 - `20260703130000_folio_homework_messages.sql` — **живой документ ДЗ, Ф3** (additive): таблица `folio_homework_messages` (чат по назначению — тред сообщений, пишут оба: репетитор и ученик). RLS через родителя-назначение. Обновление поллингом.
+- `20260703140001_folio_users_disabled.sql` — **отзыв доступа** (additive): колонка `folio_users.disabled_at` (мягкий обратимый отзыв) + `folio_current_workspace_id()` дополнена условием `disabled_at is null` (RLS-чокпоинт: отключённый репетитор не резолвит воркспейс → все RLS-запросы пусты, активная сессия немедленно нерабочая). Сигнатура/атрибуты функции не менялись — только `WHERE`. Парная ботовая миграция — `20260703140000_eb_users_disabled.sql`. Ставится/снимается командами бота `/revoke` · `/restore`.
 
 ---
 
@@ -63,7 +64,13 @@ language      folio_language enum('ru', 'en') DEFAULT 'ru'
 created_at    timestamptz
 updated_at    timestamptz
 archived_at   timestamptz nullable
+disabled_at   timestamptz nullable                 -- мягкий отзыв доступа (обратимо): null = активен.
+                                                    -- Отключённый исключается из folio_current_workspace_id()
+                                                    -- → все RLS-запросы пусты (блокировка активной сессии).
+                                                    -- Ставится/снимается командами бота /revoke · /restore
 ```
+
+> **`disabled_at` (отзыв доступа, `20260703140001_folio_users_disabled.sql`).** Мягкое обратимое отключение репетитора — параллельно с ботовым `eb_users.disabled_at`. Отзыв ставит `disabled_at=now()` в обеих таблицах (команда бота `/revoke <telegram_id>` → `revokeAccess` в `supabase/functions/english-bot/lib/db.ts`), восстановление (`/restore`) снимает оба. Данные воркспейса сохраняются (не архив, не DELETE). Блокировка Folio — через RLS-чокпоинт `folio_current_workspace_id()` (см. ниже). UI отзыва в самой Folio-админке пока нет — только команда бота (в беклоге).
 
 ### folio_auth_methods ✅
 ```sql
@@ -390,7 +397,7 @@ GROUP BY student_id, workspace_id
 
 ## RLS политики (шаблон)
 
-Прямой подзапрос `SELECT workspace_id FROM folio_users WHERE id = auth.uid()` в политике на саму `folio_users` вызывает рекурсию RLS. Поэтому используется `security definer` функция `folio_current_workspace_id()`, которая обходит RLS при чтении `folio_users`:
+Прямой подзапрос `SELECT workspace_id FROM folio_users WHERE id = auth.uid()` в политике на саму `folio_users` вызывает рекурсию RLS. Поэтому используется `security definer` функция `folio_current_workspace_id()`, которая обходит RLS при чтении `folio_users`. Начиная с `20260703140001_folio_users_disabled.sql` она также исключает отключённых (`disabled_at is null`) — это RLS-чокпоинт отзыва доступа: у отключённого репетитора функция возвращает null → все воркспейс-RLS запросы пусты → активная сессия немедленно нерабочая (сигнатура/атрибуты функции не менялись, только `WHERE`):
 
 ```sql
 create or replace function folio_current_workspace_id()
@@ -398,7 +405,7 @@ returns uuid
 language sql security definer stable
 set search_path = public
 as $$
-  select workspace_id from folio_users where id = auth.uid()
+  select workspace_id from folio_users where id = auth.uid() and disabled_at is null
 $$;
 
 -- Каждая таблица: пользователь видит и пишет только в свой workspace.

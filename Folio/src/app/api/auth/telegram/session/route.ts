@@ -23,7 +23,11 @@ export async function POST(request: NextRequest) {
       // Existing user → normal login.
       const admin = createAdminClient();
       const { data: user } = await admin
-        .from("folio_users").select("email").eq("id", consumed.folioUserId).maybeSingle();
+        .from("folio_users").select("email, disabled_at").eq("id", consumed.folioUserId).maybeSingle();
+      // Defense-in-depth against the confirm→revoke→mint race: even a token confirmed before the revoke
+      // must not mint a session for a now-disabled user. (RLS-null already neuters data access; this
+      // stops the session from being established at all.)
+      if (user?.disabled_at) return NextResponse.json({ error: "access revoked" }, { status: 403 });
       email = (user?.email as string | null) ?? null;
       if (!email) return NextResponse.json({ error: "user has no email" }, { status: 409 });
     } else if (consumed.signupInviteId && consumed.telegramId) {
