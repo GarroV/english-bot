@@ -136,13 +136,24 @@
     "pickStudents": "Pick at least one student",
     "assignmentsTitle": "Assignments",
     "noAssignments": "No assignments yet",
-    "commentPlaceholder": "Comment for the student…",
-    "review": "Reviewed",
-    "reviewedToast": "Marked as reviewed",
     "statusAssigned": "Assigned",
     "statusSubmitted": "Submitted",
-    "statusReviewed": "Reviewed",
-    "noDue": "no due date"
+    "noDue": "no due date",
+    "statusReturned": "Returned",
+    "statusAccepted": "Accepted",
+    "reviewOpen": "Review",
+    "reviewTitle": "Review homework",
+    "loading": "Loading…",
+    "studentAnswer": "Student answer",
+    "noAnswer": "No answer yet",
+    "commentPlaceholder": "Comment on the answer…",
+    "saveComment": "Save comment",
+    "commentSaved": "Saved",
+    "returnBtn": "Return for revision",
+    "returnedToast": "Returned for revision",
+    "acceptBtn": "Accept",
+    "acceptedToast": "Homework accepted",
+    "acceptedReadonly": "Homework accepted — view only."
   },
   "Nav": {
     "dashboard": "Dashboard",
@@ -239,7 +250,6 @@
     "noDue": "No due date",
     "statusAssigned": "assigned",
     "statusSubmitted": "in review",
-    "statusReviewed": "reviewed",
     "markDone": "Done",
     "marking": "Marking…",
     "markedDone": "Marked as done",
@@ -259,6 +269,10 @@
     "online": "online",
     "offline": "offline",
     "invalidTitle": "Link not valid",
-    "invalidBody": "The link may have been rotated. Ask your tutor for a new one."
+    "invalidBody": "The link may have been rotated. Ask your tutor for a new one.",
+    "statusReturned": "returned",
+    "statusAccepted": "accepted",
+    "resubmit": "Submit again",
+    "answersAccepted": "Homework accepted — editing is disabled."
   }
 }
