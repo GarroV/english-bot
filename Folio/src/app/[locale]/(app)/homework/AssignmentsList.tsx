@@ -8,9 +8,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
-  loadReview, commentOnItem, returnAssignment, acceptAssignment, postTutorMessage,
+  loadReview, commentOnItem, returnAssignment, acceptAssignment, postTutorMessage, loadMessages,
 } from "@/lib/homework/assignments";
-import { getMessages } from "@/lib/homework/queries";
 import type { AssignmentRow, AssignmentReview, ReviewItem, ChatMessage } from "@/lib/homework/queries";
 import { ChatThread, type ChatLabels } from "@/components/homework/ChatThread";
 import { formatDate } from "@/lib/format/date";
@@ -105,7 +104,7 @@ function ReviewDialog({ reviewId, onClose, labels }: {
       })
       .catch(() => { if (active) toast.error(labels.saveError); })
       .finally(() => { if (active) setLoading(false); });
-    getMessages(reviewId)
+    loadMessages(reviewId)
       .then((msgs) => { if (active) setMessages(msgs); })
       .catch(() => { /* thread loads best-effort; polling retries */ });
     return () => { active = false; };
@@ -183,7 +182,7 @@ function ReviewDialog({ reviewId, onClose, labels }: {
               messages={messages}
               mine="tutor"
               onSend={(body) => postTutorMessage(review.id, body)}
-              onRefresh={() => getMessages(review.id)}
+              onRefresh={() => loadMessages(review.id)}
               labels={labels.chat}
             />
           </div>
