@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { assignInputSchema, type AssignInput } from "./assignments-schema";
 import { callItemize, type HomeworkItem } from "./generate";
-import { getAssignmentReview, type AssignmentReview } from "./queries";
+import { getAssignmentReview, getMessages, type AssignmentReview, type ChatMessage } from "./queries";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type AssignResult = { ok: true } | { ok: false; error: string };
@@ -195,4 +195,15 @@ export async function loadReview(id: string): Promise<ReviewResult> {
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "failed" };
   }
+}
+
+// Server-action wrapper so the client chat never imports queries.ts directly (it pulls in
+// next/headers, which is server-only and breaks the client bundle). getMessages runs the session
+// client — workspace RLS scopes the thread; an unauthenticated session or bad id yields nothing.
+export async function loadMessages(assignmentId: string): Promise<ChatMessage[]> {
+  if (!assignmentId || typeof assignmentId !== "string") return [];
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  return getMessages(assignmentId);
 }
