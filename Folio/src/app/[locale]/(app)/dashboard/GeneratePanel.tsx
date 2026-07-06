@@ -12,6 +12,13 @@ import { generateHomework, saveTemplate, editHomework } from "@/lib/homework/act
 import { assignTemplate } from "@/lib/homework/assignments";
 import { MODULE_TYPES, LEVELS, AGE_GROUPS, type HomeworkInput } from "@/lib/homework/schema";
 
+// Read the server-provided filename (уровень + тема, как в боте) out of Content-Disposition.
+function filenameFromDisposition(header: string | null): string {
+  const match = header?.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+  if (!match) return "homework.pdf";
+  try { return decodeURIComponent(match[1]); } catch { return match[1]; }
+}
+
 export interface GenerateFormLabels {
   type: string; topic: string; level: string; age: string; verb: string;
   generate: string; generating: string; saveTemplate: string; saved: string; saveError: string;
@@ -119,9 +126,10 @@ export function GeneratePanel({
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content }),
       });
       if (!res.ok) { toast.error(form.saveError); return; }
+      const filename = filenameFromDisposition(res.headers.get("content-disposition"));
       const url = URL.createObjectURL(await res.blob());
       const a = document.createElement("a");
-      a.href = url; a.download = "homework.pdf"; document.body.appendChild(a); a.click(); a.remove();
+      a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(url);
     } catch { toast.error(form.saveError); } finally { setPending(false); }
   }
