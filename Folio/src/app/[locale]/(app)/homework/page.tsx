@@ -1,11 +1,12 @@
 import { getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { listTemplates, listAssignments } from "@/lib/homework/queries";
+import { listTemplates } from "@/lib/homework/queries";
 import { listActiveStudents } from "@/lib/lessons/queries";
 import { HomeworkGenerator } from "./HomeworkGenerator";
 import { TemplatesList } from "./TemplatesList";
-import { AssignmentsList } from "./AssignmentsList";
+// ВРЕМЕННО (2026-07): раздел «Проверка заданий» (AssignmentsList) скрыт вместе с онлайн-сдачей ДЗ.
+// AssignmentsList.tsx и listAssignments() целы; восстановить — из git-истории коммита скрытия.
 
 const TYPE_KEY: Record<string, string> = {
   READING_MODULE: "typeReading",
@@ -13,13 +14,6 @@ const TYPE_KEY: Record<string, string> = {
   TRANSLATION_TEXTS: "typeTranslationTexts",
   TRANSLATION_SENTENCES: "typeTranslationSentences",
   VERB_SENTENCES: "typeVerb",
-};
-const STATUS_KEY: Record<string, string> = {
-  assigned: "statusAssigned",
-  submitted: "statusSubmitted",
-  returned: "statusReturned",
-  accepted: "statusAccepted",
-  reviewed: "statusAccepted", // legacy rows map onto the new terminal label
 };
 
 export default async function HomeworkPage() {
@@ -30,19 +24,15 @@ export default async function HomeworkPage() {
     return null;
   }
 
-  const [templates, students, assignments] = await Promise.all([
+  const [templates, students] = await Promise.all([
     listTemplates(),
     listActiveStudents(),
-    listAssignments(),
   ]);
 
   const t = await getTranslations("Homework");
   // Plain serializable maps — functions cannot be passed to Client Components.
   const typeLabels: Record<string, string> = Object.fromEntries(
     Object.entries(TYPE_KEY).map(([type, key]) => [type, t(key)]),
-  );
-  const statusLabels: Record<string, string> = Object.fromEntries(
-    Object.entries(STATUS_KEY).map(([status, key]) => [status, t(key)]),
   );
 
   const genLabels = {
@@ -60,23 +50,6 @@ export default async function HomeworkPage() {
     cancel: t("cancel"), assigned: t("assigned"), pickStudents: t("pickStudents"),
     saveError: t("saveError"), typeLabels,
   };
-  const asgLabels = {
-    assignmentsTitle: t("assignmentsTitle"), noAssignments: t("noAssignments"),
-    noDue: t("noDue"), saveError: t("saveError"),
-    reviewOpen: t("reviewOpen"), reviewTitle: t("reviewTitle"), loading: t("loading"),
-    studentAnswer: t("studentAnswer"), noAnswer: t("noAnswer"),
-    commentPlaceholder: t("commentPlaceholder"), saveComment: t("saveComment"), commentSaved: t("commentSaved"),
-    returnBtn: t("returnBtn"), returned: t("returnedToast"),
-    acceptBtn: t("acceptBtn"), accepted: t("acceptedToast"),
-    acceptedReadonly: t("acceptedReadonly"),
-    chat: {
-      title: t("chatTitle"), placeholder: t("chatPlaceholder"), send: t("chatSend"),
-      sending: t("chatSending"), empty: t("chatEmpty"), sendError: t("chatSendError"),
-      tutorLabel: t("chatTutor"), studentLabel: t("chatStudent"),
-    },
-    typeLabels, statusLabels,
-  };
-
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-8">
       <h1 className="text-4xl font-bold">{t("title")}</h1>
@@ -85,7 +58,7 @@ export default async function HomeworkPage() {
         <h2 className="text-xl font-bold">{t("templates")}</h2>
         <TemplatesList templates={templates} students={students} labels={tplLabels} />
       </div>
-      <AssignmentsList assignments={assignments} labels={asgLabels} />
+      {/* ВРЕМЕННО (2026-07): <AssignmentsList> — раздел проверки сданных ДЗ — скрыт. */}
     </main>
   );
 }

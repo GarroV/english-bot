@@ -3,10 +3,11 @@ import { redirect } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { listLessonsInRange } from "@/lib/lessons/queries";
 import { listBalances } from "@/lib/billing/queries";
-import { listAssignments } from "@/lib/homework/queries";
 import { listStudents } from "@/lib/students/queries";
-import { todayLessons, debtors, homeworkBuckets, mskDateString } from "@/lib/dashboard/derive";
+import { todayLessons, debtors } from "@/lib/dashboard/derive";
 import { DashboardBento } from "./DashboardBento";
+// ВРЕМЕННО (2026-07): homework-блок дашборда скрыт вместе с онлайн-сдачей ДЗ —
+// listAssignments()/homeworkBuckets() больше не вызываются здесь; восстановить из git-истории.
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -22,16 +23,14 @@ export default async function DashboardPage() {
   const fromISO = new Date(now.getTime() - 24 * 3_600_000).toISOString();
   const toISO = new Date(now.getTime() + 24 * 3_600_000).toISOString();
 
-  const [lessonsRaw, balances, assignments, allStudents] = await Promise.all([
+  const [lessonsRaw, balances, allStudents] = await Promise.all([
     listLessonsInRange(fromISO, toISO),
     listBalances(),
-    listAssignments(),
     listStudents(true),
   ]);
 
   const today = todayLessons(lessonsRaw, nowISO);
   const debt = debtors(balances);
-  const hw = homeworkBuckets(assignments, mskDateString(nowISO));
   const students = allStudents.filter((s) => s.archived_at == null).map((s) => ({ id: s.id, name: s.name }));
 
   const d = await getTranslations("Dashboard");
@@ -42,7 +41,6 @@ export default async function DashboardPage() {
       nowISO={nowISO}
       todayLessons={today}
       debtors={debt}
-      hw={hw}
       students={students}
       todayLabels={{
         todayLessons: d("todayLessons"),
@@ -71,7 +69,6 @@ export default async function DashboardPage() {
         confirm: h("confirmAssign"), cancel: h("cancel"), assigned: h("assigned"),
         pickStudents: h("pickStudents"), error: h("saveError"),
       }}
-      hwLabels={{ homework: d("homework"), onCheck: d("onCheck"), overdue: d("overdue"), noHomework: d("noHomework") }}
       debtLabels={{ debts: d("debts"), toReceive: d("toReceive"), noDebts: d("noDebts") }}
     />
   );
