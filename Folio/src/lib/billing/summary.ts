@@ -1,6 +1,7 @@
 // Месячная сводка «Денег»: заработано/получено, раскладка занятий, прогноз до конца месяца.
 // Месяц определяется по Москве (UTC+3, без DST) — как весь продукт.
 import type { BillingEntry } from "./fifo";
+import { effectiveDate } from "./fifo";
 import { chargeAmount } from "./amount";
 
 const MSK_OFFSET_MS = 3 * 3_600_000;
@@ -32,6 +33,7 @@ export function monthRangeUtc(monthKey: string): { fromISO: string; toISO: strin
   return { fromISO: new Date(from).toISOString(), toISO: new Date(to).toISOString() };
 }
 
+// Сдвигает месячный ключ на delta месяцев.
 export function shiftMonthKey(monthKey: string, delta: number): string {
   const [y, m] = monthKey.split("-").map(Number);
   const d = new Date(Date.UTC(y, m - 1 + delta, 1));
@@ -39,19 +41,23 @@ export function shiftMonthKey(monthKey: string, delta: number): string {
 }
 
 const MONTHS_RU = ["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"];
+// Преобразует ключ месяца в русское название, например "2026-07" → "июль 2026".
 export function monthLabelRu(monthKey: string): string {
   const [y, m] = monthKey.split("-").map(Number);
   return `${MONTHS_RU[m - 1]} ${y}`;
 }
 
+// Проверяет, принадлежит ли момент `iso` месяцу по Москве.
 const inMonth = (iso: string, monthKey: string) => mskMonthKey(iso) === monthKey;
 
+// Вычисляет месячную сводку: заработано, получено, статус занятий, прогноз.
 export function buildMonthSummary(entries: BillingEntry[], lessons: MonthLesson[], monthKey: string, nowISO: string): MonthSummary {
   let charged = 0;
   let received = 0;
   for (const e of entries) {
-    const eff = e.type === "charge" && e.lesson ? e.lesson.scheduled_at : e.created_at;
+    const eff = effectiveDate(e);
     if (!inMonth(eff, monthKey)) continue;
+    // Скидки (отрицательные charges) уменьшают «заработано» — по спеке А3 сводка нетто.
     if (e.type === "charge") charged += e.amount;
     else received += e.amount;
   }

@@ -35,7 +35,7 @@ const toKop = (rub: number) => Math.round(rub * 100);
 const toRub = (kop: number) => kop / 100;
 
 // Эффективная дата строки: у charge с занятием — дата занятия, иначе дата записи.
-const effectiveDate = (e: BillingEntry) => (e.type === "charge" && e.lesson ? e.lesson.scheduled_at : e.created_at);
+export const effectiveDate = (e: BillingEntry) => (e.type === "charge" && e.lesson ? e.lesson.scheduled_at : e.created_at);
 
 // Раскладывает леджер одного ученика: кредитный пул (платежи + скидки) гасит положительные
 // начисления от старых к новым; максимум одно занятие получается partial.
