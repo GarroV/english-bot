@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { chargeAmount } from "../amount";
-import { paymentInputSchema } from "../schema";
+import { paymentInputSchema, chargeInputSchema } from "../schema";
 
 const S = "11111111-1111-4111-8111-111111111111";
 
@@ -20,5 +20,19 @@ describe("paymentInputSchema", () => {
   });
   it("rejects a non-uuid student", () => {
     expect(paymentInputSchema.safeParse({ studentId: "x", amount: 500 }).success).toBe(false);
+  });
+});
+
+describe("chargeInputSchema", () => {
+  it("accepts extra charge and discount with positive amount", () => {
+    expect(chargeInputSchema.safeParse({ studentId: S, amount: 500, kind: "extra", note: "учебник" }).success).toBe(true);
+    expect(chargeInputSchema.safeParse({ studentId: S, amount: 200, kind: "discount" }).success).toBe(true);
+  });
+  it("rejects zero/negative (sign is set by server, not form)", () => {
+    expect(chargeInputSchema.safeParse({ studentId: S, amount: 0, kind: "extra" }).success).toBe(false);
+    expect(chargeInputSchema.safeParse({ studentId: S, amount: -5, kind: "discount" }).success).toBe(false);
+  });
+  it("rejects unknown kind", () => {
+    expect(chargeInputSchema.safeParse({ studentId: S, amount: 5, kind: "bonus" }).success).toBe(false);
   });
 });
