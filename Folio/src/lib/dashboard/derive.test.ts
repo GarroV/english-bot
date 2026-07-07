@@ -38,9 +38,9 @@ describe("todayLessons", () => {
 describe("debtors", () => {
   it("только положительный баланс, по убыванию, с суммой", () => {
     const r = debtors([
-      { student_id: "1", name: "A", charged: 100, paid: 100, balance: 0 },
-      { student_id: "2", name: "B", charged: 300, paid: 100, balance: 200 },
-      { student_id: "3", name: "C", charged: 150, paid: 100, balance: 50 },
+      { student_id: "1", name: "A", charged: 100, paid: 100, balance: 0, default_rate: null },
+      { student_id: "2", name: "B", charged: 300, paid: 100, balance: 200, default_rate: null },
+      { student_id: "3", name: "C", charged: 150, paid: 100, balance: 50, default_rate: null },
     ]);
     expect(r.rows.map((x) => x.student_id)).toEqual(["2", "3"]);
     expect(r.total).toBe(250);
