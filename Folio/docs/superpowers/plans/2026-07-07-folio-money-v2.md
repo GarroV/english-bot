@@ -10,6 +10,8 @@
 
 **Spec:** `Folio/docs/superpowers/specs/2026-07-07-folio-money-v2-cabinet-engagement-design.md` (раздел А).
 
+> **Изменение объёма 2026-07-07 (решение владельца в ходе исполнения):** блок «реквизиты» ПОЛНОСТЬЮ исключён — ученики платят переводом на карту/наличными и знают куда. Не делаются: `getPaymentDetails` (Task 4), `savePaymentDetails` (Task 6), диалог «Реквизиты» и кнопка ⚙ (Task 8), i18n-ключи paymentDetails/paymentDetailsHint/settings (Task 7), грант-миграция. `buildReminderMessage`/`buildMonthStatement` вызываются с `details = null` (сигнатуры не меняются). Колонка `payment_details` из применённой миграции остаётся пустой (помечена в DATA_MODEL.md).
+
 ## Global Constraints
 
 - Рабочая директория UI/lib: `Folio/` (пути ниже — от корня репо). Тесты: `cd Folio && npm run test`. Type-check: `cd Folio && npx tsc --noEmit`. Сборка: `cd Folio && npm run build`.
