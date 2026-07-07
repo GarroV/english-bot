@@ -72,7 +72,7 @@
     "saveError": "Не удалось сохранить",
     "archivedToast": "Ученик в архиве",
     "restoredToast": "Ученик возвращён",
-    "cabinet": "Кабинет",
+    "cabinet": "Ссылка на кабинет",
     "cabinetCopied": "Ссылка на кабинет скопирована"
   },
   "Schedule": {
