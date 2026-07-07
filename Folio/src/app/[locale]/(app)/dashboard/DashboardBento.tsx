@@ -1,29 +1,22 @@
-import { PencilLine, Wallet } from "lucide-react";
+import { Wallet } from "lucide-react";
 import type { LessonWithStudents } from "@/lib/lessons/queries";
 import type { Balance } from "@/lib/billing/queries";
-import type { AssignmentRow } from "@/lib/homework/queries";
 import { TodayLessons, type TodayLessonsLabels } from "./TodayLessons";
 import { GeneratePanel, type GenerateFormLabels, type GenerateDashLabels, type GenerateAssignLabels } from "./GeneratePanel";
 import { MiniBlock } from "./MiniBlock";
 
-interface HwBuckets {
-  review: AssignmentRow[];
-  overdue: AssignmentRow[];
-  reviewCount: number;
-  overdueCount: number;
-}
+// ВРЕМЕННО (2026-07): homework-блок дашборда («на проверку / просрочено») скрыт вместе с онлайн-сдачей ДЗ.
+// Пропсы hw/hwLabels, тип HwBuckets и homeworkBuckets() убраны из UI; восстановить — из git-истории.
 
 export interface DashboardBentoProps {
   nowISO: string;
   todayLessons: LessonWithStudents[];
   debtors: { rows: Balance[]; total: number };
-  hw: HwBuckets;
   students: { id: string; name: string }[];
   todayLabels: TodayLessonsLabels;
   genForm: GenerateFormLabels;
   genDash: GenerateDashLabels;
   genAssign: GenerateAssignLabels;
-  hwLabels: { homework: string; onCheck: string; overdue: string; noHomework: string };
   debtLabels: { debts: string; toReceive: string; noDebts: string };
 }
 
@@ -41,39 +34,8 @@ export function DashboardBento(p: DashboardBentoProps) {
           <GeneratePanel form={p.genForm} dash={p.genDash} students={p.students} assign={p.genAssign} />
         </div>
 
-        {/* Right: homework + debts (expandable) */}
+        {/* Right: debts (expandable). ВРЕМЕННО (2026-07): homework-блок «на проверку» скрыт. */}
         <div className="flex flex-col gap-5">
-          <MiniBlock
-            icon={<PencilLine className="h-5 w-5" />}
-            value={String(p.hw.reviewCount + p.hw.overdueCount)}
-            title={p.hwLabels.homework}
-            sub={`${p.hw.reviewCount} ${p.hwLabels.onCheck} · ${p.hw.overdueCount} ${p.hwLabels.overdue}`}
-            tone="amber"
-          >
-            {p.hw.review.length + p.hw.overdue.length === 0 ? (
-              <p className="py-2 text-sm text-muted-foreground">{p.hwLabels.noHomework}</p>
-            ) : (
-              <ul>
-                {[...p.hw.review.map((a) => ({ a, kind: "review" as const })),
-                  ...p.hw.overdue.map((a) => ({ a, kind: "overdue" as const }))].map(({ a, kind }) => (
-                  <li key={a.id} className="flex items-center gap-2 border-t border-border py-2 text-sm first:border-t-0">
-                    <span className="min-w-0 truncate">
-                      <span className="font-medium">{a.template_topic ?? "—"}</span>
-                      <span className="text-muted-foreground"> · {a.student_name ?? "—"}</span>
-                    </span>
-                    <span className={`ml-auto flex-none rounded-full px-2 py-0.5 text-xs font-bold ${
-                      kind === "overdue"
-                        ? "bg-[color:var(--brand-coral)]/15 text-[color:var(--brand-coral)]"
-                        : "bg-amber-500/15 text-amber-500"
-                    }`}>
-                      {kind === "overdue" ? p.hwLabels.overdue : p.hwLabels.onCheck}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </MiniBlock>
-
           <MiniBlock
             icon={<Wallet className="h-5 w-5" />}
             value={`${p.debtors.total} ₽`}
