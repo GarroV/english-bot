@@ -30,7 +30,8 @@ function star(n: number, k: number, R: number, phaseDeg = -90): string[] {
 
 const OUTER_RUNES = "ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ ᚷ ᚹ ᚺ ᚾ ᛁ ᛃ ᛇ ᛈ ᛉ ᛊ ᛏ ᛒ ᛖ ᛗ ᛚ ᛜ ᛞ ᛟ";
 const INNER_RUNES = "ᚨ ᚱ ᛊ ᛏ ᚾ ᛒ ᛖ ᛗ";
-const DIGITS = "0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9";
+// Middle ring — extended runic/rune-like signs (Anglo-Saxon futhorc + extras), no digits.
+const MID_RUNES = "ᚪ ᚫ ᚣ ᛠ ᚸ ᛢ ᛥ ᚻ ᛄ ᛥ ᛝ ᚦ ᛡ ᚹ ᛥ ᛒ ᚷ ᛦ ᚩ ᛥ ᛁ ᛠ ᛗ ᛥ ᚪ ᛞ ᛚ ᛥ ᚫ ᛄ ᚾ ᛥ";
 
 const BRIGHT = "#d7fff8"; // near-white cyan for the hottest accents
 
@@ -55,7 +56,7 @@ export function MagicBackground() {
       >
         <defs>
           <path id="mbRune" d="M500,500 m-452,0 a452,452 0 1,1 904,0 a452,452 0 1,1 -904,0" />
-          <path id="mbDigit" d="M500,500 m-404,0 a404,404 0 1,0 808,0 a404,404 0 1,0 -808,0" />
+          <path id="mbMid" d="M500,500 m-404,0 a404,404 0 1,0 808,0 a404,404 0 1,0 -808,0" />
           <path id="mbInner" d="M500,500 m-150,0 a150,150 0 1,1 300,0 a150,150 0 1,1 -300,0" />
           <radialGradient id="mbCore" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor={BRIGHT} stopOpacity="0.9" />
@@ -79,12 +80,12 @@ export function MagicBackground() {
           </text>
         </g>
 
-        {/* L2 — numerals + segmented + thin rings (CCW). */}
+        {/* L2 — second runic ring + segmented + thin rings (CCW). No digits. */}
         <g className="folio-spin-rev">
           <circle cx={C} cy={C} r="430" stroke="currentColor" strokeWidth="0.7" strokeOpacity="0.3" />
           <circle cx={C} cy={C} r="422" stroke="currentColor" strokeWidth="1.4" strokeOpacity="0.5" pathLength={360} strokeDasharray="1.5 6.5" />
-          <text fill="currentColor" fillOpacity="0.55" fontSize="21" letterSpacing="4" style={{ fontFamily: "ui-monospace, monospace", fontWeight: 600 }}>
-            <textPath href="#mbDigit" startOffset="0" textLength="2538" lengthAdjust="spacingAndGlyphs">{DIGITS}</textPath>
+          <text fill="currentColor" fillOpacity="0.55" fontSize="26" letterSpacing="3" style={{ fontFamily: "Georgia, serif" }}>
+            <textPath href="#mbMid" startOffset="0" textLength="2538" lengthAdjust="spacingAndGlyphs">{MID_RUNES}</textPath>
           </text>
           <circle cx={C} cy={C} r="382" stroke="currentColor" strokeWidth="0.6" strokeOpacity="0.3" />
         </g>
