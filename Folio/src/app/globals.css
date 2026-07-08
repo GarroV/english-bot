@@ -135,7 +135,22 @@
     @apply font-sans;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    /* App-wide ambient gradient wash (teal + coral + violet) over the base — airy, colourful,
+       fixed so it spans the whole interface on scroll. Cards/tables are opaque and float above it. */
+    background-color: var(--background);
+    background-image:
+      radial-gradient(1100px 780px at 8% -8%, color-mix(in oklch, var(--primary) 16%, transparent), transparent 58%),
+      radial-gradient(1000px 720px at 112% 6%, color-mix(in oklch, var(--brand-coral) 13%, transparent), transparent 55%),
+      radial-gradient(1250px 1050px at 55% 118%, color-mix(in oklch, var(--chart-4) 12%, transparent), transparent 60%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+  .dark body {
+    background-image:
+      radial-gradient(1100px 780px at 8% -8%, color-mix(in oklch, var(--primary) 26%, transparent), transparent 60%),
+      radial-gradient(1000px 720px at 112% 6%, color-mix(in oklch, var(--brand-coral) 20%, transparent), transparent 56%),
+      radial-gradient(1250px 1050px at 55% 118%, color-mix(in oklch, var(--chart-4) 22%, transparent), transparent 62%);
   }
   /* Oswald referenced directly (next/font emits --font-oswald); @theme inline does NOT
      emit --font-heading as a usable custom property, which previously caused serif fallback. */
