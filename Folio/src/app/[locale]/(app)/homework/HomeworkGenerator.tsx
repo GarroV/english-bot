@@ -14,7 +14,7 @@ interface Labels {
   generate: string; generating: string; result: string; saveTemplate: string;
   saved: string; saveError: string;
   typeReading: string; typeVocabulary: string; typeTranslationTexts: string;
-  typeTranslationSentences: string; typeVerb: string;
+  typeTranslationSentences: string; typeVerb: string; typeWarmup: string;
   ageTeen: string; ageYoung: string; ageAdult: string;
 }
 
@@ -26,6 +26,7 @@ export function HomeworkGenerator({ labels }: { labels: Labels }) {
     TRANSLATION_TEXTS: labels.typeTranslationTexts,
     TRANSLATION_SENTENCES: labels.typeTranslationSentences,
     VERB_SENTENCES: labels.typeVerb,
+    WARMUP_MODULE: labels.typeWarmup,
   };
   const ages = [
     { v: "teen", label: labels.ageTeen },
@@ -49,9 +50,11 @@ export function HomeworkGenerator({ labels }: { labels: Labels }) {
   }
 
   const selectCls = "rounded-xl border border-border bg-card px-3 py-2 text-sm";
+  // Topic is optional for the warm-up module; required for the rest.
+  const topicRequired = moduleType !== "WARMUP_MODULE";
 
   async function onGenerate() {
-    if (!topic.trim()) { toast.error(labels.saveError); return; }
+    if (topicRequired && !topic.trim()) { toast.error(labels.saveError); return; }
     setPending(true);
     setContent("");
     try {
@@ -115,7 +118,7 @@ export function HomeworkGenerator({ labels }: { labels: Labels }) {
       </div>
 
       <div>
-        <Button onClick={onGenerate} disabled={pending || !topic.trim()}>
+        <Button onClick={onGenerate} disabled={pending || (topicRequired && !topic.trim())}>
           {pending && !content ? labels.generating : labels.generate}
         </Button>
       </div>
