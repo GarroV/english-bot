@@ -27,10 +27,11 @@ supabase/functions/english-bot/
 │   ├── errors.ts               — friendlyError(): маппинг ошибок LLM в короткое сообщение пользователю
 │   ├── pricing.ts              — usageCostUsd(model, usage): стоимость вызова LLM по токенам (#23 учёт)
 │   ├── db.ts                   — Supabase-запросы (сессии, пользователи, задания, инвайты; гейт: isAllowed/isDisabled; отзыв доступа: revokeAccess/restoreAccess; учёт LLM: logLlmUsage, getUsageThisMonth; мост в Folio: resolveFolioWorkspace, saveFolioTemplateFromBot)
-│   ├── pdf.ts                  — генерация PDF через pdf-lib (A4, PT Sans, поддержка кириллицы)
+│   ├── pdf.ts                  — генерация PDF через pdf-lib (A4, PT Sans regular+bold — полные TTF с кириллицей; строки-заголовки Module:/Task N ·/Teacher's Guide · — жирным, isHeaderLine)
 │   ├── utils.ts                — makeFilename, makeTeacherFilename, splitIfLong, generateInviteCode, extractTopic, timingSafeEqual, parseTargetTelegramId
 │   ├── module_detect.ts        — detectModule(), extractParams(), extractVerb() из свободного текста пользователя
 │   ├── folio_login.ts          — parseLoginPayload(): разбор deep-link `folio_login_<token>` для входа в Folio
+│   ├── pdf.test.ts             — тесты isHeaderLine
 │   ├── utils.test.ts           — тесты utils
 │   ├── module_detect.test.ts   — тесты детекции модулей
 │   └── folio_login.test.ts     — тесты разбора login-payload
