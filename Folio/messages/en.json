@@ -284,7 +284,13 @@
     "lessons": "Lessons",
     "createdAt": "Created",
     "noWorkspaces": "No workspaces yet",
-    "saveError": "Error"
+    "saveError": "Error",
+    "accessRevoke": "Revoke access",
+    "accessRestore": "Restore access",
+    "accessRevokedBadge": "🚫 disabled",
+    "accessConfirmRevoke": "Revoke access for “{name}”? The tutor loses Folio and bot access; all data is kept and access can be restored.",
+    "accessRevokedToast": "Access revoked",
+    "accessRestoredToast": "Access restored"
   },
   "Cabinet": {
     "greeting": "Hi, {name}!",
