@@ -146,3 +146,33 @@
     line-height: 1.1;
   }
 }
+
+/* ── Dashboard "magic circle" ambient background (MagicBackground.tsx) ───────── */
+@keyframes folio-spin { to { transform: rotate(360deg); } }
+@keyframes folio-pulse {
+  0%, 100% { transform: scale(0.92); opacity: 0.5; }
+  50%      { transform: scale(1.06); opacity: 1; }
+}
+.folio-spin-slow, .folio-spin-rev, .folio-spin-med, .folio-spin-fast {
+  transform-box: fill-box;
+  transform-origin: center;
+  will-change: transform;
+}
+.folio-spin-slow { animation: folio-spin 120s linear infinite; }
+.folio-spin-rev  { animation: folio-spin  90s linear infinite reverse; }
+.folio-spin-med  { animation: folio-spin  70s linear infinite; }
+.folio-spin-fast { animation: folio-spin  48s linear infinite reverse; }
+.folio-magic-glow {
+  position: absolute;
+  width: 58vh;
+  height: 58vh;
+  border-radius: 9999px;
+  background: radial-gradient(circle, color-mix(in oklch, var(--primary) 45%, transparent) 0%, transparent 62%);
+  filter: blur(30px);
+  animation: folio-pulse 8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .folio-spin-slow, .folio-spin-rev, .folio-spin-med, .folio-spin-fast, .folio-magic-glow {
+    animation: none;
+  }
+}
