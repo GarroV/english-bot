@@ -129,15 +129,17 @@ Defense-in-depth: `resolveFolioWorkspace` (мост бот→веб) тоже в
 
 | Тип | Константа | Описание |
 |-----|-----------|----------|
-| Reading | `READING_MODULE` | Авторский текст + 8 видов упражнений (TF, Comprehension, MCQ, Gap fill, Word formation, Matching, Error correction, Key word transformation) |
-| Vocabulary | `VOCABULARY_MODULE` | Словарный список 15–18 единиц + 7 упражнений, без текста для чтения |
+| Reading | `READING_MODULE` | Авторский текст + упражнения (TF, Comprehension, MCQ, Gap fill, Word formation, Matching, Error correction, Key word transformation, **Agree or disagree** — мнения персонажей). Для грамматической темы — текст, насыщенный целевой конструкцией, + задание **Grammar practice** (выбор формы) |
+| Vocabulary | `VOCABULARY_MODULE` | Словарный список 15–18 единиц + упражнения, без текста для чтения |
 | Перевод (тексты) | `TRANSLATION_TEXTS` | 4–5 жанровых текстов на русском для перевода (аналитика, публицистика, официальный стиль, статистика, непереводимое) |
-| Перевод (предложения) | `TRANSLATION_SENTENCES` | 3–4 блока по грамматической теме, 8–12 предложений каждый |
+| Перевод (предложения) | `TRANSLATION_SENTENCES` | 3–4 блока; для конкретной грамматической темы (например Past Continuous) КАЖДОЕ предложение требует целевой конструкции, блоки — её разные употребления |
 | Глаголы (предложения) | `VERB_SENTENCES` | 20 предложений на русском под конкретный глагол / пару (например `must / have to`); глагол спрашивается отдельным шагом (`WAITING_VERB`) |
 
-**Teacher's Guide** — только для Reading и Vocabulary, и только если на шаге версии выбрано «С ответами для учителя» (`version=teacher`). Генерируется отдельным вызовом Claude (`generateTeacherGuide`), отдаётся вторым PDF.
+**Уровневый ориентир (CEFR)** — в каждый промпт генерации подставляется описание диапазона `{LEVEL_DESC}` из словаря `LEVEL_GUIDE` (`_shared/generate.ts`): что за лексика, грамматика и длина предложений соответствуют A2/B1/B2/C1/C2. Промпт обязывает соблюдать уровень и в тексте, и в каждом задании (в т.ч. сложность ошибок в Error correction). Введено 2026-07-08 после аудита качества: модель дрейфовала (элементарные ошибки уровня A2 внутри C1-задания).
 
-**Детекция модуля** — `detectModule()` в `lib/module_detect.ts` определяет тип по ключевым словам из свободного запроса (vocabulary/лексика → VOCABULARY_MODULE, перевод/translation + текст → TRANSLATION_TEXTS, глагол → VERB_SENTENCES и т.д.); `extractParams()` вытаскивает уровень/возраст, `extractVerb()` — целевой глагол. Это лишь предустановка визарда — пользователь подтверждает/меняет всё кнопками.
+**Teacher's Guide** — только для Reading и Vocabulary, и только если на шаге версии выбрано «С ответами для учителя» (`version=teacher`). Генерируется отдельным вызовом Claude (`generateTeacherGuide`), отдаётся вторым PDF. Для вопросов на мнение (Discussion, Agree or disagree) и открытых вопросов без ответа в тексте ключ не выдумывается — ставится прочерк с пометкой «вопрос на мнение».
+
+**Детекция модуля** — `detectModule()` в `lib/module_detect.ts` определяет тип по ключевым словам из свободного запроса (vocabulary/лексика → VOCABULARY_MODULE; перевод/translation + текст → TRANSLATION_TEXTS; глагол → VERB_SENTENCES; **названная грамматическая тема** — времена `past/present/future + simple/continuous/perfect`, conditionals, passive voice, reported speech, а также рус. «паст континиус», «кондишнл», «пассивный залог», «косвенная речь» → TRANSLATION_SENTENCES). Голые слова `past`/`future` не триггерят (это частые слова тем: «future of work»). `extractParams()` вытаскивает уровень/возраст, `extractVerb()` — целевой глагол. Это лишь предустановка визарда — пользователь подтверждает/меняет всё кнопками.
 
 ---
 

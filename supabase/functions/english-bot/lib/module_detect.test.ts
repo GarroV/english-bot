@@ -19,6 +19,20 @@ Deno.test("detectModule: vocabulary keywords", () => {
   assertEquals(detectModule("лексика по теме путешествия"), "VOCABULARY_MODULE");
 });
 
+Deno.test("detectModule: grammar topics by name go to translation sentences", () => {
+  assertEquals(detectModule("задание на past continuous, B1"), "TRANSLATION_SENTENCES");
+  assertEquals(detectModule("паст континиус для подростка"), "TRANSLATION_SENTENCES");
+  assertEquals(detectModule("Present Perfect B2"), "TRANSLATION_SENTENCES");
+  assertEquals(detectModule("отработать conditionals"), "TRANSLATION_SENTENCES");
+  assertEquals(detectModule("passive voice, взрослый"), "TRANSLATION_SENTENCES");
+  assertEquals(detectModule("косвенная речь C1"), "TRANSLATION_SENTENCES");
+});
+
+Deno.test("detectModule: topic words like future do not trigger grammar detection", () => {
+  assertEquals(detectModule("текст про future of work"), "READING_MODULE");
+  assertEquals(detectModule("reading про past civilizations"), "READING_MODULE");
+});
+
 Deno.test("detectModule: reading is default", () => {
   assertEquals(detectModule("B2, бизнес, взрослый"), "READING_MODULE");
   assertEquals(detectModule("прочитали книгу Animal Farm"), "READING_MODULE");

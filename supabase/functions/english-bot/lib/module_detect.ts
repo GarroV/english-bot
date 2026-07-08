@@ -15,6 +15,14 @@ export function detectModule(input: string): ModuleType {
   if (/переводн.*предложен|перевод.*предложен|грамматик|модальн.*глаго|изолирован.*предложен/.test(s)) {
     return "TRANSLATION_SENTENCES";
   }
+  // Grammar topics named directly (tenses, conditionals, passive, reported speech) → sentence drills.
+  // Bare "past"/"future" are NOT enough — they are common topic words ("future of work").
+  if (
+    /\b(past|present|future)\s+(simple|continuous|perfect)\b|\bconditionals?\b|\bpassive\s+voice\b|\breported\s+speech\b/.test(s) ||
+    /(паст|презент|фьюче)\s*(симпл|континиус|перфект)|кондишнл|пассивн.*залог|косвенн.*реч/.test(s)
+  ) {
+    return "TRANSLATION_SENTENCES";
+  }
   // Vocabulary: "лексика", "словарные", "погонять", "без текста"
   if (/лексик|словарн|погонять|без текста/.test(s)) {
     return "VOCABULARY_MODULE";
