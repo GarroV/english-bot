@@ -291,7 +291,15 @@
     "accessRevokedBadge": "🚫 disabled",
     "accessConfirmRevoke": "Revoke access for “{name}”? The tutor loses Folio and bot access; all data is kept and access can be restored.",
     "accessRevokedToast": "Access revoked",
-    "accessRestoredToast": "Access restored"
+    "accessRestoredToast": "Access restored",
+    "statsToggle": "Workspace stats",
+    "statsLessonsMonth": "Lessons this month",
+    "statsLessonsLine": "{done} done · {cancelled} cancelled · {upcoming} upcoming",
+    "statsGenerations": "Generations",
+    "statsCountLine": "{month} this month · {total} total",
+    "statsTemplates": "Assignments",
+    "statsLastActivity": "Last activity",
+    "statsNever": "—"
   },
   "Cabinet": {
     "greeting": "Hi, {name}!",

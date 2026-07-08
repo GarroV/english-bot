@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,23 @@ interface Labels {
   createdAt: string; noWorkspaces: string; saveError: string;
   accessRevoke: string; accessRestore: string; accessRevokedBadge: string;
   accessConfirmRevoke: string; accessRevokedToast: string; accessRestoredToast: string;
+  statsToggle: string; statsLessonsMonth: string; statsLessonsLine: string;
+  statsGenerations: string; statsCountLine: string; statsTemplates: string;
+  statsLastActivity: string; statsNever: string;
+}
+
+// Подстановка "{name}"-плейсхолдеров в raw-шаблоны next-intl на клиенте (как fill в StudentCards).
+const fillStat = (tpl: string, vars: Record<string, string | number>) =>
+  tpl.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? ""));
+
+// Мини-блок статистики в раскрытой строке воркспейса (#77).
+function StatBlock({ title, line }: { title: string; line: string }) {
+  return (
+    <div className="rounded-xl bg-background/60 px-3.5 py-2.5">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
+      <p className="mt-0.5 text-sm font-medium tabular-nums">{line}</p>
+    </div>
+  );
 }
 
 export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
@@ -32,6 +49,7 @@ export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
   const [ttl, setTtl] = useState("14");
   const [pending, setPending] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [statsFor, setStatsFor] = useState<string | null>(null);
 
   const linkFor = (token: string) => `${origin}/${locale}/invite/${token}`;
 
@@ -174,28 +192,55 @@ export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
               </thead>
               <tbody>
                 {workspaces.map((w) => (
-                  <tr key={w.id} className={`border-b border-border last:border-0 ${w.tutor_disabled ? "opacity-60" : ""}`}>
-                    <td className="p-3 font-medium">{w.name}</td>
-                    <td className="p-3">
-                      {w.tutor_name ?? "—"}{w.tutor_telegram ? ` · ${w.tutor_telegram}` : ""}
-                      {w.tutor_disabled && (
-                        <span className="ml-2 rounded-full bg-destructive/12 px-2 py-0.5 text-xs font-bold text-destructive">
-                          {labels.accessRevokedBadge}
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-3">{w.students}</td>
-                    <td className="p-3">{w.lessons}</td>
-                    <td className="p-3 text-muted-foreground">{formatDate(w.created_at)}</td>
-                    <td className="p-3 text-right">
-                      {w.owner_user_id && (
-                        <Button variant={w.tutor_disabled ? "outline" : "ghost"} size="sm" disabled={pending}
-                          onClick={() => onAccessToggle(w)}>
-                          {w.tutor_disabled ? labels.accessRestore : labels.accessRevoke}
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
+                  <Fragment key={w.id}>
+                    <tr className={`border-b border-border last:border-0 ${w.tutor_disabled ? "opacity-60" : ""}`}>
+                      <td className="p-3 font-medium">
+                        <button type="button" onClick={() => setStatsFor((v) => (v === w.id ? null : w.id))}
+                          aria-expanded={statsFor === w.id} aria-label={labels.statsToggle}
+                          className="inline-flex items-center gap-1.5 hover:underline">
+                          <span aria-hidden className="text-xs text-muted-foreground">{statsFor === w.id ? "▾" : "▸"}</span>
+                          {w.name}
+                        </button>
+                      </td>
+                      <td className="p-3">
+                        {w.tutor_name ?? "—"}{w.tutor_telegram ? ` · ${w.tutor_telegram}` : ""}
+                        {w.tutor_disabled && (
+                          <span className="ml-2 rounded-full bg-destructive/12 px-2 py-0.5 text-xs font-bold text-destructive">
+                            {labels.accessRevokedBadge}
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3">{w.students}</td>
+                      <td className="p-3">{w.lessons}</td>
+                      <td className="p-3 text-muted-foreground">{formatDate(w.created_at)}</td>
+                      <td className="p-3 text-right">
+                        {w.owner_user_id && (
+                          <Button variant={w.tutor_disabled ? "outline" : "ghost"} size="sm" disabled={pending}
+                            onClick={() => onAccessToggle(w)}>
+                            {w.tutor_disabled ? labels.accessRestore : labels.accessRevoke}
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                    {statsFor === w.id && (
+                      <tr className="border-b border-border bg-secondary/30 last:border-0">
+                        <td colSpan={6} className="p-4">
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                            <StatBlock title={labels.statsLessonsMonth}
+                              line={fillStat(labels.statsLessonsLine, {
+                                done: w.stats.monthLessonsDone, cancelled: w.stats.monthLessonsCancelled, upcoming: w.stats.monthLessonsUpcoming,
+                              })} />
+                            <StatBlock title={labels.statsGenerations}
+                              line={fillStat(labels.statsCountLine, { month: w.stats.monthGenerations, total: w.stats.totalGenerations })} />
+                            <StatBlock title={labels.statsTemplates}
+                              line={fillStat(labels.statsCountLine, { month: w.stats.monthTemplates, total: w.stats.totalTemplates })} />
+                            <StatBlock title={labels.statsLastActivity}
+                              line={w.stats.lastActivityAt ? formatDate(w.stats.lastActivityAt) : labels.statsNever} />
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
