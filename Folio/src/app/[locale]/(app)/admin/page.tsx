@@ -34,6 +34,10 @@ export default async function AdminPage({
     accessRevoke: t("accessRevoke"), accessRestore: t("accessRestore"),
     accessRevokedBadge: t("accessRevokedBadge"), accessConfirmRevoke: t.raw("accessConfirmRevoke"),
     accessRevokedToast: t("accessRevokedToast"), accessRestoredToast: t("accessRestoredToast"),
+    statsToggle: t("statsToggle"), statsLessonsMonth: t("statsLessonsMonth"),
+    statsLessonsLine: t.raw("statsLessonsLine"), statsGenerations: t("statsGenerations"),
+    statsCountLine: t.raw("statsCountLine"), statsTemplates: t("statsTemplates"),
+    statsLastActivity: t("statsLastActivity"), statsNever: t("statsNever"),
   };
 
   return (

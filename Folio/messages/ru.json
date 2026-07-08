@@ -290,7 +290,15 @@
     "accessRevokedBadge": "🚫 отключён",
     "accessConfirmRevoke": "Отозвать доступ у «{name}»? Репетитор потеряет вход в Folio и бота; все данные сохранятся, доступ можно вернуть.",
     "accessRevokedToast": "Доступ отозван",
-    "accessRestoredToast": "Доступ восстановлен"
+    "accessRestoredToast": "Доступ восстановлен",
+    "statsToggle": "Статистика воркспейса",
+    "statsLessonsMonth": "Занятия за месяц",
+    "statsLessonsLine": "{done} проведено · {cancelled} отменено · {upcoming} впереди",
+    "statsGenerations": "Генерации",
+    "statsCountLine": "{month} за месяц · {total} всего",
+    "statsTemplates": "Задания",
+    "statsLastActivity": "Последняя активность",
+    "statsNever": "—"
   },
   "Cabinet": {
     "greeting": "Привет, {name}!",
