@@ -1,6 +1,13 @@
 import { assertEquals } from "jsr:@std/assert";
 import { detectModule, extractParams, extractVerb } from "./module_detect.ts";
 
+Deno.test("detectModule: warm-up keywords", () => {
+  assertEquals(detectModule("разминка про путешествия B1"), "WARMUP_MODULE");
+  assertEquals(detectModule("разогрев на 5 минут"), "WARMUP_MODULE");
+  assertEquals(detectModule("warm-up про еду, взрослый"), "WARMUP_MODULE");
+  assertEquals(detectModule("нужен айсбрейкер для группы"), "WARMUP_MODULE");
+});
+
 Deno.test("detectModule: translation texts keywords", () => {
   assertEquals(detectModule("нужны переводные тексты B2"), "TRANSLATION_TEXTS");
   assertEquals(detectModule("перевод текстов с русского"), "TRANSLATION_TEXTS");

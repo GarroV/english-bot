@@ -1,7 +1,7 @@
 import { generateModuleContent, applyEdit, itemizeHomework } from "../_shared/generate.ts";
 
 const MODULE_TYPES = [
-  "READING_MODULE", "VOCABULARY_MODULE", "TRANSLATION_TEXTS", "TRANSLATION_SENTENCES", "VERB_SENTENCES",
+  "READING_MODULE", "VOCABULARY_MODULE", "TRANSLATION_TEXTS", "TRANSLATION_SENTENCES", "VERB_SENTENCES", "WARMUP_MODULE",
 ];
 const LEVELS = ["A2", "B1", "B2", "C1", "C2"];
 const AGE_GROUPS = ["teen", "young_adult", "adult"];
@@ -42,10 +42,13 @@ Deno.serve(async (req) => {
 
     // Generate action (default).
     const { moduleType, level, ageGroup, topic, verb } = body;
+    // Topic is optional only for WARMUP_MODULE (a warm-up can be general); required otherwise.
+    const topicOk = typeof topic === "string" && topic.length <= 500 &&
+      (topic.trim().length > 0 || moduleType === "WARMUP_MODULE");
     // Allowlist everything that flows into the prompt — the function is callable directly.
     if (
       !MODULE_TYPES.includes(moduleType) ||
-      typeof topic !== "string" || !topic.trim() || topic.length > 500 ||
+      !topicOk ||
       !LEVELS.includes(level) || !AGE_GROUPS.includes(ageGroup) ||
       (verb != null && (typeof verb !== "string" || verb.length > 100))
     ) {

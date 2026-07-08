@@ -23,7 +23,7 @@ export interface GenerateFormLabels {
   type: string; topic: string; level: string; age: string; verb: string;
   generate: string; generating: string; saveTemplate: string; saved: string; saveError: string;
   typeReading: string; typeVocabulary: string; typeTranslationTexts: string;
-  typeTranslationSentences: string; typeVerb: string;
+  typeTranslationSentences: string; typeVerb: string; typeWarmup: string;
   ageTeen: string; ageYoung: string; ageAdult: string;
 }
 export interface GenerateDashLabels {
@@ -55,6 +55,7 @@ export function GeneratePanel({
     TRANSLATION_TEXTS: form.typeTranslationTexts,
     TRANSLATION_SENTENCES: form.typeTranslationSentences,
     VERB_SENTENCES: form.typeVerb,
+    WARMUP_MODULE: form.typeWarmup,
   };
   const ageLabels: Record<AgeT, string> = { teen: form.ageTeen, young_adult: form.ageYoung, adult: form.ageAdult };
 
@@ -73,6 +74,8 @@ export function GeneratePanel({
   const [due, setDue] = useState("");
 
   const showVerb = moduleType === "VERB_SENTENCES";
+  // Topic is optional for the warm-up module; required for the rest.
+  const topicRequired = moduleType !== "WARMUP_MODULE";
 
   function currentInput(): HomeworkInput {
     return { moduleType, topic: topic.trim(), level, ageGroup, verb: verb.trim() || undefined };
@@ -82,7 +85,7 @@ export function GeneratePanel({
   }
 
   async function onGenerate() {
-    if (!topic.trim() || (showVerb && !verb.trim())) { toast.error(form.saveError); return; }
+    if ((topicRequired && !topic.trim()) || (showVerb && !verb.trim())) { toast.error(form.saveError); return; }
     setPending(true); setContent(""); setSavedId(null);
     try {
       const input = currentInput();
@@ -173,7 +176,7 @@ export function GeneratePanel({
           placeholder={`${form.topic}: B2, бизнес-лексика, взрослый…`} aria-label={form.topic}
           className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/70"
         />
-        <button type="button" onClick={onGenerate} disabled={pending || !topic.trim() || (showVerb && !verb.trim())}
+        <button type="button" onClick={onGenerate} disabled={pending || (topicRequired && !topic.trim()) || (showVerb && !verb.trim())}
           className="flex-none rounded-lg bg-primary px-4 py-1.5 text-sm font-bold text-primary-foreground transition-opacity disabled:opacity-50">
           {pending && !content ? form.generating : form.generate}
         </button>

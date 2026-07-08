@@ -3,6 +3,10 @@ import type { ModuleType, ClarifyingParams } from "./types.ts";
 // Detect which module type best fits the user's free-form request
 export function detectModule(input: string): ModuleType {
   const s = input.toLowerCase();
+  // Warm-up: short spoken warm-up for the start of a lesson. Specific keywords → check first.
+  if (/разминк|разогрев|warm.?up|айсбрейк|ice.?break/.test(s)) {
+    return "WARMUP_MODULE";
+  }
   // Translation texts: "переводные тексты", "перевод текстов", "с русского", "по жанру"
   if (/переводн.*текст|перевод.*текст|с русского|по жанр/.test(s)) {
     return "TRANSLATION_TEXTS";

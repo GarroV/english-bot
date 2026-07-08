@@ -3,7 +3,8 @@ export type ModuleType =
   | "VOCABULARY_MODULE"
   | "TRANSLATION_TEXTS"
   | "TRANSLATION_SENTENCES"
-  | "VERB_SENTENCES";
+  | "VERB_SENTENCES"
+  | "WARMUP_MODULE";
 
 // Canonical human-readable module names. Single source shared by the wizard and history views.
 export const MODULE_LABELS: Record<ModuleType, string> = {
@@ -12,6 +13,7 @@ export const MODULE_LABELS: Record<ModuleType, string> = {
   TRANSLATION_TEXTS: "Перевод (тексты)",
   TRANSLATION_SENTENCES: "Перевод (предложения)",
   VERB_SENTENCES: "Глаголы (предложения)",
+  WARMUP_MODULE: "Разогрев",
 };
 
 export interface ClarifyingParams {

@@ -24,6 +24,7 @@ export function buildWizardMessage(
       ],
       [
         [`${mark("VERB_SENTENCES")}Глаголы (пред.)`, "wiz_type_VERB_SENTENCES"],
+        [`${mark("WARMUP_MODULE")}Разогрев`, "wiz_type_WARMUP_MODULE"],
       ],
     ];
     return { text: "Выбери тип задания:", kb: keyboard(rows) };

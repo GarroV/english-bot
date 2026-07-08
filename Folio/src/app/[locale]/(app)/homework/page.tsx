@@ -14,6 +14,7 @@ const TYPE_KEY: Record<string, string> = {
   TRANSLATION_TEXTS: "typeTranslationTexts",
   TRANSLATION_SENTENCES: "typeTranslationSentences",
   VERB_SENTENCES: "typeVerb",
+  WARMUP_MODULE: "typeWarmup",
 };
 
 export default async function HomeworkPage() {
@@ -41,7 +42,8 @@ export default async function HomeworkPage() {
     saveTemplate: t("saveTemplate"), saved: t("saved"), saveError: t("saveError"),
     typeReading: t("typeReading"), typeVocabulary: t("typeVocabulary"),
     typeTranslationTexts: t("typeTranslationTexts"), typeTranslationSentences: t("typeTranslationSentences"),
-    typeVerb: t("typeVerb"), ageTeen: t("ageTeen"), ageYoung: t("ageYoung"), ageAdult: t("ageAdult"),
+    typeVerb: t("typeVerb"), typeWarmup: t("typeWarmup"),
+    ageTeen: t("ageTeen"), ageYoung: t("ageYoung"), ageAdult: t("ageAdult"),
   };
   const tplLabels = {
     empty: t("empty"), templates: t("templates"), view: t("view"), hide: t("hide"),
