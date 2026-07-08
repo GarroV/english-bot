@@ -204,6 +204,42 @@ const VERB_SENTENCES_PROMPT = `Ты опытный преподаватель а
 - Никаких объяснений грамматики
 - Никаких разделителей ---`;
 
+const WARMUP_PROMPT = `Ты опытный преподаватель английского языка. Создай Warm-up Module — короткую устную разминку на первые 5–10 минут занятия.
+
+Запрос: {INPUT}
+Уровень: {LEVEL}
+Возраст: {AGE}
+
+Ориентир уровня {LEVEL} — держи его в вопросах и фразах: {LEVEL_DESC}
+
+КЛЮЧЕВОЕ: коротко, устно, живо. Одна страница максимум. НИКАКИХ письменных упражнений (никаких gap fill, matching, word formation, error correction, переводов, длинных словников). Только то, что проговаривается вслух.
+
+Тема опциональна: если в запросе есть тема — разминка подводит к ней; если темы нет — общие вопросы «про жизнь».
+
+Структура:
+1. Первая строка: Module: Warm-up · Level: {LEVEL} · Topic: [тема на английском; если темы нет — General] · Age: {AGE}
+2. Conversation starters — 6–8 личных вопросов по теме (или общих, если темы нет).
+   - Всегда личный угол: Have you ever…? Would you rather…? What would you do if…?
+   - A2/B1: простые, конкретные, короткого ответа достаточно.
+   - C1/C2: провокационные тезисы, «за/против», моральные дилеммы.
+   - Каждый закрытый (yes/no) вопрос — с добивкой Why? / Give an example.
+3. Quick activity — 1–2 мини-игры. ВЫБЕРИ СЛУЧАЙНО из ротации (при повторной генерации бери другие, чтобы разминки не повторялись):
+   - Would you rather… (3–4 дилеммы по теме)
+   - Two truths and a lie (по теме)
+   - Finish the sentence (3–4 незаконченных предложения по теме)
+   - Odd one out (ряд из 4 слов — какое лишнее и ПОЧЕМУ, устно)
+   - Word association / 60 seconds on… (говорить без остановки минуту на тему)
+   - Find someone who… (для групп — 4–5 пунктов)
+   К каждой игре — одна строка-инструкция + сам материал.
+4. Useful phrases — опционально 3–5 разговорных фраз-опор по теме (НЕ словарь! живые фразы для ответа).
+
+Форматирование (строго):
+- Начинай сразу с "Module: Warm-up · …", без преамбулы и без разделителей ---.
+- Заголовки блоков: Conversation starters, Quick activity, Useful phrases.
+- Нумеруй вопросы: 1., 2., …
+- Никаких письменных полей/прочерков для вписывания, никаких ключей ответов.
+- Никаких "Homework", "Good luck" — это разминка на уроке, не домашка.`;
+
 const TEACHER_GUIDE_PROMPT = `Вот студенческое задание по английскому:
 
 {STUDENT_CONTENT}
@@ -280,6 +316,7 @@ function buildPrompt(
     TRANSLATION_TEXTS: TRANSLATION_TEXTS_PROMPT,
     TRANSLATION_SENTENCES: TRANSLATION_SENTENCES_PROMPT,
     VERB_SENTENCES: VERB_SENTENCES_PROMPT,
+    WARMUP_MODULE: WARMUP_PROMPT,
   };
 
   return templates[moduleType]
