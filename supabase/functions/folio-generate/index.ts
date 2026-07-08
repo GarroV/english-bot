@@ -1,4 +1,13 @@
-import { generateModuleContent, applyEdit, itemizeHomework } from "../_shared/generate.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { generateModuleContent, applyEdit, itemizeHomework, MODEL } from "../_shared/generate.ts";
+import { getWorkspaceGenerationBudget } from "../_shared/quota.ts";
+
+const supabase = createClient(
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+);
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const MODULE_TYPES = [
   "READING_MODULE", "VOCABULARY_MODULE", "TRANSLATION_TEXTS", "TRANSLATION_SENTENCES", "VERB_SENTENCES",
@@ -41,20 +50,50 @@ Deno.serve(async (req) => {
     }
 
     // Generate action (default).
-    const { moduleType, level, ageGroup, topic, verb } = body;
+    const { moduleType, level, ageGroup, topic, verb, workspaceId } = body;
     // Allowlist everything that flows into the prompt — the function is callable directly.
     if (
       !MODULE_TYPES.includes(moduleType) ||
       typeof topic !== "string" || !topic.trim() || topic.length > 500 ||
       !LEVELS.includes(level) || !AGE_GROUPS.includes(ageGroup) ||
-      (verb != null && (typeof verb !== "string" || verb.length > 100))
+      (verb != null && (typeof verb !== "string" || verb.length > 100)) ||
+      (workspaceId != null && (typeof workspaceId !== "string" || !UUID_RE.test(workspaceId)))
     ) {
       return json({ error: "bad request" }, 400);
     }
+
+    // Квота генераций (#75): проверка ДО платного вызова. Сбой проверки — fail-open
+    // (мягкий биллинг-контроль, как учёт usage); исчерпанный лимит — жёсткий 402.
+    if (workspaceId) {
+      const budget = await getWorkspaceGenerationBudget(supabase, workspaceId).catch((e) => {
+        console.error("quota check failed:", e);
+        return null;
+      });
+      if (budget && budget.used >= budget.granted) {
+        return json({ error: "quota_exceeded", used: budget.used, granted: budget.granted }, 402);
+      }
+    }
+
     const content = await generateModuleContent(
       moduleType,
       { level, ageGroup, version: "student", targetVerb: verb },
       topic,
+      // Учёт расхода (#23): пишем module-вызов на воркспейс — им же считается квота.
+      workspaceId
+        ? async (u) => {
+          const { error } = await supabase.from("eb_llm_usage").insert({
+            source: "folio",
+            ref_id: workspaceId,
+            action: "module",
+            model: MODEL,
+            input_tokens: u.input_tokens ?? 0,
+            output_tokens: u.output_tokens ?? 0,
+            cache_creation_input_tokens: u.cache_creation_input_tokens ?? 0,
+            cache_read_input_tokens: u.cache_read_input_tokens ?? 0,
+          });
+          if (error) console.error("usage log failed:", error.message);
+        }
+        : undefined,
     );
     return json({ content });
   } catch (e) {

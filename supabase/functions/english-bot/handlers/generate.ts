@@ -1,5 +1,5 @@
 import { sendMessage, answerCallbackQuery, keyboard } from "../lib/telegram.ts";
-import { setSession, logLlmUsage } from "../lib/db.ts";
+import { setSession, logLlmUsage, getGenerationBudget } from "../lib/db.ts";
 import { generateModuleContent, generateTeacherGuide, MODEL } from "../lib/claude.ts";
 import { splitIfLong } from "../lib/utils.ts";
 import type { TgCallbackQuery, ModuleType, ClarifyingParams } from "../lib/types.ts";
@@ -24,6 +24,21 @@ export async function generateAndSend(params: {
 }): Promise<void> {
   const { userId, chatId, userInput, moduleType } = params;
   const clrParams = params.params;
+
+  // Квота генераций (#75): fail-open — сбой проверки не должен класть генерацию (это мягкий
+  // биллинг-контроль, как logLlmUsage), но исчерпанный лимит останавливает ДО платного вызова.
+  const budget = await getGenerationBudget(userId).catch((e) => {
+    console.error("quota check failed:", e);
+    return null;
+  });
+  if (budget && budget.used >= budget.granted) {
+    await setSession(userId, "WAITING_REQUEST");
+    await sendMessage(
+      chatId,
+      `🚫 Лимит генераций исчерпан (использовано ${budget.used} из ${budget.granted}).\nПопроси администратора добавить генерации.`,
+    );
+    return;
+  }
 
   const studentContent = await generateModuleContent(moduleType, clrParams, userInput,
     (u) => logLlmUsage({ source: "bot", refId: String(userId), action: "module", model: MODEL, usage: u }));

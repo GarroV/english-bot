@@ -47,7 +47,7 @@ supabase/functions/english-bot/
     └── admin.ts                — /invite, /users, /usage, /setup, /revoke, /restore (только ADMIN_USER_ID)
 ```
 
-> **Движок генерации (shared с Folio):** промпты + `generateModuleContent` / `generateTeacherGuide` / `applyEdit` вынесены в `supabase/functions/_shared/generate.ts` (Deno + Anthropic). `lib/claude.ts` — тонкий ре-экспорт из `_shared`. Тот же движок выставлен по HTTP для веб-Folio через Edge Function `folio-generate` — оба потребителя гоняют идентичный код, без дрейфа промптов. Все три функции принимают опциональный `onUsage`-колбэк (токены из ответа Anthropic, awaited до возврата) — бот пишет расход в `eb_llm_usage` (#23); `folio-generate` колбэк пока не передаёт.
+> **Движок генерации (shared с Folio):** промпты + `generateModuleContent` / `generateTeacherGuide` / `applyEdit` вынесены в `supabase/functions/_shared/generate.ts` (Deno + Anthropic). `lib/claude.ts` — тонкий ре-экспорт из `_shared`. Тот же движок выставлен по HTTP для веб-Folio через Edge Function `folio-generate` — оба потребителя гоняют идентичный код, без дрейфа промптов. Все три функции принимают опциональный `onUsage`-колбэк (токены из ответа Anthropic, awaited до возврата) — бот пишет расход в `eb_llm_usage` (#23); `folio-generate` с 2026-07-08 тоже пишет module-вызовы (source='folio', ref_id=workspace_id — воркспейс передаёт Folio-сервер). Рядом в `_shared/quota.ts` — канон **квоты генераций** (#75): `folio_workspaces.generation_quota` (NULL = безлимит) против count module-вызовов; бот проверяет её в `generateAndSend` (`getGenerationBudget`, fail-open), `folio-generate` — перед генерацией (402 quota_exceeded).
 
 ---
 

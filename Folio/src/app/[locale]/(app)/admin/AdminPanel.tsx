@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createSignupInvite, revokeSignupInvite, setTutorAccess } from "@/lib/admin/actions";
+import { createSignupInvite, revokeSignupInvite, setTutorAccess, addGenerationQuota, clearGenerationQuota } from "@/lib/admin/actions";
 import type { SignupInviteRow, WorkspaceOverview } from "@/lib/admin/queries";
 import { formatDate } from "@/lib/format/date";
 
@@ -21,6 +21,9 @@ interface Labels {
   statsToggle: string; statsLessonsMonth: string; statsLessonsLine: string;
   statsGenerations: string; statsCountLine: string; statsTemplates: string;
   statsLastActivity: string; statsNever: string;
+  quotaTitle: string; quotaUnlimited: string; quotaLeftLine: string;
+  quotaAddBtn: string; quotaAddPrompt: string; quotaUnlimitedBtn: string;
+  quotaConfirmUnlimited: string; quotaSaved: string;
 }
 
 // Подстановка "{name}"-плейсхолдеров в raw-шаблоны next-intl на клиенте (как fill в StudentCards).
@@ -97,6 +100,31 @@ export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
       } else {
         toast.error(`${labels.saveError}: ${res.error}`);
       }
+    } catch {
+      toast.error(labels.saveError);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  // Выдача генераций (#75): prompt на количество; «Безлимит» снимает лимит (с подтверждением).
+  async function onQuota(w: WorkspaceOverview, action: "add" | "unlimited") {
+    let call: (() => Promise<{ ok: boolean; error?: string }>) | null = null;
+    if (action === "add") {
+      const raw = window.prompt(labels.quotaAddPrompt, "50");
+      if (raw == null) return;
+      const n = Math.round(Number(raw.trim()));
+      if (!Number.isFinite(n) || n < 1) { toast.error(labels.saveError); return; }
+      call = () => addGenerationQuota(w.id, n);
+    } else {
+      if (!window.confirm(labels.quotaConfirmUnlimited.replace("{name}", w.name))) return;
+      call = () => clearGenerationQuota(w.id);
+    }
+    setPending(true);
+    try {
+      const res = await call();
+      if (res.ok) { toast.success(labels.quotaSaved); router.refresh(); }
+      else toast.error(`${labels.saveError}: ${res.error}`);
     } catch {
       toast.error(labels.saveError);
     } finally {
@@ -236,6 +264,27 @@ export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
                               line={fillStat(labels.statsCountLine, { month: w.stats.monthTemplates, total: w.stats.totalTemplates })} />
                             <StatBlock title={labels.statsLastActivity}
                               line={w.stats.lastActivityAt ? formatDate(w.stats.lastActivityAt) : labels.statsNever} />
+                            <div className="rounded-xl bg-background/60 px-3.5 py-2.5">
+                              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{labels.quotaTitle}</p>
+                              <div className="mt-0.5 flex flex-wrap items-center gap-2">
+                                <span className="text-sm font-medium tabular-nums">
+                                  {w.stats.quotaGranted == null
+                                    ? labels.quotaUnlimited
+                                    : fillStat(labels.quotaLeftLine, {
+                                        left: Math.max(0, w.stats.quotaGranted - w.stats.quotaUsedModules),
+                                        granted: w.stats.quotaGranted,
+                                      })}
+                                </span>
+                                <Button variant="outline" size="xs" disabled={pending} onClick={() => onQuota(w, "add")}>
+                                  {labels.quotaAddBtn}
+                                </Button>
+                                {w.stats.quotaGranted != null && (
+                                  <Button variant="ghost" size="xs" disabled={pending} onClick={() => onQuota(w, "unlimited")}>
+                                    {labels.quotaUnlimitedBtn}
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </td>
                       </tr>
