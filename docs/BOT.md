@@ -18,19 +18,20 @@ Telegram → webhook → Supabase Edge Function (english-bot) → Anthropic API
 
 ```
 supabase/functions/english-bot/
-├── index.ts                    — точка входа: проверка webhook secret (X-Telegram-Bot-Api-Secret-Token), парсинг update, роутинг, обработка ошибок
+├── index.ts                    — точка входа: проверка webhook secret (X-Telegram-Bot-Api-Secret-Token), парсинг update, роутинг, обработка ошибок (unhandled → ответ пользователю + алерт админу в Telegram)
 ├── lib/
 │   ├── types.ts                — все TypeScript-типы (State, ModuleType, TgUpdate и др.)
 │   ├── telegram.ts             — обёртки Telegram API (sendMessage, editMessageText, keyboard, mainMenu)
 │   ├── claude.ts               — тонкий ре-экспорт движка генерации из `_shared/generate.ts` (generateModuleContent/generateTeacherGuide/applyEdit + MODEL)
 │   ├── config.ts               — конфиг из env: ADMIN_ID (fail-fast при отсутствии/невалидном ADMIN_USER_ID)
-│   ├── errors.ts               — friendlyError(): маппинг ошибок LLM в короткое сообщение пользователю
+│   ├── errors.ts               — friendlyError(): маппинг ошибок LLM в сообщение пользователю; formatAdminAlert(): алерт админу об unhandled-ошибке (user/chat/ввод/ошибка, с усечением)
 │   ├── pricing.ts              — usageCostUsd(model, usage): стоимость вызова LLM по токенам (#23 учёт)
 │   ├── db.ts                   — Supabase-запросы (сессии, пользователи, задания, инвайты; гейт: isAllowed/isDisabled; отзыв доступа: revokeAccess/restoreAccess; учёт LLM: logLlmUsage, getUsageThisMonth; мост в Folio: resolveFolioWorkspace, saveFolioTemplateFromBot)
 │   ├── pdf.ts                  — генерация PDF через pdf-lib (A4, PT Sans, поддержка кириллицы)
 │   ├── utils.ts                — makeFilename, makeTeacherFilename, splitIfLong, generateInviteCode, extractTopic, timingSafeEqual, parseTargetTelegramId
 │   ├── module_detect.ts        — detectModule(), extractParams(), extractVerb() из свободного текста пользователя
 │   ├── folio_login.ts          — parseLoginPayload(): разбор deep-link `folio_login_<token>` для входа в Folio
+│   ├── errors.test.ts          — тесты formatAdminAlert
 │   ├── utils.test.ts           — тесты utils
 │   ├── module_detect.test.ts   — тесты детекции модулей
 │   └── folio_login.test.ts     — тесты разбора login-payload
