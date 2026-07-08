@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { postStudentMessage, listStudentMessages } from "@/lib/cabinet/actions";
 import type { CabinetData } from "@/lib/cabinet/queries";
 import type { CabAssignment, CabLesson } from "@/lib/cabinet/derive";
-import type { ChatMessage } from "@/lib/homework/queries";
-import { ChatThread } from "@/components/homework/ChatThread";
 
 // ВРЕМЕННО (2026-07): онлайн-сдача ДЗ скрыта — ученик только смотрит задание и качает PDF.
 // Инлайн-поля ответов (ItemsEditor/ItemRow/groupByLabel), кнопка «Я сделал» и markSubmitted/saveAnswer
 // удалены из UI; восстановить — вернуть из git (коммит скрытия). Экшены в lib/cabinet/actions.ts целы.
+// ВРЕМЕННО (2026-07-08, #64): чат по заданию скрыт и у ученика (у репетитора он жил внутри уже скрытой
+// «Проверки заданий»). ChatThread.tsx, listStudentMessages/postStudentMessage и таблица сообщений целы;
+// восстановить — вернуть из git рендер ChatThread + загрузку треда в AssignmentCard.
 
 const mskDateTime = (iso: string) =>
   new Intl.DateTimeFormat("ru-RU", {
@@ -104,25 +104,6 @@ function StatusBadge({ status }: { status: string }) {
 function AssignmentCard({ a, token, pdfBase }: { a: CabAssignment; token: string; pdfBase: string }) {
   const t = useTranslations("Cabinet");
   const [open, setOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-
-  // Load the chat thread once on mount; ChatThread then polls via listStudentMessages. Best-effort —
-  // a failed initial load leaves an empty thread that polling will fill.
-  useEffect(() => {
-    let active = true;
-    listStudentMessages(token, a.id)
-      .then((res) => { if (active && res.ok) setChatMessages(res.messages); })
-      .catch(() => { /* transient — polling retries */ });
-    return () => { active = false; };
-  }, [token, a.id]);
-
-  // Throw on failure so ChatThread's polling .catch() keeps the current thread on a transient blip
-  // (returning [] would blank the thread every failed poll). Matches the tutor side's getMessages.
-  async function refreshChat(): Promise<ChatMessage[]> {
-    const res = await listStudentMessages(token, a.id);
-    if (!res.ok) throw new Error(res.error);
-    return res.messages;
-  }
 
   const pdfUrl = `${pdfBase}?token=${encodeURIComponent(token)}&a=${encodeURIComponent(a.id)}`;
 
@@ -161,17 +142,7 @@ function AssignmentCard({ a, token, pdfBase }: { a: CabAssignment; token: string
         </div>
       )}
 
-      <ChatThread
-        messages={chatMessages}
-        mine="student"
-        onSend={(body) => postStudentMessage(token, a.id, body)}
-        onRefresh={refreshChat}
-        labels={{
-          title: t("chatTitle"), placeholder: t("chatPlaceholder"), send: t("chatSend"),
-          sending: t("chatSending"), empty: t("chatEmpty"), sendError: t("chatSendError"),
-          tutorLabel: t("chatTutor"), studentLabel: t("chatStudent"),
-        }}
-      />
+      {/* ВРЕМЕННО (2026-07-08, #64): <ChatThread> — чат по заданию — скрыт. */}
     </article>
   );
 }
