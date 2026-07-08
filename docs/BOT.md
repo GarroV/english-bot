@@ -107,6 +107,8 @@ wiz_age_*    → set ageGroup → генерация сразу → POST_GENERAT
 
 **Мягкий отзыв доступа (обратимый, данные сохраняются).** Раньше отозвать можно было только неиспользованный инвайт; после регистрации способа не было. Теперь:
 
+> Тот же отзыв доступен и из веб-админки Folio кнопкой «Отозвать/Восстановить доступ» (server action `setTutorAccess`, зеркало этих команд; #76).
+
 - `/revoke <telegram_id>` (admin) → `revokeAccess`: ставит `disabled_at = now()` в **обеих** таблицах — `eb_users` (гейт бота) и, если Telegram связан с Folio (`folio_auth_methods`→`folio_users`), `folio_users` (гейт Folio). Никаких DELETE. Отвечает, что реально отключено (бот / Folio / оба / не найдено).
 - `/restore <telegram_id>` (admin) → `restoreAccess`: зеркально снимает `disabled_at` (=null) в обеих таблицах.
 - Аргумент разбирается чистой `parseTargetTelegramId` (положительное целое; иначе подсказка формата).

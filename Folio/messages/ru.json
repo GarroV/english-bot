@@ -284,7 +284,13 @@
     "lessons": "Занятия",
     "createdAt": "Создан",
     "noWorkspaces": "Воркспейсов пока нет",
-    "saveError": "Ошибка"
+    "saveError": "Ошибка",
+    "accessRevoke": "Отозвать доступ",
+    "accessRestore": "Восстановить доступ",
+    "accessRevokedBadge": "🚫 отключён",
+    "accessConfirmRevoke": "Отозвать доступ у «{name}»? Репетитор потеряет вход в Folio и бота; все данные сохранятся, доступ можно вернуть.",
+    "accessRevokedToast": "Доступ отозван",
+    "accessRestoredToast": "Доступ восстановлен"
   },
   "Cabinet": {
     "greeting": "Привет, {name}!",

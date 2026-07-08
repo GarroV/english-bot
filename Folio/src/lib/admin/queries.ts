@@ -42,8 +42,10 @@ export interface WorkspaceOverview {
   id: string;
   name: string;
   created_at: string;
+  owner_user_id: string | null;
   tutor_name: string | null;
   tutor_telegram: number | null;
+  tutor_disabled: boolean;
   students: number;
   lessons: number;
 }
@@ -60,7 +62,7 @@ export async function listWorkspacesOverview(): Promise<WorkspaceOverview[]> {
   return Promise.all(
     (ws ?? []).map(async (w) => {
       const owner = w.owner_id
-        ? (await admin.from("folio_users").select("name, telegram_id").eq("id", w.owner_id).maybeSingle()).data
+        ? (await admin.from("folio_users").select("name, telegram_id, disabled_at").eq("id", w.owner_id).maybeSingle()).data
         : null;
       const students = (await admin.from("folio_students").select("*", { count: "exact", head: true }).eq("workspace_id", w.id).is("archived_at", null)).count ?? 0;
       const lessons = (await admin.from("folio_lessons").select("*", { count: "exact", head: true }).eq("workspace_id", w.id)).count ?? 0;
@@ -68,8 +70,10 @@ export async function listWorkspacesOverview(): Promise<WorkspaceOverview[]> {
         id: w.id as string,
         name: w.name as string,
         created_at: w.created_at as string,
+        owner_user_id: (w.owner_id as string | null) ?? null,
         tutor_name: (owner?.name as string | undefined) ?? null,
         tutor_telegram: (owner?.telegram_id as number | null) ?? null,
+        tutor_disabled: (owner?.disabled_at ?? null) != null,
         students,
         lessons,
       };
