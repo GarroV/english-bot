@@ -97,7 +97,12 @@
     "saved": "Saved",
     "saveError": "Could not save",
     "pickStudents": "Pick at least one student",
-    "journal": "Lesson journal"
+    "journal": "Lesson journal",
+    "lateCancelTitle": "Cancelling less than a day ahead",
+    "lateCancelBody": "Charge for the late cancellation?",
+    "lateCancelNone": "No charge",
+    "lateCancelHalf": "50% of rate",
+    "lateCancelFull": "100% of rate"
   },
   "Homework": {
     "title": "Homework",

@@ -44,6 +44,8 @@ export default async function SchedulePage({
       cancelLesson: t("cancelLesson"), complete: t("complete"),
       saved: t("saved"), saveError: t("saveError"), pickStudents: t("pickStudents"),
       journal: t("journal"),
+      lateCancelTitle: t("lateCancelTitle"), lateCancelBody: t("lateCancelBody"),
+      lateCancelNone: t("lateCancelNone"), lateCancelHalf: t("lateCancelHalf"), lateCancelFull: t("lateCancelFull"),
     },
     journal: {
       title: tj("title"), topic: tj("topic"), level: tj("level"), levelNone: tj("levelNone"),
