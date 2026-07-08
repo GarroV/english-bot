@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,9 @@ const DAY_START = 7;
 const DAY_END = 22;
 const HOUR_PX = 48;
 const MIN_CARD_PX = 30;
+const WORK_DAY_START = 9; // initial vertical scroll target inside the grid
+const GRID_BOTTOM_GAP_PX = 24; // breathing room between the grid and the viewport bottom
+const GRID_MIN_H_PX = 5 * HOUR_PX; // never collapse below ~5 hour rows on short viewports
 const HOURS = Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_START + i);
 const DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
@@ -38,6 +41,16 @@ export function ScheduleBoard({
   const [dialog, setDialog] = useState<LessonDialogState | null>(null);
   const [journalFor, setJournalFor] = useState<LessonWithStudents | null>(null);
   const [busy, setBusy] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  // Cap the grid to the viewport (scroll stays inside the container, not the page) and
+  // start at working hours. Top offset is measured once; height changes track via dvh.
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const top = Math.ceil(el.getBoundingClientRect().top);
+    el.style.maxHeight = `max(${GRID_MIN_H_PX}px, calc(100dvh - ${top + GRID_BOTTOM_GAP_PX}px))`;
+    el.scrollTop = (WORK_DAY_START - DAY_START) * HOUR_PX;
+  }, []);
   const weekStart = new Date(weekStartISO);
 
   const dayDates = Array.from({ length: 7 }, (_, i) => {
@@ -126,11 +139,11 @@ export function ScheduleBoard({
         </p>
       )}
 
-      <div className="overflow-x-auto rounded-2xl border border-border bg-card shadow-sm">
+      <div ref={scrollRef} className="overflow-x-auto overflow-y-auto overscroll-contain rounded-2xl border border-border bg-card shadow-sm">
         <div className="grid min-w-[720px]" style={{ gridTemplateColumns: "48px repeat(7, 1fr)" }}>
-          <div className="border-b border-border" />
+          <div className="sticky top-0 z-20 border-b border-border bg-card" />
           {dayDates.map((d, i) => (
-            <div key={i} className="border-b border-l border-border p-2 text-center text-sm font-semibold">
+            <div key={i} className="sticky top-0 z-20 border-b border-l border-border bg-card p-2 text-center text-sm font-semibold">
               {DAY_NAMES[i]} {d.getDate()}
             </div>
           ))}
