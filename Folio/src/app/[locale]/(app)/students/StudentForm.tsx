@@ -37,10 +37,12 @@ function toInput(f: { name: string; email: string; telegram: string; rate: strin
   };
 }
 
-export function StudentForm({ mode, student, labels }: {
+export function StudentForm({ mode, student, labels, iconTrigger }: {
   mode: "create" | "edit";
   student?: StudentLike;
   labels: Labels;
+  // Иконка вместо текстового триггера: кнопка становится size="icon-sm", подпись уходит в aria/title.
+  iconTrigger?: React.ReactNode;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -98,8 +100,12 @@ export function StudentForm({ mode, student, labels }: {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant={mode === "create" ? "default" : "outline"} size="sm" />}>
-        {labels.trigger}
+      <DialogTrigger render={
+        iconTrigger
+          ? <Button variant="outline" size="icon-sm" aria-label={labels.trigger} title={labels.trigger} />
+          : <Button variant={mode === "create" ? "default" : "outline"} size="sm" />
+      }>
+        {iconTrigger ?? labels.trigger}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>{labels.heading}</DialogTitle></DialogHeader>
