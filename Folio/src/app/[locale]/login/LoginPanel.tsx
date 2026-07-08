@@ -88,7 +88,10 @@ export function LoginPanel({ labels, inviteToken, redirectTo }: {
       if (!res.ok) { setPhase("error"); return; }
       const { token, deepLink } = await res.json();
       if (!token || !deepLink) { setPhase("error"); return; }
-      tgWindow.current = window.open(deepLink, "_blank");
+      // Named POPUP (features string), not a plain "_blank" tab: browsers reliably let the opener
+      // close() a popup it created, so on success the Telegram window actually disappears. A plain tab
+      // often refuses programmatic close(), leaving the "START BOT" window stuck open after login.
+      tgWindow.current = window.open(deepLink, "folio_tg_login", "popup=yes,width=480,height=720");
       poll(token);
     } catch {
       setPhase("error");
