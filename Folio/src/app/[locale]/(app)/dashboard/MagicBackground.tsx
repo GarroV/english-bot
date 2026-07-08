@@ -123,26 +123,20 @@ export function MagicBackground() {
           </text>
         </g>
 
-        {/* ── Event Horizon gravity-drive gimbal: 3 nested rings, each spinning fast on its OWN 3D
-             axis (X / Y / diagonal), converging on the hot core. NOT wrapped in a filter — a filter
-             flattens 3D; luminosity comes from the bright cyan + core bloom. ── */}
+        {/* ── Event Horizon gravity-drive gimbal: 3 nested rings, each TUMBLING in 3D (its whole plane
+             sweeps face↔edge on its own axis) → you see the rings move, not just dots. Similar radii
+             so they nest into a spinning sphere. NOT in a filter (filters flatten 3D). ── */}
         <g className="folio-gim-x">
-          <circle cx={C} cy={C} r="132" stroke="currentColor" strokeWidth="2" strokeOpacity="0.8" />
-          <circle cx={C} cy={C} r="124" stroke="currentColor" strokeWidth="0.6" strokeOpacity="0.4" />
-          <circle cx={C - 132} cy={C} r="4.5" fill={BRIGHT} stroke="none" />
-          <circle cx={C + 132} cy={C} r="4.5" fill={BRIGHT} stroke="none" />
+          <circle cx={C} cy={C} r="150" stroke={BRIGHT} strokeWidth="2.4" strokeOpacity="0.85" />
+          <circle cx={C} cy={C} r="143" stroke="currentColor" strokeWidth="0.7" strokeOpacity="0.4" />
         </g>
         <g className="folio-gim-y">
-          <circle cx={C} cy={C} r="110" stroke="currentColor" strokeWidth="2" strokeOpacity="0.75" />
-          <circle cx={C} cy={C} r="102" stroke="currentColor" strokeWidth="0.6" strokeOpacity="0.4" />
-          <circle cx={C - 110} cy={C} r="4.5" fill={BRIGHT} stroke="none" />
-          <circle cx={C + 110} cy={C} r="4.5" fill={BRIGHT} stroke="none" />
+          <circle cx={C} cy={C} r="136" stroke="currentColor" strokeWidth="2.4" strokeOpacity="0.8" />
+          <circle cx={C} cy={C} r="129" stroke="currentColor" strokeWidth="0.7" strokeOpacity="0.4" />
         </g>
         <g className="folio-gim-d">
-          <circle cx={C} cy={C} r="88" stroke={BRIGHT} strokeWidth="1.8" strokeOpacity="0.8" />
-          <circle cx={C} cy={C} r="80" stroke="currentColor" strokeWidth="0.6" strokeOpacity="0.4" />
-          <circle cx={C - 88} cy={C} r="4" fill={BRIGHT} stroke="none" />
-          <circle cx={C + 88} cy={C} r="4" fill={BRIGHT} stroke="none" />
+          <circle cx={C} cy={C} r="122" stroke={BRIGHT} strokeWidth="2.2" strokeOpacity="0.8" />
+          <circle cx={C} cy={C} r="115" stroke="currentColor" strokeWidth="0.7" strokeOpacity="0.4" />
         </g>
 
         {/* Singularity core (static, hot) */}
