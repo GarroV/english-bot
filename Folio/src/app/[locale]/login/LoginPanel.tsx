@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "@/i18n/navigation";
+import { useLocale } from "next-intl";
 
 interface Labels { button: string; waiting: string; expired: string; error: string; }
 type Phase = "idle" | "waiting" | "expired" | "error";
@@ -17,7 +17,7 @@ export function LoginPanel({ labels, inviteToken, redirectTo }: {
   redirectTo?: string;
 }) {
   const [phase, setPhase] = useState<Phase>("idle");
-  const router = useRouter();
+  const locale = useLocale();
   const polls = useRef(0);
   const cancelled = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -55,7 +55,15 @@ export function LoginPanel({ labels, inviteToken, redirectTo }: {
           body: JSON.stringify({ token }),
         });
         if (cancelled.current) return;
-        if (s.ok) { tgWindow.current?.close(); router.push(redirectTo ?? "/dashboard"); return; }
+        // Close the Telegram tab and HARD-navigate the app tab (not router.push): the session cookie
+        // was just set by /session, and a soft client navigation can race the fresh cookie and bounce
+        // back to /login. A full navigation guarantees the server sees the session. Locale-prefixed so
+        // middleware doesn't add an extra redirect hop.
+        if (s.ok) {
+          tgWindow.current?.close();
+          window.location.assign(redirectTo ?? `/${locale}/dashboard`);
+          return;
+        }
         setPhase("error");
         return;
       }
@@ -63,7 +71,7 @@ export function LoginPanel({ labels, inviteToken, redirectTo }: {
     } catch {
       if (!cancelled.current) setPhase("error");
     }
-  }, [router, redirectTo]);
+  }, [locale, redirectTo]);
 
   // Keep the self-scheduling ref pointed at the latest poll.
   useEffect(() => { pollRef.current = poll; }, [poll]);
