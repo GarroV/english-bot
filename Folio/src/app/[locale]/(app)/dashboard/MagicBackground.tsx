@@ -111,33 +111,46 @@ export function MagicBackground() {
           ))}
         </g>
 
-        {/* L4a — inner sigil ring, tilted & spinning about the X axis (3D gyroscope). */}
-        <g className="folio-tilt-x">
-          <circle cx={C} cy={C} r="210" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.45" />
+        {/* Containment housing — STATIC ring that holds the engine (fixed, like the drive's frame). */}
+        <g>
+          <circle cx={C} cy={C} r="210" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.4" />
           {star(6, 2, 196).map((p, i) => (
-            <polygon key={`h1-${i}`} points={p} stroke="currentColor" strokeWidth="1.3" strokeOpacity="0.75" strokeLinejoin="round" />
+            <polygon key={`h1-${i}`} points={p} stroke="currentColor" strokeWidth="1" strokeOpacity="0.45" strokeLinejoin="round" />
           ))}
-          <circle cx={C} cy={C} r="168" stroke="currentColor" strokeWidth="0.6" strokeOpacity="0.35" />
-          <text fill="currentColor" fillOpacity="0.6" fontSize="14" letterSpacing="0.5" style={{ fontFamily: "Georgia, serif" }}>
+          <circle cx={C} cy={C} r="168" stroke="currentColor" strokeWidth="0.6" strokeOpacity="0.3" />
+          <text fill="currentColor" fillOpacity="0.55" fontSize="14" letterSpacing="0.5" style={{ fontFamily: "Georgia, serif" }}>
             <textPath href="#mbInner" startOffset="0" textLength="942" lengthAdjust="spacing">{INNER_RUNES}</textPath>
           </text>
         </g>
 
-        {/* L4b — innermost ring, tilted & spinning about the Y axis; crosses L4a → gyroscope look. */}
-        <g className="folio-tilt-y">
-          <circle cx={C} cy={C} r="118" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5" />
-          {star(6, 2, 104).map((p, i) => (
-            <polygon key={`h2-${i}`} points={p} stroke="currentColor" strokeWidth="1" strokeOpacity="0.5" strokeLinejoin="round" />
-          ))}
-          <circle cx={C} cy={C} r="78" stroke="currentColor" strokeWidth="0.6" strokeOpacity="0.4" />
+        {/* ── Event Horizon gravity-drive gimbal: 3 nested rings, each spinning fast on its OWN 3D
+             axis (X / Y / diagonal), converging on the hot core. NOT wrapped in a filter — a filter
+             flattens 3D; luminosity comes from the bright cyan + core bloom. ── */}
+        <g className="folio-gim-x">
+          <circle cx={C} cy={C} r="132" stroke="currentColor" strokeWidth="2" strokeOpacity="0.8" />
+          <circle cx={C} cy={C} r="124" stroke="currentColor" strokeWidth="0.6" strokeOpacity="0.4" />
+          <circle cx={C - 132} cy={C} r="4.5" fill={BRIGHT} stroke="none" />
+          <circle cx={C + 132} cy={C} r="4.5" fill={BRIGHT} stroke="none" />
+        </g>
+        <g className="folio-gim-y">
+          <circle cx={C} cy={C} r="110" stroke="currentColor" strokeWidth="2" strokeOpacity="0.75" />
+          <circle cx={C} cy={C} r="102" stroke="currentColor" strokeWidth="0.6" strokeOpacity="0.4" />
+          <circle cx={C - 110} cy={C} r="4.5" fill={BRIGHT} stroke="none" />
+          <circle cx={C + 110} cy={C} r="4.5" fill={BRIGHT} stroke="none" />
+        </g>
+        <g className="folio-gim-d">
+          <circle cx={C} cy={C} r="88" stroke={BRIGHT} strokeWidth="1.8" strokeOpacity="0.8" />
+          <circle cx={C} cy={C} r="80" stroke="currentColor" strokeWidth="0.6" strokeOpacity="0.4" />
+          <circle cx={C - 88} cy={C} r="4" fill={BRIGHT} stroke="none" />
+          <circle cx={C + 88} cy={C} r="4" fill={BRIGHT} stroke="none" />
         </g>
 
-        {/* Focal emblem (static, hot) */}
+        {/* Singularity core (static, hot) */}
         <g className="folio-glow">
-          {star(6, 2, 40).map((p, i) => (
+          {star(6, 2, 34).map((p, i) => (
             <polygon key={`e-${i}`} points={p} stroke={BRIGHT} strokeWidth="1.2" strokeOpacity="0.9" strokeLinejoin="round" />
           ))}
-          <circle cx={C} cy={C} r="7" fill={BRIGHT} stroke="none" />
+          <circle cx={C} cy={C} r="8" fill={BRIGHT} stroke="none" />
         </g>
       </svg>
     </div>
