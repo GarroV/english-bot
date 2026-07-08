@@ -158,10 +158,11 @@
   transform-origin: center;
   will-change: transform;
 }
-.folio-spin-slow { animation: folio-spin 120s linear infinite; }
-.folio-spin-rev  { animation: folio-spin  90s linear infinite reverse; }
-.folio-spin-med  { animation: folio-spin  70s linear infinite; }
-.folio-spin-fast { animation: folio-spin  48s linear infinite reverse; }
+/* Coprime periods so the four rings never visibly resync (always looks alive). */
+.folio-spin-slow { animation: folio-spin 111s linear infinite; }
+.folio-spin-rev  { animation: folio-spin  83s linear infinite reverse; }
+.folio-spin-med  { animation: folio-spin  61s linear infinite; }
+.folio-spin-fast { animation: folio-spin  43s linear infinite reverse; }
 .folio-magic-glow {
   position: absolute;
   width: 58vh;
@@ -171,8 +172,12 @@
   filter: blur(30px);
   animation: folio-pulse 8s ease-in-out infinite;
 }
+/* Satellite-node twinkle (opacity only) — per-node animation-delay staggers it. */
+@keyframes folio-flicker { 0%, 100% { opacity: 1; } 46% { opacity: 0.28; } }
+.folio-twinkle { animation: folio-flicker 3.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .folio-spin-slow, .folio-spin-rev, .folio-spin-med, .folio-spin-fast, .folio-magic-glow {
+  .folio-spin-slow, .folio-spin-rev, .folio-spin-med, .folio-spin-fast,
+  .folio-magic-glow, .folio-twinkle {
     animation: none;
   }
 }
