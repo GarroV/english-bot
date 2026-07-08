@@ -168,16 +168,20 @@
   0%, 100% { transform: scale(0.92); opacity: 0.5; }
   50%      { transform: scale(1.06); opacity: 1; }
 }
-.folio-spin-slow, .folio-spin-rev, .folio-spin-med, .folio-spin-fast {
+.folio-spin-slow, .folio-spin-rev, .folio-spin-med, .folio-tilt-x, .folio-tilt-y {
   transform-box: fill-box;
   transform-origin: center;
   will-change: transform;
 }
-/* Coprime periods so the four rings never visibly resync (always looks alive). */
-.folio-spin-slow { animation: folio-spin 111s linear infinite; }
-.folio-spin-rev  { animation: folio-spin  83s linear infinite reverse; }
-.folio-spin-med  { animation: folio-spin  61s linear infinite; }
-.folio-spin-fast { animation: folio-spin  43s linear infinite reverse; }
+/* 3D tilt spins — inner rings rotate about a tilted axis (perspective is on the <svg>), so they read
+   as gyroscope discs crossing each other. Non-harmonic periods across all layers → "complex system". */
+@keyframes folio-tiltx { from { transform: rotateX(64deg) rotate(0deg); } to { transform: rotateX(64deg) rotate(360deg); } }
+@keyframes folio-tilty { from { transform: rotateY(66deg) rotate(0deg); } to { transform: rotateY(66deg) rotate(-360deg); } }
+.folio-spin-slow { animation: folio-spin 240s linear infinite; }        /* outer — very slow, majestic */
+.folio-spin-rev  { animation: folio-spin 134s linear infinite reverse; } /* mid runes — counter */
+.folio-spin-med  { animation: folio-spin  76s linear infinite; }         /* hero star */
+.folio-tilt-x    { animation: folio-tiltx 47s linear infinite; }         /* inner gyroscope X */
+.folio-tilt-y    { animation: folio-tilty 31s linear infinite; }         /* inner gyroscope Y (fastest) */
 /* Dark radial "well" — the crisp cyan circle glows only because it sits on darkness (anime look).
    Fades to transparent well before the viewport edge so the rest of the app stays light/airy. */
 .folio-magic-well {
@@ -210,8 +214,11 @@
 @keyframes folio-flicker { 0%, 100% { opacity: 1; } 46% { opacity: 0.3; } }
 .folio-twinkle { animation: folio-flicker 3.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .folio-spin-slow, .folio-spin-rev, .folio-spin-med, .folio-spin-fast,
+  .folio-spin-slow, .folio-spin-rev, .folio-spin-med, .folio-tilt-x, .folio-tilt-y,
   .folio-magic-glow, .folio-twinkle {
     animation: none;
   }
+  /* Keep the 3D tilt as a static pose (still reads as a gyroscope, just not spinning). */
+  .folio-tilt-x { transform: rotateX(64deg); }
+  .folio-tilt-y { transform: rotateY(66deg); }
 }

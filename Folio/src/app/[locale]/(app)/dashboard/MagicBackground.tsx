@@ -57,6 +57,7 @@ export function MagicBackground() {
       <svg
         viewBox="0 0 1000 1000"
         className="h-[128%] max-h-none w-auto max-w-none min-w-[128%] text-[#5eead4] opacity-90"
+        style={{ perspective: "1200px" }}
         fill="none"
       >
         <defs>
@@ -110,8 +111,8 @@ export function MagicBackground() {
           ))}
         </g>
 
-        {/* L4 — inner sigil: hexagram + inner runes (fast CCW). */}
-        <g className="folio-spin-fast">
+        {/* L4a — inner sigil ring, tilted & spinning about the X axis (3D gyroscope). */}
+        <g className="folio-tilt-x">
           <circle cx={C} cy={C} r="210" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.45" />
           {star(6, 2, 196).map((p, i) => (
             <polygon key={`h1-${i}`} points={p} stroke="currentColor" strokeWidth="1.3" strokeOpacity="0.75" strokeLinejoin="round" />
@@ -120,7 +121,15 @@ export function MagicBackground() {
           <text fill="currentColor" fillOpacity="0.6" fontSize="14" letterSpacing="0.5" style={{ fontFamily: "Georgia, serif" }}>
             <textPath href="#mbInner" startOffset="0" textLength="942" lengthAdjust="spacing">{INNER_RUNES}</textPath>
           </text>
+        </g>
+
+        {/* L4b — innermost ring, tilted & spinning about the Y axis; crosses L4a → gyroscope look. */}
+        <g className="folio-tilt-y">
           <circle cx={C} cy={C} r="118" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5" />
+          {star(6, 2, 104).map((p, i) => (
+            <polygon key={`h2-${i}`} points={p} stroke="currentColor" strokeWidth="1" strokeOpacity="0.5" strokeLinejoin="round" />
+          ))}
+          <circle cx={C} cy={C} r="78" stroke="currentColor" strokeWidth="0.6" strokeOpacity="0.4" />
         </g>
 
         {/* Focal emblem (static, hot) */}
