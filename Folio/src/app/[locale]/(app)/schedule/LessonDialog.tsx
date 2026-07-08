@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createLesson, updateLesson, cancelLesson, completeLesson } from "@/lib/lessons/actions";
+import { createLesson, updateLesson, cancelLesson, completeLesson, cancelLessonLate } from "@/lib/lessons/actions";
 import { fromDatetimeLocal } from "@/lib/lessons/week";
 import type { StudentOption, LessonWithStudents } from "@/lib/lessons/queries";
 
@@ -24,6 +24,8 @@ interface Labels {
   location: string; online: string; offline: string; students: string; notes: string; rateOverride: string;
   save: string; cancel: string; cancelLesson: string; complete: string;
   saved: string; saveError: string; pickStudents: string; journal: string;
+  lateCancelTitle: string; lateCancelBody: string; lateCancelNone: string;
+  lateCancelHalf: string; lateCancelFull: string;
 }
 
 export function LessonDialog({
@@ -46,6 +48,7 @@ export function LessonDialog({
   const [rate, setRate] = useState("");
   const [picked, setPicked] = useState<string[]>([]);
   const [seededFor, setSeededFor] = useState<string | null>(null);
+  const [lateCancelOpen, setLateCancelOpen] = useState(false);
   const seedKey = state ? `${state.mode}:${state.lesson?.id ?? state.datetimeLocal}` : null;
   if (open && seedKey !== seededFor) {
     setSeededFor(seedKey);
@@ -58,6 +61,7 @@ export function LessonDialog({
   } else if (!open && seededFor !== null) {
     // Reset on close so reopening the same slot re-seeds instead of showing stale state.
     setSeededFor(null);
+    setLateCancelOpen(false);
   }
 
   function togglePicked(id: string) {
@@ -180,7 +184,12 @@ export function LessonDialog({
                   {labels.journal}
                 </Button>
               )}
-              <Button variant="outline" size="sm" disabled={pending} onClick={() => runAction(cancelLesson)}>
+              <Button variant="outline" size="sm" disabled={pending} onClick={() => {
+                const startsAt = state?.lesson ? new Date(state.lesson.scheduled_at).getTime() : 0;
+                const isLate = state?.lesson?.status === "scheduled" && startsAt - Date.now() < 24 * 3_600_000 && startsAt > Date.now();
+                if (isLate) setLateCancelOpen(true);
+                else runAction(cancelLesson);
+              }}>
                 {labels.cancelLesson}
               </Button>
               <Button variant="outline" size="sm" disabled={pending} onClick={() => runAction(completeLesson)}>
@@ -191,6 +200,26 @@ export function LessonDialog({
           <Button variant="ghost" disabled={pending} onClick={onClose}>{labels.cancel}</Button>
           <Button disabled={pending || !datetime} onClick={submit}>{labels.save}</Button>
         </DialogFooter>
+        {lateCancelOpen && (
+          <div className="mt-2 rounded-xl border border-amber-500/40 bg-amber-500/8 p-3">
+            <p className="text-sm font-semibold">{labels.lateCancelTitle}</p>
+            <p className="mb-2 text-sm text-muted-foreground">{labels.lateCancelBody}</p>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" disabled={pending}
+                onClick={() => { setLateCancelOpen(false); runAction(cancelLesson); }}>
+                {labels.lateCancelNone}
+              </Button>
+              <Button size="sm" variant="outline" disabled={pending}
+                onClick={() => { setLateCancelOpen(false); runAction((id) => cancelLessonLate(id, 0.5)); }}>
+                {labels.lateCancelHalf}
+              </Button>
+              <Button size="sm" disabled={pending}
+                onClick={() => { setLateCancelOpen(false); runAction((id) => cancelLessonLate(id, 1)); }}>
+                {labels.lateCancelFull}
+              </Button>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -96,3 +96,13 @@ export async function cancelLesson(id: string): Promise<ActionResult> {
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
+
+// Поздняя отмена (<24 ч до начала): отменить занятие И начислить долю ставки — атомарно (RPC).
+export async function cancelLessonLate(id: string, fraction: 0.5 | 1): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "not authenticated" };
+  const { error } = await supabase.rpc("folio_cancel_lesson_with_charge", { p_lesson_id: id, p_fraction: fraction });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
