@@ -1,6 +1,6 @@
 # Folio — Data Model
 
-> Последнее обновление: 2026-06-30
+> Последнее обновление: 2026-07-07
 > Статус: таблицы M1–M9 созданы и задеплоены (см. «Применённые миграции»).
 
 ---
@@ -35,6 +35,8 @@
 - `20260702204525_folio_homework_items.sql` — **живой документ ДЗ, Ф1a** (additive): таблица `folio_homework_items` (итемизация задания — вопрос + ответ ученика + per-item комментарий репетитора), RLS через родителя-назначение. Заполняется при назначении через LLM-итемизацию (`folio-generate` action `itemize`).
 - `20260703130000_folio_homework_messages.sql` — **живой документ ДЗ, Ф3** (additive): таблица `folio_homework_messages` (чат по назначению — тред сообщений, пишут оба: репетитор и ученик). RLS через родителя-назначение. Обновление поллингом.
 - `20260703140001_folio_users_disabled.sql` — **отзыв доступа** (additive): колонка `folio_users.disabled_at` (мягкий обратимый отзыв) + `folio_current_workspace_id()` дополнена условием `disabled_at is null` (RLS-чокпоинт: отключённый репетитор не резолвит воркспейс → все RLS-запросы пусты, активная сессия немедленно нерабочая). Сигнатура/атрибуты функции не менялись — только `WHERE`. Парная ботовая миграция — `20260703140000_eb_users_disabled.sql`. Ставится/снимается командами бота `/revoke` · `/restore`.
+- `20260707120000_folio_money_v2.sql` — **Деньги v2** (additive): колонка `folio_workspaces.payment_details` (⚠️ НЕ используется: владелец отказался от подстановки реквизитов в напоминания; колонка пустая, зарезервирована/кандидат на удаление) + RPC `folio_cancel_lesson_with_charge(p_lesson_id, p_fraction)` — атомарно отменяет занятие и начисляет каждому ученику ростера charge за отмену (доля текущей ставки, `0 < p_fraction <= 1`; `round(...,2)`). `SECURITY INVOKER`, `FOR UPDATE` сериализует конкурентные операции над занятием, тот же стиль что `20260701101000`. **Ослабляет инвариант «charge ⇔ completed»** из `folio_student_payments` (см. выше): charge за отмену теперь может висеть на занятии со статусом `cancelled` — UI отличает его от обычного charge через join по статусу занятия, отдельный `type` не нужен. Server action `cancelLessonLate` в `lib/lessons/actions.ts`.
+- `20260708100000_folio_cancel_preserve_late_charge.sql` — **Деньги v2 follow-up**: `folio_cancel_lesson` (обычная отмена) больше не удаляет charge за позднюю отмену (`note='отмена'`) на повторной отмене уже cancelled-занятия — удаляет только не-отменные charges; `folio_cancel_lesson_with_charge`, `folio_complete_lesson`, `folio_reopen_lesson` не изменились.
 
 ---
 
@@ -44,11 +46,12 @@
 
 ### folio_workspaces ✅
 ```sql
-id            uuid PK
-name          text
-owner_id      uuid FK → folio_users.id (nullable, добавлен после создания folio_users — циклическая FK)
-created_at    timestamptz
-updated_at    timestamptz
+id                uuid PK
+name              text
+owner_id          uuid FK → folio_users.id (nullable, добавлен после создания folio_users — циклическая FK)
+payment_details   text nullable   -- НЕ используется (владелец отказался от реквизитов в напоминаниях); всегда NULL
+created_at        timestamptz
+updated_at        timestamptz
 ```
 
 ### folio_users ✅
@@ -299,7 +302,7 @@ created_at      timestamptz
 -- unique(lesson_id, student_id); index on (workspace_id, student_id)
 ```
 
-> Реализовано в `20260615194711_folio_student_payments.sql` (M5). Денежный леджер: остаток ученика = Σ(charge) − Σ(payment). **Charge** создаётся автоматически при отметке занятия «состоялось» (`completeLesson`, сумма = `lesson_students.rate_override ?? folio_students.default_rate ?? 0`, `lesson_id` проставлен) и удаляется при возврате/отмене занятия — инвариант: charge существует ⇔ занятие `completed`. Идемпотентность через `unique(lesson_id, student_id)` (payment'ы имеют `lesson_id=null` и не конфликтуют). **Payment** заносит репетитор вручную. RLS `workspace_isolation` `FOR ALL`: `USING` по `workspace_id`, `WITH CHECK` дополнительно требует student из того же workspace. Реализует черновик `student_payments` из проектной модели. См. [[ARCHITECTURE]].
+> Реализовано в `20260615194711_folio_student_payments.sql` (M5). Денежный леджер: остаток ученика = Σ(charge) − Σ(payment). **Charge** создаётся автоматически при отметке занятия «состоялось» (`completeLesson`, сумма = `lesson_students.rate_override ?? folio_students.default_rate ?? 0`, `lesson_id` проставлен) и удаляется при возврате/отмене занятия — инвариант: charge существует ⇔ занятие `completed`. **Исключение:** RPC `folio_cancel_lesson_with_charge` (`20260707120000`) допускает charge и на `cancelled`-занятии — при поздней отмене начисляется доля ставки; UI отличает такие строки по статусу занятия. Идемпотентность через `unique(lesson_id, student_id)` (payment'ы имеют `lesson_id=null` и не конфликтуют). **Payment** заносит репетитор вручную. RLS `workspace_isolation` `FOR ALL`: `USING` по `workspace_id`, `WITH CHECK` дополнительно требует student из того же workspace. Реализует черновик `student_payments` из проектной модели. См. [[ARCHITECTURE]].
 
 ### homework_templates
 > ⚠️ Старый черновик (без префикса `folio_`) — **частично реализован / заменён** таблицей `folio_homework_templates ✅` выше (M7a). В реализации: `module_type` (5 типов движка генерации) вместо `type`/`difficulty`, `source` ∈ (`web`,`bot`), без `bot_cache_key` (кэширование генерации отложено). Черновик ниже оставлен для истории проектных идей.

@@ -135,7 +135,22 @@
     @apply font-sans;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    /* App-wide ambient gradient wash (teal + coral + violet) over the base — airy, colourful,
+       fixed so it spans the whole interface on scroll. Cards/tables are opaque and float above it. */
+    background-color: var(--background);
+    background-image:
+      radial-gradient(1100px 780px at 8% -8%, color-mix(in oklch, var(--primary) 16%, transparent), transparent 58%),
+      radial-gradient(1000px 720px at 112% 6%, color-mix(in oklch, var(--brand-coral) 13%, transparent), transparent 55%),
+      radial-gradient(1250px 1050px at 55% 118%, color-mix(in oklch, var(--chart-4) 12%, transparent), transparent 60%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+  .dark body {
+    background-image:
+      radial-gradient(1100px 780px at 8% -8%, color-mix(in oklch, var(--primary) 26%, transparent), transparent 60%),
+      radial-gradient(1000px 720px at 112% 6%, color-mix(in oklch, var(--brand-coral) 20%, transparent), transparent 56%),
+      radial-gradient(1250px 1050px at 55% 118%, color-mix(in oklch, var(--chart-4) 22%, transparent), transparent 62%);
   }
   /* Oswald referenced directly (next/font emits --font-oswald); @theme inline does NOT
      emit --font-heading as a usable custom property, which previously caused serif fallback. */
@@ -145,4 +160,70 @@
     letter-spacing: 0.01em;
     line-height: 1.1;
   }
+}
+
+/* ── Dashboard "magic circle" ambient background (MagicBackground.tsx) ───────── */
+@keyframes folio-spin { to { transform: rotate(360deg); } }
+@keyframes folio-pulse {
+  0%, 100% { transform: scale(0.92); opacity: 0.5; }
+  50%      { transform: scale(1.06); opacity: 1; }
+}
+.folio-spin-slow, .folio-spin-rev, .folio-spin-med, .folio-gim-x, .folio-gim-y, .folio-gim-d {
+  transform-box: fill-box;
+  transform-origin: center;
+  will-change: transform;
+}
+/* Event Horizon gravity-drive gimbal: three rings, each spinning FAST on its own 3D axis (X / Y /
+   diagonal) via perspective on the <svg> — nested, independent, converging on the core. Outer runic
+   layers stay slow → a slow arcane frame around a fast spinning engine. */
+/* Each ring TUMBLES around its own axis (plane sweeps face↔edge) → the whole ring visibly moves. */
+@keyframes folio-gimx { to { transform: rotateX(360deg); } }
+@keyframes folio-gimy { to { transform: rotateY(360deg); } }
+@keyframes folio-gimd { to { transform: rotate3d(1, 1, 0, 360deg); } }
+.folio-spin-slow { animation: folio-spin 240s linear infinite; }        /* outer — very slow, majestic */
+.folio-spin-rev  { animation: folio-spin 134s linear infinite reverse; } /* mid runes — counter */
+.folio-spin-med  { animation: folio-spin  76s linear infinite; }         /* hero star */
+.folio-gim-x     { animation: folio-gimx 17s linear infinite; }          /* gimbal ring tumbling — X */
+.folio-gim-y     { animation: folio-gimy 12s linear infinite reverse; }  /* gimbal ring tumbling — Y */
+.folio-gim-d     { animation: folio-gimd  9s linear infinite; }          /* gimbal ring tumbling — diagonal */
+/* Dark radial "well" — the crisp cyan circle glows only because it sits on darkness (anime look).
+   Fades to transparent well before the viewport edge so the rest of the app stays light/airy. */
+.folio-magic-well {
+  position: absolute;
+  width: 150vh;
+  height: 150vh;
+  border-radius: 9999px;
+  background: radial-gradient(circle,
+    rgba(5, 16, 22, 0.96) 0%,
+    rgba(5, 16, 22, 0.80) 34%,
+    rgba(5, 16, 22, 0.40) 52%,
+    rgba(5, 16, 22, 0) 70%);
+}
+/* Hot cyan bloom at the core. */
+.folio-magic-glow {
+  position: absolute;
+  width: 62vh;
+  height: 62vh;
+  border-radius: 9999px;
+  background: radial-gradient(circle,
+    rgba(94, 234, 212, 0.55) 0%,
+    rgba(56, 189, 248, 0.16) 42%,
+    transparent 70%);
+  filter: blur(26px);
+  animation: folio-pulse 8s ease-in-out infinite;
+}
+/* Line glow (bloom) for the hero star + emblem — cheap: one drop-shadow per filtered group. */
+.folio-glow { filter: drop-shadow(0 0 5px rgba(94, 234, 212, 0.65)); }
+/* Node twinkle (opacity only) — per-node animation-delay staggers it. */
+@keyframes folio-flicker { 0%, 100% { opacity: 1; } 46% { opacity: 0.3; } }
+.folio-twinkle { animation: folio-flicker 3.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .folio-spin-slow, .folio-spin-rev, .folio-spin-med, .folio-gim-x, .folio-gim-y, .folio-gim-d,
+  .folio-magic-glow, .folio-twinkle {
+    animation: none;
+  }
+  /* Freeze the gimbal as a static crossed-rings pose (still reads as a gyroscope). */
+  .folio-gim-x { transform: rotateX(74deg); }
+  .folio-gim-y { transform: rotateY(74deg); }
+  .folio-gim-d { transform: rotate3d(1,1,0,60deg); }
 }

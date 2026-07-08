@@ -31,6 +31,9 @@ export default async function AdminPage({
     workspacesTitle: t("workspacesTitle"), wsName: t("wsName"), tutor: t("tutor"),
     students: t("students"), lessons: t("lessons"), createdAt: t("createdAt"),
     noWorkspaces: t("noWorkspaces"), saveError: t("saveError"),
+    accessRevoke: t("accessRevoke"), accessRestore: t("accessRestore"),
+    accessRevokedBadge: t("accessRevokedBadge"), accessConfirmRevoke: t.raw("accessConfirmRevoke"),
+    accessRevokedToast: t("accessRevokedToast"), accessRestoredToast: t("accessRestoredToast"),
   };
 
   return (

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useLocale } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
+import { Archive, ArchiveRestore, Link2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StudentForm } from "../students/StudentForm";
 import { StudentJournalDialog, type StudentJournalLabels } from "./StudentJournalDialog";
@@ -82,7 +83,7 @@ export function StudentsPanel({ students, labels, journalLabels }: {
             const archived = s.archived_at != null;
             return (
               <li key={s.id}
-                className={`flex items-center justify-between gap-2 rounded-xl border border-border bg-card p-3 shadow-sm ${archived ? "opacity-60" : ""}`}>
+                className={`flex flex-col gap-2 rounded-xl border border-border bg-card p-3 shadow-sm ${archived ? "opacity-60" : ""}`}>
                 <div className="min-w-0">
                   <button type="button" onClick={() => setHistoryFor({ id: s.id, name: s.name })}
                     className="block max-w-full truncate text-left font-medium hover:underline">
@@ -90,19 +91,25 @@ export function StudentsPanel({ students, labels, journalLabels }: {
                   </button>
                   <div className="text-xs text-muted-foreground">{labels.rate}: {s.default_rate ?? "—"}</div>
                 </div>
-                <div className="flex shrink-0 gap-1">
+                {/* Пиктограммы вместо надписей (#78): подпись — в aria-label/title каждой кнопки. */}
+                <div className="flex flex-wrap gap-1">
                   <StudentForm
                     mode="edit"
                     student={s}
                     labels={{ ...formLabels, trigger: labels.edit, heading: labels.editStudent }}
+                    iconTrigger={<Pencil />}
                   />
                   {!archived && (
-                    <Button variant="outline" size="sm" disabled={busyId === s.id} onClick={() => copyCabinet(s.id)}>
-                      {labels.cabinet}
+                    <Button variant="outline" size="icon-sm" disabled={busyId === s.id}
+                      aria-label={labels.cabinet} title={labels.cabinet} onClick={() => copyCabinet(s.id)}>
+                      <Link2 />
                     </Button>
                   )}
-                  <Button variant="outline" size="sm" disabled={busyId === s.id} onClick={() => onArchive(s.id, archived)}>
-                    {archived ? labels.restore : labels.archive}
+                  <Button variant="outline" size="icon-sm" disabled={busyId === s.id}
+                    aria-label={archived ? labels.restore : labels.archive}
+                    title={archived ? labels.restore : labels.archive}
+                    onClick={() => onArchive(s.id, archived)}>
+                    {archived ? <ArchiveRestore /> : <Archive />}
                   </Button>
                 </div>
               </li>

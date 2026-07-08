@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createSignupInvite, revokeSignupInvite } from "@/lib/admin/actions";
+import { createSignupInvite, revokeSignupInvite, setTutorAccess } from "@/lib/admin/actions";
 import type { SignupInviteRow, WorkspaceOverview } from "@/lib/admin/queries";
 import { formatDate } from "@/lib/format/date";
 
@@ -16,6 +16,8 @@ interface Labels {
   expires: string; usedBy: string; revoke: string; revoked: string; noInvites: string;
   workspacesTitle: string; wsName: string; tutor: string; students: string; lessons: string;
   createdAt: string; noWorkspaces: string; saveError: string;
+  accessRevoke: string; accessRestore: string; accessRevokedBadge: string;
+  accessConfirmRevoke: string; accessRevokedToast: string; accessRestoredToast: string;
 }
 
 export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
@@ -52,6 +54,27 @@ export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
         toast.success(labels.created);
         setNote("");
         if (res.token) await copy(res.token);
+        router.refresh();
+      } else {
+        toast.error(`${labels.saveError}: ${res.error}`);
+      }
+    } catch {
+      toast.error(labels.saveError);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  // Отзыв/восстановление доступа репетитора (#76): подтверждение — на отзыв, восстановление сразу.
+  async function onAccessToggle(w: WorkspaceOverview) {
+    if (!w.owner_user_id) return;
+    const revoking = !w.tutor_disabled;
+    if (revoking && !window.confirm(labels.accessConfirmRevoke.replace("{name}", w.tutor_name ?? w.name))) return;
+    setPending(true);
+    try {
+      const res = await setTutorAccess(w.owner_user_id, revoking);
+      if (res.ok) {
+        toast.success(revoking ? labels.accessRevokedToast : labels.accessRestoredToast);
         router.refresh();
       } else {
         toast.error(`${labels.saveError}: ${res.error}`);
@@ -146,16 +169,32 @@ export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
                   <th className="p-3 font-semibold">{labels.students}</th>
                   <th className="p-3 font-semibold">{labels.lessons}</th>
                   <th className="p-3 font-semibold">{labels.createdAt}</th>
+                  <th className="p-3" />
                 </tr>
               </thead>
               <tbody>
                 {workspaces.map((w) => (
-                  <tr key={w.id} className="border-b border-border last:border-0">
+                  <tr key={w.id} className={`border-b border-border last:border-0 ${w.tutor_disabled ? "opacity-60" : ""}`}>
                     <td className="p-3 font-medium">{w.name}</td>
-                    <td className="p-3">{w.tutor_name ?? "—"}{w.tutor_telegram ? ` · ${w.tutor_telegram}` : ""}</td>
+                    <td className="p-3">
+                      {w.tutor_name ?? "—"}{w.tutor_telegram ? ` · ${w.tutor_telegram}` : ""}
+                      {w.tutor_disabled && (
+                        <span className="ml-2 rounded-full bg-destructive/12 px-2 py-0.5 text-xs font-bold text-destructive">
+                          {labels.accessRevokedBadge}
+                        </span>
+                      )}
+                    </td>
                     <td className="p-3">{w.students}</td>
                     <td className="p-3">{w.lessons}</td>
                     <td className="p-3 text-muted-foreground">{formatDate(w.created_at)}</td>
+                    <td className="p-3 text-right">
+                      {w.owner_user_id && (
+                        <Button variant={w.tutor_disabled ? "outline" : "ghost"} size="sm" disabled={pending}
+                          onClick={() => onAccessToggle(w)}>
+                          {w.tutor_disabled ? labels.accessRestore : labels.accessRevoke}
+                        </Button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -4,6 +4,7 @@ import type { Balance } from "@/lib/billing/queries";
 import { TodayLessons, type TodayLessonsLabels } from "./TodayLessons";
 import { GeneratePanel, type GenerateFormLabels, type GenerateDashLabels, type GenerateAssignLabels } from "./GeneratePanel";
 import { MiniBlock } from "./MiniBlock";
+import { MagicBackground } from "./MagicBackground";
 
 // ВРЕМЕННО (2026-07): homework-блок дашборда («на проверку / просрочено») скрыт вместе с онлайн-сдачей ДЗ.
 // Пропсы hw/hwLabels, тип HwBuckets и homeworkBuckets() убраны из UI; восстановить — из git-истории.
@@ -22,7 +23,10 @@ export interface DashboardBentoProps {
 
 export function DashboardBento(p: DashboardBentoProps) {
   return (
-    <div className="mx-auto flex w-full max-w-[1500px] flex-1 flex-col gap-4 p-4 md:px-6 md:pt-4">
+    <div className="relative isolate flex flex-1 flex-col overflow-hidden">
+      {/* Ambient magic circle behind the bento (shows through the gaps between cards). */}
+      <MagicBackground />
+      <div className="relative z-10 mx-auto flex w-full max-w-[1500px] flex-1 flex-col gap-4 p-4 md:px-6 md:pt-4">
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[300px_minmax(0,1fr)_330px]">
         {/* Left: today's lessons */}
         <div className="flex flex-col gap-5">
@@ -57,6 +61,7 @@ export function DashboardBento(p: DashboardBentoProps) {
             )}
           </MiniBlock>
         </div>
+      </div>
       </div>
     </div>
   );
