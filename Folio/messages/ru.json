@@ -221,7 +221,17 @@
     "remindDebt": "Напомнить о долге",
     "remindStatement": "Выписка за месяц",
     "inDebtTotal": "В долгу: {amount} ({count})",
-    "prepaidTotal": "Предоплачено: {amount} ({count})"
+    "prepaidTotal": "Предоплачено: {amount} ({count})",
+    "periodWeek": "Неделя",
+    "periodMonth": "Месяц",
+    "periodYear": "Год",
+    "periodCustom": "Период",
+    "customFrom": "С",
+    "customTo": "По",
+    "customShow": "Показать",
+    "chartTitle": "Динамика",
+    "chartEmpty": "За этот период операций нет",
+    "studentsTitle": "Ученики"
   },
   "Journal": {
     "title": "Журнал занятия",

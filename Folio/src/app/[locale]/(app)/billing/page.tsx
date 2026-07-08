@@ -3,14 +3,16 @@ import { redirect } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { listBalances, listBillingEntries, listMonthLessons } from "@/lib/billing/queries";
 import { buildStudentBilling } from "@/lib/billing/fifo";
-import { buildMonthSummary, mskMonthKey, monthRangeUtc, shiftMonthKey, monthLabelRu } from "@/lib/billing/summary";
+import { buildRangeSummary, mskMonthKey, monthLabelRu } from "@/lib/billing/summary";
+import { resolvePeriod, buildChartBuckets, type PeriodParams } from "@/lib/billing/period";
 import { formatRub } from "@/lib/format/money";
-import { MonthSummaryCard } from "./MonthSummaryCard";
+import { PeriodSummaryCard } from "./PeriodSummaryCard";
+import { EarningsChart } from "./EarningsChart";
 import { StudentCards, type StudentCardData } from "./StudentCards";
 
 const DAY_MS = 86_400_000;
 
-export default async function BillingPage({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
+export default async function BillingPage({ searchParams }: { searchParams: Promise<PeriodParams> }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -19,15 +21,17 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   }
 
   const nowISO = new Date().toISOString();
-  const { m } = await searchParams;
-  const monthKey = m && /^\d{4}-(0[1-9]|1[0-2])$/.test(m) ? m : mskMonthKey(nowISO);
-  const { fromISO, toISO } = monthRangeUtc(monthKey);
+  const period = resolvePeriod(await searchParams, nowISO);
 
-  const [balances, entries, monthLessons] = await Promise.all([
-    listBalances(), listBillingEntries(), listMonthLessons(fromISO, toISO),
+  const [balances, entries, periodLessons] = await Promise.all([
+    listBalances(), listBillingEntries(), listMonthLessons(period.fromISO, period.toISO),
   ]);
 
-  const summary = buildMonthSummary(entries, monthLessons, monthKey, nowISO);
+  const summary = buildRangeSummary(entries, periodLessons, period.fromISO, period.toISO, nowISO);
+  const buckets = buildChartBuckets(entries, period.fromISO, period.toISO);
+
+  // Выписка в «Напомнить» всегда месячная: выбранный месяц в режиме месяца, иначе текущий.
+  const monthKey = period.kind === "month" ? mskMonthKey(period.fromISO) : mskMonthKey(nowISO);
 
   // FIFO по каждому ученику — на сервере; клиенту уходят только сериализуемые данные.
   const byStudent = new Map<string, typeof entries>();
@@ -63,50 +67,65 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   const t = await getTranslations("Billing");
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-5 p-4 sm:p-8">
-      <h1 className="text-4xl font-bold">{t("title")}</h1>
+    <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-6 p-4 sm:p-6 xl:flex-row">
+      {/* Слева — всё про деньги за выбранный период */}
+      <div className="flex min-w-0 flex-1 flex-col gap-5">
+        <h1 className="text-4xl font-bold">{t("title")}</h1>
 
-      <MonthSummaryCard
-        summary={summary}
-        awaiting={totalDebt}
-        monthLabel={monthLabelRu(monthKey)}
-        prevHref={`/billing?m=${shiftMonthKey(monthKey, -1)}`}
-        nextHref={`/billing?m=${shiftMonthKey(monthKey, 1)}`}
-        labels={{
-          charged: t("summaryCharged"), received: t("summaryReceived"), awaiting: t("summaryAwaiting"),
-          lessons: t("summaryLessons"),
-          lessonsLine: t("summaryLessonsLine", { done: summary.lessonsCompleted, cancelled: summary.lessonsCancelled, upcoming: summary.lessonsUpcoming }),
-          forecast: t("summaryForecast", { count: summary.forecastCount, amount: formatRub(summary.forecastAmount) }),
-        }}
-      />
+        <PeriodSummaryCard
+          summary={summary}
+          awaiting={totalDebt}
+          period={period}
+          labels={{
+            charged: t("summaryCharged"), received: t("summaryReceived"), awaiting: t("summaryAwaiting"),
+            lessons: t("summaryLessons"),
+            lessonsLine: t("summaryLessonsLine", { done: summary.lessonsCompleted, cancelled: summary.lessonsCancelled, upcoming: summary.lessonsUpcoming }),
+            forecast: t("summaryForecast", { count: summary.forecastCount, amount: formatRub(summary.forecastAmount) }),
+            week: t("periodWeek"), month: t("periodMonth"), year: t("periodYear"), custom: t("periodCustom"),
+            range: { from: t("customFrom"), to: t("customTo"), show: t("customShow") },
+          }}
+        />
 
-      <p className="text-sm text-muted-foreground">
-        <span className={totalDebt > 0 ? "font-semibold text-destructive" : ""}>{t("inDebtTotal", { amount: formatRub(totalDebt), count: debtors })}</span>
-        {"  ·  "}
-        <span className={totalAdvance > 0 ? "font-semibold text-emerald-600 dark:text-emerald-400" : ""}>{t("prepaidTotal", { amount: formatRub(totalAdvance), count: prepaid })}</span>
-      </p>
+        <EarningsChart
+          buckets={buckets}
+          labels={{
+            title: t("chartTitle"), charged: t("summaryCharged"),
+            received: t("summaryReceived"), empty: t("chartEmpty"),
+          }}
+        />
 
-      <StudentCards
-        cards={cards}
-        monthKey={monthKey}
-        monthLabel={monthLabelRu(monthKey)}
-        labels={{
-          recordPayment: t("recordPayment"), recordCharge: t("recordCharge"), amount: t("amount"),
-          note: t("note"), save: t("save"), cancel: t("cancel"), saved: t("saved"), saveError: t("saveError"),
-          empty: t("empty"), ledger: t("ledger"), hide: t("hide"), delete: t("delete"),
-          payment: t("payment"), noEntries: t("noEntries"),
-          debtBadge: t.raw("debtBadge"), paidUpTo: t.raw("paidUpTo"), advanceBadge: t.raw("advanceBadge"),
-          advanceLessons: t.raw("advanceLessons"), advanceRenew: t("advanceRenew"),
-          lessonFrom: t.raw("lessonFrom"), statusPaid: t("statusPaid"), statusPartial: t.raw("statusPartial"),
-          statusDebt: t("statusDebt"), cancelledBadge: t("cancelledBadge"),
-          extraCharge: t("extraCharge"), discount: t("discount"),
-          chargeKindExtra: t("chargeKindExtra"), chargeKindDiscount: t("chargeKindDiscount"),
-          notePlaceholder: t("notePlaceholder"),
-          chipPayOffDebt: t.raw("chipPayOffDebt"), chipLessons: t.raw("chipLessons"),
-          remind: t("remind"), remindCopied: t("remindCopied"), remindDebt: t("remindDebt"),
-          remindStatement: t("remindStatement"),
-        }}
-      />
+        <p className="text-sm text-muted-foreground">
+          <span className={totalDebt > 0 ? "font-semibold text-destructive" : ""}>{t("inDebtTotal", { amount: formatRub(totalDebt), count: debtors })}</span>
+          {"  ·  "}
+          <span className={totalAdvance > 0 ? "font-semibold text-emerald-600 dark:text-emerald-400" : ""}>{t("prepaidTotal", { amount: formatRub(totalAdvance), count: prepaid })}</span>
+        </p>
+      </div>
+
+      {/* Справа — ученики */}
+      <aside className="flex w-full shrink-0 flex-col gap-3 xl:w-[30rem]">
+        <h2 className="font-heading text-xl font-bold">{t("studentsTitle")}</h2>
+        <StudentCards
+          cards={cards}
+          monthKey={monthKey}
+          monthLabel={monthLabelRu(monthKey)}
+          labels={{
+            recordPayment: t("recordPayment"), recordCharge: t("recordCharge"), amount: t("amount"),
+            note: t("note"), save: t("save"), cancel: t("cancel"), saved: t("saved"), saveError: t("saveError"),
+            empty: t("empty"), ledger: t("ledger"), hide: t("hide"), delete: t("delete"),
+            payment: t("payment"), noEntries: t("noEntries"),
+            debtBadge: t.raw("debtBadge"), paidUpTo: t.raw("paidUpTo"), advanceBadge: t.raw("advanceBadge"),
+            advanceLessons: t.raw("advanceLessons"), advanceRenew: t("advanceRenew"),
+            lessonFrom: t.raw("lessonFrom"), statusPaid: t("statusPaid"), statusPartial: t.raw("statusPartial"),
+            statusDebt: t("statusDebt"), cancelledBadge: t("cancelledBadge"),
+            extraCharge: t("extraCharge"), discount: t("discount"),
+            chargeKindExtra: t("chargeKindExtra"), chargeKindDiscount: t("chargeKindDiscount"),
+            notePlaceholder: t("notePlaceholder"),
+            chipPayOffDebt: t.raw("chipPayOffDebt"), chipLessons: t.raw("chipLessons"),
+            remind: t("remind"), remindCopied: t("remindCopied"), remindDebt: t("remindDebt"),
+            remindStatement: t("remindStatement"),
+          }}
+        />
+      </aside>
     </main>
   );
 }

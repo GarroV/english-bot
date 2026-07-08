@@ -221,7 +221,17 @@
     "remindDebt": "Remind about debt",
     "remindStatement": "Month statement",
     "inDebtTotal": "In debt: {amount} ({count})",
-    "prepaidTotal": "Prepaid: {amount} ({count})"
+    "prepaidTotal": "Prepaid: {amount} ({count})",
+    "periodWeek": "Week",
+    "periodMonth": "Month",
+    "periodYear": "Year",
+    "periodCustom": "Custom",
+    "customFrom": "From",
+    "customTo": "To",
+    "customShow": "Show",
+    "chartTitle": "Trend",
+    "chartEmpty": "No activity in this period",
+    "studentsTitle": "Students"
   },
   "Journal": {
     "title": "Lesson journal",
