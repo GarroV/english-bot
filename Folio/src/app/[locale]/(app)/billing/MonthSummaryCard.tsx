@@ -1,12 +1,11 @@
 import { Link } from "@/i18n/navigation";
 import type { MonthSummary } from "@/lib/billing/summary";
+import { formatRub } from "@/lib/format/money";
 
 export interface SummaryLabels {
   charged: string; received: string; awaiting: string; lessons: string;
   lessonsLine: string; forecast: string;
 }
-
-const fmtRub = (n: number) => `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(n)} ₽`;
 
 // Серверный презентационный блок: числа месяца + переключатель месяцев ссылками (?m=YYYY-MM).
 export function MonthSummaryCard({ summary, awaiting, monthLabel, prevHref, nextHref, labels }: {
@@ -14,9 +13,9 @@ export function MonthSummaryCard({ summary, awaiting, monthLabel, prevHref, next
   prevHref: string; nextHref: string; labels: SummaryLabels;
 }) {
   const stats: [string, string, string][] = [
-    [labels.charged, fmtRub(summary.charged), "text-foreground"],
-    [labels.received, fmtRub(summary.received), "text-emerald-600 dark:text-emerald-400"],
-    [labels.awaiting, fmtRub(awaiting), awaiting > 0 ? "text-destructive" : "text-foreground"],
+    [labels.charged, formatRub(summary.charged), "text-foreground"],
+    [labels.received, formatRub(summary.received), "text-emerald-600 dark:text-emerald-400"],
+    [labels.awaiting, formatRub(awaiting), awaiting > 0 ? "text-destructive" : "text-foreground"],
   ];
   return (
     <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">

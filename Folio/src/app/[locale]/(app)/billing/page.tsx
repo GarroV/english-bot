@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { listBalances, listBillingEntries, listMonthLessons } from "@/lib/billing/queries";
 import { buildStudentBilling } from "@/lib/billing/fifo";
 import { buildMonthSummary, mskMonthKey, monthRangeUtc, shiftMonthKey, monthLabelRu } from "@/lib/billing/summary";
+import { formatRub } from "@/lib/format/money";
 import { MonthSummaryCard } from "./MonthSummaryCard";
 import { StudentCards, type StudentCardData } from "./StudentCards";
 
@@ -60,7 +61,6 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   const prepaid = cards.filter((x) => x.advance > 0).length;
 
   const t = await getTranslations("Billing");
-  const fmtRub = (n: number) => `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(n)} ₽`;
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-5 p-4 sm:p-8">
@@ -76,14 +76,14 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
           charged: t("summaryCharged"), received: t("summaryReceived"), awaiting: t("summaryAwaiting"),
           lessons: t("summaryLessons"),
           lessonsLine: t("summaryLessonsLine", { done: summary.lessonsCompleted, cancelled: summary.lessonsCancelled, upcoming: summary.lessonsUpcoming }),
-          forecast: t("summaryForecast", { count: summary.forecastCount, amount: fmtRub(summary.forecastAmount) }),
+          forecast: t("summaryForecast", { count: summary.forecastCount, amount: formatRub(summary.forecastAmount) }),
         }}
       />
 
       <p className="text-sm text-muted-foreground">
-        <span className={totalDebt > 0 ? "font-semibold text-destructive" : ""}>{t("inDebtTotal", { amount: fmtRub(totalDebt), count: debtors })}</span>
+        <span className={totalDebt > 0 ? "font-semibold text-destructive" : ""}>{t("inDebtTotal", { amount: formatRub(totalDebt), count: debtors })}</span>
         {"  ·  "}
-        <span className={totalAdvance > 0 ? "font-semibold text-emerald-600 dark:text-emerald-400" : ""}>{t("prepaidTotal", { amount: fmtRub(totalAdvance), count: prepaid })}</span>
+        <span className={totalAdvance > 0 ? "font-semibold text-emerald-600 dark:text-emerald-400" : ""}>{t("prepaidTotal", { amount: formatRub(totalAdvance), count: prepaid })}</span>
       </p>
 
       <StudentCards
@@ -95,7 +95,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
           note: t("note"), save: t("save"), cancel: t("cancel"), saved: t("saved"), saveError: t("saveError"),
           empty: t("empty"), ledger: t("ledger"), hide: t("hide"), delete: t("delete"),
           payment: t("payment"), noEntries: t("noEntries"),
-          debtBadge: t.raw("debtBadge"), paidUpTo: t.raw("paidUpTo"), advanceBadge: t("advanceBadge"),
+          debtBadge: t.raw("debtBadge"), paidUpTo: t.raw("paidUpTo"), advanceBadge: t.raw("advanceBadge"),
           advanceLessons: t.raw("advanceLessons"), advanceRenew: t("advanceRenew"),
           lessonFrom: t.raw("lessonFrom"), statusPaid: t("statusPaid"), statusPartial: t.raw("statusPartial"),
           statusDebt: t("statusDebt"), cancelledBadge: t("cancelledBadge"),

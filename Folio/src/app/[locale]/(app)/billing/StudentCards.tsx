@@ -14,6 +14,7 @@ import { buildReminderMessage, buildMonthStatement } from "@/lib/billing/reminde
 import { mskMonthKey } from "@/lib/billing/summary";
 import type { HistoryRow } from "@/lib/billing/fifo";
 import { formatDate } from "@/lib/format/date";
+import { formatRub } from "@/lib/format/money";
 
 export interface StudentCardData {
   student_id: string; name: string;
@@ -36,7 +37,6 @@ export interface CardLabels {
   remind: string; remindCopied: string; remindDebt: string; remindStatement: string;
 }
 
-const fmtRub = (n: number) => `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(n)} ₽`;
 // Простая интерполяция raw-шаблонов next-intl ("{amount}" и т.п.) на клиенте.
 const fill = (tpl: string, vars: Record<string, string | number>) =>
   tpl.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? ""));
@@ -85,12 +85,12 @@ export function StudentCards({ cards, monthKey, monthLabel, labels }: {
               <span className="font-semibold">{c.name}</span>
               {c.debt > 0 && c.oldestDebtDays !== null && (
                 <span className="rounded-full bg-destructive/12 px-2.5 py-0.5 text-xs font-bold text-destructive">
-                  {fill(labels.debtBadge, { amount: fmtRub(c.debt), days: c.oldestDebtDays })}
+                  {fill(labels.debtBadge, { amount: formatRub(c.debt), days: c.oldestDebtDays })}
                 </span>
               )}
               {c.advance > 0 && (
                 <span className="rounded-full bg-emerald-500/12 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                  {fill(labels.advanceBadge, { amount: fmtRub(c.advance) })}
+                  {fill(labels.advanceBadge, { amount: formatRub(c.advance) })}
                   {c.advanceLessons !== null && c.advanceLessons > 0 && ` ${fill(labels.advanceLessons, { count: c.advanceLessons })}`}
                 </span>
               )}
@@ -125,15 +125,15 @@ export function StudentCards({ cards, monthKey, monthLabel, labels }: {
                     {c.rows.map((r) => (
                       <li key={r.id} className={`flex items-center justify-between gap-2 ${r.kind === "payment" ? "text-emerald-700 dark:text-emerald-400" : ""}`}>
                         <span className="min-w-0 truncate">
-                          {r.kind === "payment" && `${labels.payment} ${formatDate(r.date)} · ${fmtRub(r.amount)}${r.note ? ` · ${r.note}` : ""}`}
+                          {r.kind === "payment" && `${labels.payment} ${formatDate(r.date)} · ${formatRub(r.amount)}${r.note ? ` · ${r.note}` : ""}`}
                           {r.kind === "lesson_charge" && (
                             <>
-                              {fill(labels.lessonFrom, { date: formatDate(r.date) })} · {fmtRub(r.amount)} ·{" "}
+                              {fill(labels.lessonFrom, { date: formatDate(r.date) })} · {formatRub(r.amount)} ·{" "}
                               <StatusBadge row={r} labels={labels} />
                               {r.cancelled && <span className="ml-1 rounded bg-secondary px-1.5 py-0.5 text-xs">{labels.cancelledBadge}</span>}
                             </>
                           )}
-                          {r.kind === "manual_charge" && `${r.amount < 0 ? labels.discount : labels.extraCharge} · ${fmtRub(Math.abs(r.amount))}${r.note ? ` · ${r.note}` : ""} · ${formatDate(r.date)}`}
+                          {r.kind === "manual_charge" && `${r.amount < 0 ? labels.discount : labels.extraCharge} · ${formatRub(Math.abs(r.amount))}${r.note ? ` · ${r.note}` : ""} · ${formatDate(r.date)}`}
                         </span>
                         <Button variant="ghost" size="sm" disabled={pending}
                           onClick={() => run(() => deleteEntry(r.id), () => {})}>
@@ -158,12 +158,12 @@ export function StudentCards({ cards, monthKey, monthLabel, labels }: {
               <div className="flex flex-wrap gap-1.5">
                 {payFor.debt > 0 && (
                   <Chip active onClick={() => setAmount(String(payFor.debt))}>
-                    {fill(labels.chipPayOffDebt, { amount: fmtRub(payFor.debt) })}
+                    {fill(labels.chipPayOffDebt, { amount: formatRub(payFor.debt) })}
                   </Chip>
                 )}
                 {payFor.defaultRate != null && payFor.defaultRate > 0 && [1, 4, 8].map((n) => (
                   <Chip key={n} onClick={() => setAmount(String(n * payFor.defaultRate!))}>
-                    {fill(labels.chipLessons, { count: n, amount: fmtRub(n * payFor.defaultRate!) })}
+                    {fill(labels.chipLessons, { count: n, amount: formatRub(n * payFor.defaultRate!) })}
                   </Chip>
                 ))}
               </div>
@@ -252,7 +252,7 @@ function StatusBadge({ row, labels }: { row: HistoryRow; labels: CardLabels }) {
   if (row.status === "paid") return <span className="font-semibold text-emerald-600 dark:text-emerald-400">✓ {labels.statusPaid}</span>;
   if (row.status === "partial") {
     return <span className="font-semibold text-amber-600 dark:text-amber-400">
-      ◑ {fill(labels.statusPartial, { covered: fmtRub(row.covered), amount: fmtRub(row.amount) })}
+      ◑ {fill(labels.statusPartial, { covered: formatRub(row.covered), amount: formatRub(row.amount) })}
     </span>;
   }
   return <span className="font-semibold text-destructive">✗ {labels.statusDebt}</span>;

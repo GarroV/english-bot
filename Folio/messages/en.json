@@ -174,9 +174,6 @@
   "Billing": {
     "title": "Money",
     "student": "Student",
-    "charged": "Charged",
-    "paid": "Paid",
-    "balance": "Balance",
     "recordPayment": "Record payment",
     "amount": "Amount",
     "note": "Note",
@@ -188,7 +185,6 @@
     "ledger": "History",
     "hide": "Hide",
     "delete": "Delete",
-    "charge": "Charge",
     "payment": "Payment",
     "noEntries": "No entries",
     "summaryCharged": "Earned",
