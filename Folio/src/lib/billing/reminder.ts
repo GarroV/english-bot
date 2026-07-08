@@ -4,13 +4,20 @@ import { formatDate } from "../format/date";
 import { formatRub } from "../format/money";
 import type { HistoryRow } from "./fifo";
 
-// Неоплаченные lesson_charge строки → маркированный список + итог + реквизиты.
+// Неоплаченные lesson_charge и manual_charge строки → маркированный список + итог + реквизиты.
+// Итог должен совпадать с реальным долгом (бейджем) — поэтому ручные начисления в долгу/частично тоже включены.
 export function buildReminderMessage(studentName: string, rows: HistoryRow[], details: string | null): string {
   const unpaid = rows
-    .filter((r) => r.kind === "lesson_charge" && (r.status === "debt" || r.status === "partial"))
+    .filter((r) => (r.kind === "lesson_charge" || r.kind === "manual_charge") && (r.status === "debt" || r.status === "partial"))
     .sort((a, b) => a.date.localeCompare(b.date));
   const lines = unpaid.map((r) => {
     const remaining = Math.round((r.amount - r.covered) * 100) / 100;
+    if (r.kind === "manual_charge") {
+      const label = r.note ?? "начисление";
+      return r.status === "partial"
+        ? `— ${label}: осталось ${formatRub(remaining)}`
+        : `— ${label}: ${formatRub(r.amount)}`;
+    }
     return r.status === "partial"
       ? `— занятие от ${formatDate(r.date)} — осталось ${formatRub(remaining)}`
       : `— занятие от ${formatDate(r.date)} — ${formatRub(r.amount)}`;

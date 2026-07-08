@@ -32,6 +32,15 @@ describe("buildReminderMessage", () => {
     const msg = buildReminderMessage("Настя", [row({})], null);
     expect(msg).not.toContain("Реквизиты");
   });
+  it("включает неоплаченное ручное начисление в список и в Итого", () => {
+    const msg = buildReminderMessage("Настя", [
+      row({ status: "debt", date: "2026-06-19T10:00:00Z" }),
+      row({ kind: "manual_charge", status: "debt", amount: 300, note: "доплата за учебник", date: "2026-06-20T10:00:00Z" }),
+    ], null);
+    const normalized = normalizeWhitespace(msg);
+    expect(normalized).toContain("— доплата за учебник: 300 ₽");
+    expect(normalized).toContain("Итого: 1 000 ₽");
+  });
 });
 
 describe("buildMonthStatement", () => {

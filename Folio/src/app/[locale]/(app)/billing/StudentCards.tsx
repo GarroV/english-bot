@@ -128,8 +128,8 @@ export function StudentCards({ cards, monthKey, monthLabel, labels }: {
                           {r.kind === "payment" && `${labels.payment} ${formatDate(r.date)} · ${formatRub(r.amount)}${r.note ? ` · ${r.note}` : ""}`}
                           {r.kind === "lesson_charge" && (
                             <>
-                              {fill(labels.lessonFrom, { date: formatDate(r.date) })} · {formatRub(r.amount)} ·{" "}
-                              <StatusBadge row={r} labels={labels} />
+                              {fill(labels.lessonFrom, { date: formatDate(r.date) })} · {formatRub(r.amount)}
+                              {r.amount !== 0 && <> · <StatusBadge row={r} labels={labels} /></>}
                               {r.cancelled && <span className="ml-1 rounded bg-secondary px-1.5 py-0.5 text-xs">{labels.cancelledBadge}</span>}
                             </>
                           )}
