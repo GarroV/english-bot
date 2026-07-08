@@ -28,10 +28,15 @@ function star(n: number, k: number, R: number, phaseDeg = -90): string[] {
   return comps;
 }
 
-const OUTER_RUNES = "ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ ᚷ ᚹ ᚺ ᚾ ᛁ ᛃ ᛇ ᛈ ᛉ ᛊ ᛏ ᛒ ᛖ ᛗ ᛚ ᛜ ᛞ ᛟ";
-const INNER_RUNES = "ᚨ ᚱ ᛊ ᛏ ᚾ ᛒ ᛖ ᛗ";
-// Middle ring — extended runic/rune-like signs (Anglo-Saxon futhorc + extras), no digits.
-const MID_RUNES = "ᚪ ᚫ ᚣ ᛠ ᚸ ᛢ ᛥ ᚻ ᛄ ᛥ ᛝ ᚦ ᛡ ᚹ ᛥ ᛒ ᚷ ᛦ ᚩ ᛥ ᛁ ᛠ ᛗ ᛥ ᚪ ᛞ ᛚ ᛥ ᚫ ᛄ ᚾ ᛥ";
+// Dense rune bands — many small glyphs read better than a few big ones. `runeBand` repeats a pool
+// to N glyphs so each ring is a tight belt of runes; textLength keeps them evenly distributed.
+const FUTHARK = [..."ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ"];
+const FUTHORC = [..."ᚪᚫᚣᛠᚸᛢᛥᚻᛡᚹᚩᛄᛒᚷᛦᚾᛝᚦᛁᛗᛚᛞᚧᚫ"];
+const runeBand = (pool: string[], n: number) =>
+  Array.from({ length: n }, (_, i) => pool[(i * 7) % pool.length]).join(" ");
+const OUTER_RUNES = runeBand(FUTHARK, 54);
+const MID_RUNES = runeBand(FUTHORC, 46);
+const INNER_RUNES = runeBand(FUTHARK, 22);
 
 const BRIGHT = "#d7fff8"; // near-white cyan for the hottest accents
 
@@ -75,8 +80,8 @@ export function MagicBackground() {
           {TICKS.map((t, i) => (
             <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} stroke="currentColor" strokeWidth={t.w} strokeOpacity="0.4" />
           ))}
-          <text fill="currentColor" fillOpacity="0.7" fontSize="30" letterSpacing="3" style={{ fontFamily: "Georgia, serif" }}>
-            <textPath href="#mbRune" startOffset="0" textLength="2840" lengthAdjust="spacingAndGlyphs">{OUTER_RUNES}</textPath>
+          <text fill="currentColor" fillOpacity="0.7" fontSize="21" letterSpacing="1" style={{ fontFamily: "Georgia, serif" }}>
+            <textPath href="#mbRune" startOffset="0" textLength="2840" lengthAdjust="spacing">{OUTER_RUNES}</textPath>
           </text>
         </g>
 
@@ -84,8 +89,8 @@ export function MagicBackground() {
         <g className="folio-spin-rev">
           <circle cx={C} cy={C} r="430" stroke="currentColor" strokeWidth="0.7" strokeOpacity="0.3" />
           <circle cx={C} cy={C} r="422" stroke="currentColor" strokeWidth="1.4" strokeOpacity="0.5" pathLength={360} strokeDasharray="1.5 6.5" />
-          <text fill="currentColor" fillOpacity="0.55" fontSize="26" letterSpacing="3" style={{ fontFamily: "Georgia, serif" }}>
-            <textPath href="#mbMid" startOffset="0" textLength="2538" lengthAdjust="spacingAndGlyphs">{MID_RUNES}</textPath>
+          <text fill="currentColor" fillOpacity="0.55" fontSize="19" letterSpacing="1" style={{ fontFamily: "Georgia, serif" }}>
+            <textPath href="#mbMid" startOffset="0" textLength="2538" lengthAdjust="spacing">{MID_RUNES}</textPath>
           </text>
           <circle cx={C} cy={C} r="382" stroke="currentColor" strokeWidth="0.6" strokeOpacity="0.3" />
         </g>
@@ -112,8 +117,8 @@ export function MagicBackground() {
             <polygon key={`h1-${i}`} points={p} stroke="currentColor" strokeWidth="1.3" strokeOpacity="0.75" strokeLinejoin="round" />
           ))}
           <circle cx={C} cy={C} r="168" stroke="currentColor" strokeWidth="0.6" strokeOpacity="0.35" />
-          <text fill="currentColor" fillOpacity="0.6" fontSize="20" letterSpacing="3" style={{ fontFamily: "Georgia, serif" }}>
-            <textPath href="#mbInner" startOffset="0" textLength="942" lengthAdjust="spacingAndGlyphs">{INNER_RUNES}</textPath>
+          <text fill="currentColor" fillOpacity="0.6" fontSize="14" letterSpacing="0.5" style={{ fontFamily: "Georgia, serif" }}>
+            <textPath href="#mbInner" startOffset="0" textLength="942" lengthAdjust="spacing">{INNER_RUNES}</textPath>
           </text>
           <circle cx={C} cy={C} r="118" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.5" />
         </g>
