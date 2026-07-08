@@ -19,6 +19,8 @@ import { handleInvite, handleUsers, handleSetup, handleUsage, handleRevoke, hand
 import { isAllowed, isDisabled, getSession } from "./lib/db.ts";
 import { sendMessage } from "./lib/telegram.ts";
 import { timingSafeEqual } from "./lib/utils.ts";
+import { formatAdminAlert } from "./lib/errors.ts";
+import { ADMIN_ID } from "./lib/config.ts";
 import type { TgUpdate } from "./lib/types.ts";
 
 // Webhook authentication is mandatory. update.message.from.id is the tenancy key the Folio bridge
@@ -39,9 +41,13 @@ Deno.serve(async (req) => {
   }
 
   let chatId: number | null = null;
+  let userId: number | null = null;
+  let hint: string | null = null;
   try {
     const update: TgUpdate = await req.json();
     chatId = update.message?.chat.id ?? update.callback_query?.message.chat.id ?? null;
+    userId = update.message?.from.id ?? update.callback_query?.from.id ?? null;
+    hint = update.message?.text ?? update.callback_query?.data ?? null;
     await route(update);
   } catch (e) {
     console.error("Unhandled error:", e);
@@ -50,6 +56,10 @@ Deno.serve(async (req) => {
         await sendMessage(chatId, "Что-то пошло не так. Попробуй ещё раз через минуту.");
       } catch (_) { /* ignore send failure */ }
     }
+    // Кроме логов Supabase — сразу сообщить админу в Telegram, кто и на чём упал (best-effort).
+    try {
+      await sendMessage(ADMIN_ID, formatAdminAlert(e, { userId, chatId, hint }));
+    } catch (_) { /* alert must never break the 200 response */ }
   }
 
   return new Response("OK", { status: 200 });
