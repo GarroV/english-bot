@@ -299,7 +299,15 @@
     "statsCountLine": "{month} this month · {total} total",
     "statsTemplates": "Assignments",
     "statsLastActivity": "Last activity",
-    "statsNever": "—"
+    "statsNever": "—",
+    "quotaTitle": "Generation quota",
+    "quotaUnlimited": "unlimited",
+    "quotaLeftLine": "{left} of {granted} left",
+    "quotaAddBtn": "+ generations",
+    "quotaAddPrompt": "How many generations to add?",
+    "quotaUnlimitedBtn": "Unlimited",
+    "quotaConfirmUnlimited": "Remove the generation limit for “{name}”?",
+    "quotaSaved": "Quota updated"
   },
   "Cabinet": {
     "greeting": "Hi, {name}!",

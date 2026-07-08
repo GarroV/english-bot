@@ -49,6 +49,9 @@ export interface WorkspaceStats {
   monthTemplates: number;
   totalTemplates: number;
   lastActivityAt: string | null; // max(прошедшее занятие, генерация, создание задания)
+  // Квота генераций (#75): granted NULL = безлимит; used — только module-вызовы (канон _shared/quota.ts).
+  quotaGranted: number | null;
+  quotaUsedModules: number;
 }
 
 export interface WorkspaceOverview {
@@ -75,7 +78,7 @@ export async function listWorkspacesOverview(): Promise<WorkspaceOverview[]> {
   const admin = createAdminClient();
   const { data: ws, error } = await admin
     .from("folio_workspaces")
-    .select("id, name, created_at, owner_id")
+    .select("id, name, created_at, owner_id, generation_quota")
     .order("created_at", { ascending: true });
   if (error) throw new Error(`listWorkspacesOverview failed: ${error.message}`);
 
@@ -92,7 +95,7 @@ export async function listWorkspacesOverview(): Promise<WorkspaceOverview[]> {
       const telegramId = (owner?.telegram_id as number | null) ?? null;
       const usageOr = usageOrFilter(w.id as string, telegramId);
 
-      const [students, lessons, monthLessons, lastPastLesson, monthGen, totalGen, lastGen, monthTpl, totalTpl, lastTpl] = await Promise.all([
+      const [students, lessons, monthLessons, lastPastLesson, monthGen, totalGen, lastGen, monthTpl, totalTpl, lastTpl, usedModules] = await Promise.all([
         admin.from("folio_students").select("*", { count: "exact", head: true }).eq("workspace_id", w.id).is("archived_at", null).then((r) => r.count ?? 0),
         admin.from("folio_lessons").select("*", { count: "exact", head: true }).eq("workspace_id", w.id).then((r) => r.count ?? 0),
         admin.from("folio_lessons").select("scheduled_at, status").eq("workspace_id", w.id).gte("scheduled_at", fromISO).lt("scheduled_at", toISO).then((r) => r.data ?? []),
@@ -103,6 +106,7 @@ export async function listWorkspacesOverview(): Promise<WorkspaceOverview[]> {
         admin.from("folio_homework_templates").select("*", { count: "exact", head: true }).eq("workspace_id", w.id).gte("created_at", fromISO).lt("created_at", toISO).then((r) => r.count ?? 0),
         admin.from("folio_homework_templates").select("*", { count: "exact", head: true }).eq("workspace_id", w.id).then((r) => r.count ?? 0),
         admin.from("folio_homework_templates").select("created_at").eq("workspace_id", w.id).order("created_at", { ascending: false }).limit(1).maybeSingle().then((r) => r.data?.created_at ?? null),
+        admin.from("eb_llm_usage").select("*", { count: "exact", head: true }).eq("action", "module").or(usageOr).then((r) => r.count ?? 0),
       ]);
 
       let done = 0, cancelled = 0, upcoming = 0;
@@ -135,6 +139,8 @@ export async function listWorkspacesOverview(): Promise<WorkspaceOverview[]> {
           monthTemplates: monthTpl,
           totalTemplates: totalTpl,
           lastActivityAt,
+          quotaGranted: (w.generation_quota as number | null) == null ? null : Number(w.generation_quota),
+          quotaUsedModules: usedModules,
         },
       };
     }),

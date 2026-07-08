@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { getWorkspaceGenerationBudget } from "../../_shared/quota.ts";
 import type { State, DbSession, DbUser, DbAssignment, SessionContext, LlmUsage, DbLlmUsage } from "./types.ts";
 import { generateInviteCode } from "./utils.ts";
 
@@ -418,6 +419,16 @@ export async function resolveFolioWorkspace(
   if (!user || user.archived_at || user.disabled_at || user.role === "student") return null;
 
   return { workspaceId: String(user.workspace_id), userId: String(user.id) };
+}
+
+// Квота генераций для Telegram-пользователя (#75): null — квоты нет (нет воркспейса или безлимит).
+// Расчёт — канонический _shared/quota.ts (granted из folio_workspaces, used из eb_llm_usage).
+export async function getGenerationBudget(
+  telegramId: number,
+): Promise<{ granted: number; used: number } | null> {
+  const ws = await resolveFolioWorkspace(telegramId);
+  if (!ws) return null;
+  return getWorkspaceGenerationBudget(supabase, ws.workspaceId);
 }
 
 // Mirror a bot-generated assignment into the tutor's Folio template library (source='bot'),

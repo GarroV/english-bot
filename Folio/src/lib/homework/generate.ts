@@ -9,8 +9,16 @@ export interface HomeworkItem {
   item_type: HomeworkItemType;
 }
 
+// Бросается, когда воркспейс упёрся в лимит генераций (#75) — 402 от folio-generate.
+export class QuotaExceededError extends Error {
+  constructor(public used: number, public granted: number) {
+    super("quota_exceeded");
+  }
+}
+
 // Server-only: calls the shared generation Edge Function (secret in a header).
-export async function callGenerate(input: HomeworkInput): Promise<string> {
+// workspaceId включает на стороне функции проверку квоты и учёт расхода (#75/#23).
+export async function callGenerate(input: HomeworkInput, workspaceId?: string): Promise<string> {
   const res = await fetch(process.env.FOLIO_GENERATE_URL!, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-folio-secret": process.env.FOLIO_GENERATE_SECRET! },
@@ -20,8 +28,13 @@ export async function callGenerate(input: HomeworkInput): Promise<string> {
       ageGroup: input.ageGroup,
       topic: input.topic,
       verb: input.verb,
+      workspaceId,
     }),
   });
+  if (res.status === 402) {
+    const data = (await res.json().catch(() => null)) as { used?: number; granted?: number } | null;
+    throw new QuotaExceededError(data?.used ?? 0, data?.granted ?? 0);
+  }
   if (!res.ok) throw new Error(`folio-generate ${res.status}`);
   const data = (await res.json()) as { content?: string };
   if (!data.content) throw new Error("empty generation");

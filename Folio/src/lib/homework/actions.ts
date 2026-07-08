@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { homeworkInputSchema, type HomeworkInput } from "./schema";
-import { callGenerate, callEdit } from "./generate";
+import { callGenerate, callEdit, QuotaExceededError } from "./generate";
 
 export type GenResult = { ok: true; content: string } | { ok: false; error: string };
 export type SaveResult = { ok: true; id: string } | { ok: false; error: string };
@@ -14,10 +14,17 @@ export async function generateHomework(input: HomeworkInput): Promise<GenResult>
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "not authenticated" };
+  // Воркспейс из собственной строки folio_users (RLS-allowed) — folio-generate по нему
+  // проверяет квоту и пишет учёт расхода (#75/#23).
+  const { data: profile } = await supabase.from("folio_users").select("workspace_id").eq("id", user.id).maybeSingle();
+  const workspaceId = (profile?.workspace_id as string | null) ?? undefined;
   try {
-    const content = await callGenerate(parsed.data);
+    const content = await callGenerate(parsed.data, workspaceId);
     return { ok: true, content };
   } catch (e) {
+    if (e instanceof QuotaExceededError) {
+      return { ok: false, error: `лимит генераций исчерпан (${e.used} из ${e.granted}) — попросите администратора добавить генерации` };
+    }
     return { ok: false, error: e instanceof Error ? e.message : "generation failed" };
   }
 }

@@ -38,6 +38,9 @@ export default async function AdminPage({
     statsLessonsLine: t.raw("statsLessonsLine"), statsGenerations: t("statsGenerations"),
     statsCountLine: t.raw("statsCountLine"), statsTemplates: t("statsTemplates"),
     statsLastActivity: t("statsLastActivity"), statsNever: t("statsNever"),
+    quotaTitle: t("quotaTitle"), quotaUnlimited: t("quotaUnlimited"), quotaLeftLine: t.raw("quotaLeftLine"),
+    quotaAddBtn: t("quotaAddBtn"), quotaAddPrompt: t("quotaAddPrompt"), quotaUnlimitedBtn: t("quotaUnlimitedBtn"),
+    quotaConfirmUnlimited: t.raw("quotaConfirmUnlimited"), quotaSaved: t("quotaSaved"),
   };
 
   return (

@@ -299,7 +299,15 @@
     "statsCountLine": "{month} за месяц · {total} всего",
     "statsTemplates": "Задания",
     "statsLastActivity": "Последняя активность",
-    "statsNever": "—"
+    "statsNever": "—",
+    "quotaTitle": "Квота генераций",
+    "quotaUnlimited": "безлимит",
+    "quotaLeftLine": "осталось {left} из {granted}",
+    "quotaAddBtn": "+ генерации",
+    "quotaAddPrompt": "Сколько генераций добавить?",
+    "quotaUnlimitedBtn": "Безлимит",
+    "quotaConfirmUnlimited": "Снять лимит генераций у «{name}»?",
+    "quotaSaved": "Квота обновлена"
   },
   "Cabinet": {
     "greeting": "Привет, {name}!",
