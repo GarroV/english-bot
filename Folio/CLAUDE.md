@@ -35,6 +35,16 @@
 
 ---
 
+## Деплой — только из чекаута с `.env.local`
+
+`npm run cf:deploy` собирает `NEXT_PUBLIC_*` **на этапе сборки** из `Folio/.env.local` (он в `.gitignore`). Сборка из git-worktree, куда `.env.local` не скопировали, вшивает пустые значения → Supabase-клиент падает и **весь прод отдаёт 500** (логин, кабинет, дашборд), при этом сборка зелёная (инцидент 2026-07-08).
+
+- Деплоишь из worktree — **сначала** `cp <main-чекаут>/Folio/.env.local ./Folio/.env.local`.
+- Защита автоматическая: `cf:deploy`/`cf:preview` запускают `preflight:env` (`scripts/preflight-env.mjs`) и **падают с понятной ошибкой**, если `.env.local` нет или `NEXT_PUBLIC_*` пустые — сломанная сборка в прод не уедет.
+- `--no-verify-jwt` и project-ref — как в `docs/ARCHITECTURE.md`.
+
+---
+
 ## Безопасность — железные правила
 
 - Каждая таблица имеет `workspace_id` + RLS политику на него
