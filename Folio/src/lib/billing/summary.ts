@@ -47,16 +47,26 @@ export function monthLabelRu(monthKey: string): string {
   return `${MONTHS_RU[m - 1]} ${y}`;
 }
 
-// Проверяет, принадлежит ли момент `iso` месяцу по Москве.
-const inMonth = (iso: string, monthKey: string) => mskMonthKey(iso) === monthKey;
-
 // Вычисляет месячную сводку: заработано, получено, статус занятий, прогноз.
 export function buildMonthSummary(entries: BillingEntry[], lessons: MonthLesson[], monthKey: string, nowISO: string): MonthSummary {
+  const { fromISO, toISO } = monthRangeUtc(monthKey);
+  return buildRangeSummary(entries, lessons, fromISO, toISO, nowISO);
+}
+
+// Та же сводка для произвольного UTC-диапазона [fromISO, toISO) — недели/года/периода.
+export function buildRangeSummary(entries: BillingEntry[], lessons: MonthLesson[], fromISO: string, toISO: string, nowISO: string): MonthSummary {
+  const fromMs = new Date(fromISO).getTime();
+  const toMs = new Date(toISO).getTime();
+  const inRange = (iso: string) => {
+    const t = new Date(iso).getTime();
+    return t >= fromMs && t < toMs;
+  };
+
   let charged = 0;
   let received = 0;
   for (const e of entries) {
     const eff = effectiveDate(e);
-    if (!inMonth(eff, monthKey)) continue;
+    if (!inRange(eff)) continue;
     // Скидки (отрицательные charges) уменьшают «заработано» — по спеке А3 сводка нетто.
     if (e.type === "charge") charged += e.amount;
     else received += e.amount;
@@ -65,7 +75,7 @@ export function buildMonthSummary(entries: BillingEntry[], lessons: MonthLesson[
   let lessonsCompleted = 0, lessonsCancelled = 0, lessonsUpcoming = 0, forecastCount = 0, forecastAmount = 0;
   const now = new Date(nowISO).getTime();
   for (const l of lessons) {
-    if (!inMonth(l.scheduled_at, monthKey)) continue;
+    if (!inRange(l.scheduled_at)) continue;
     if (l.status === "completed") lessonsCompleted++;
     else if (l.status === "cancelled") lessonsCancelled++;
     else if (new Date(l.scheduled_at).getTime() > now) {
