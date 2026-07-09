@@ -44,6 +44,21 @@ export async function editHomework(content: string, edit: string): Promise<GenRe
   }
 }
 
+// Обновить контент сохранённого шаблона (#60). Session-клиент: RLS воркспейса скоупит
+// update — чужой id просто не совпадёт (0 строк → not found), отдельной проверки не нужно.
+export async function updateTemplate(id: string, content: string): Promise<SaveResult> {
+  if (!content.trim()) return { ok: false, error: "empty content" };
+  if (content.length > 100_000) return { ok: false, error: "content too large" };
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "not authenticated" };
+  const { data, error } = await supabase
+    .from("folio_homework_templates").update({ content }).eq("id", id).select("id");
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: "not found" };
+  return { ok: true, id: data[0].id as string };
+}
+
 // Persist a previewed result as a template (workspace + author from session).
 export async function saveTemplate(input: HomeworkInput, content: string): Promise<SaveResult> {
   const parsed = homeworkInputSchema.safeParse(input);

@@ -167,7 +167,13 @@
     "chatEmpty": "Пока нет сообщений",
     "chatSendError": "Не удалось отправить",
     "chatTutor": "Репетитор",
-    "chatStudent": "Ученик"
+    "chatStudent": "Ученик",
+    "tplEdit": "Редактировать",
+    "tplEditTitle": "Редактирование задания",
+    "tplEditSave": "Сохранить",
+    "tplEditSaved": "Шаблон обновлён",
+    "tplAiEditPlaceholder": "AI-правка: «замени Task 3 на диалог», «сделай проще»…",
+    "tplAiApply": "Применить"
   },
   "Nav": {
     "dashboard": "Панель",
