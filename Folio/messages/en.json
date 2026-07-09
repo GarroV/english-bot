@@ -167,7 +167,13 @@
     "chatEmpty": "No messages yet",
     "chatSendError": "Failed to send",
     "chatTutor": "Tutor",
-    "chatStudent": "Student"
+    "chatStudent": "Student",
+    "tplEdit": "Edit",
+    "tplEditTitle": "Edit assignment",
+    "tplEditSave": "Save",
+    "tplEditSaved": "Template updated",
+    "tplAiEditPlaceholder": "AI edit: “replace Task 3 with a dialogue”, “make it simpler”…",
+    "tplAiApply": "Apply"
   },
   "Nav": {
     "dashboard": "Dashboard",
