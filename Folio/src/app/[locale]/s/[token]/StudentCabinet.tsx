@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
-import { markSubmitted, saveAnswer } from "@/lib/cabinet/actions";
+import { markSubmitted, saveInlineAnswers } from "@/lib/cabinet/actions";
 import type { CabinetData } from "@/lib/cabinet/queries";
-import type { CabAssignment, CabItem, CabLesson } from "@/lib/cabinet/derive";
+import type { CabAssignment, CabLesson } from "@/lib/cabinet/derive";
+import { InlineAnswersDoc } from "@/components/homework/InlineAnswersDoc";
 
 // Онлайн-ответы восстановлены 2026-07-09 по запросу владельца (скрывались в #53).
 // ВРЕМЕННО (2026-07-08, #64): чат по заданию скрыт. ChatThread.tsx, server actions и таблица
@@ -106,8 +107,34 @@ function StatusBadge({ status }: { status: string }) {
 function AssignmentCard({ a, token, pdfBase }: { a: CabAssignment; token: string; pdfBase: string }) {
   const t = useTranslations("Cabinet");
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
+  // Editable while assigned (first pass) or returned (tutor sent it back); frozen once submitted/accepted.
+  const editable = a.status === "assigned" || a.status === "returned";
+  // Текст раскрыт по умолчанию, пока ученик отвечает; завершённые — свёрнуты.
+  const [open, setOpen] = useState(editable);
+
+  // Инлайн-ответы (#56): правки в пропусках автосохраняются целой картой с дебаунсом.
+  const [answers, setAnswers] = useState<Record<string, string>>(a.inlineAnswers ?? {});
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, []);
+
+  function onAnswersChange(next: Record<string, string>) {
+    setAnswers(next);
+    if (!editable) return;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setSaveState("saving");
+    timerRef.current = setTimeout(async () => {
+      try {
+        const res = await saveInlineAnswers(token, a.id, next);
+        setSaveState(res.ok ? "saved" : "error");
+      } catch {
+        setSaveState("error");
+      }
+    }, AUTOSAVE_DEBOUNCE_MS);
+  }
 
   async function onDone() {
     setPending(true);
@@ -119,9 +146,7 @@ function AssignmentCard({ a, token, pdfBase }: { a: CabAssignment; token: string
   }
 
   const pdfUrl = `${pdfBase}?token=${encodeURIComponent(token)}&a=${encodeURIComponent(a.id)}`;
-  const hasItems = a.items.length > 0;
-  // Editable while assigned (first pass) or returned (tutor sent it back); frozen once submitted/accepted.
-  const editable = a.status === "assigned" || a.status === "returned";
+  const isAccepted = a.status === "accepted" || a.status === "reviewed";
 
   return (
     <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
@@ -141,19 +166,39 @@ function AssignmentCard({ a, token, pdfBase }: { a: CabAssignment; token: string
         </div>
       )}
 
-      {/* Live-doc Ф1b: structured questions with per-item answer fields (autosave). Falls back to the
-          plain-text "show homework" toggle for assignments generated before itemization. */}
-      {hasItems && (
-        <ItemsEditor items={a.items} token={token} editable={editable} status={a.status} />
+      {!editable && open && (
+        <p className={`mt-3 rounded-lg px-3 py-2 text-xs font-medium ${
+          isAccepted
+            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+            : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+        }`}>
+          {isAccepted ? t("answersAccepted") : t("answersLocked")}
+        </p>
+      )}
+
+      {/* Инлайн-редактор (#56): ответы пишутся прямо в пропусках текста задания. */}
+      {open && (
+        <div className="mt-3">
+          <InlineAnswersDoc
+            content={a.content}
+            answers={answers}
+            editable={editable}
+            onChange={onAnswersChange}
+            labels={{ freeLabel: t("yourAnswer"), freePlaceholder: t("answerPlaceholder") }}
+          />
+          {editable && saveState !== "idle" && (
+            <p className={`mt-1 text-xs ${saveState === "error" ? "text-destructive" : "text-muted-foreground"}`}>
+              {saveState === "saving" ? t("saving") : saveState === "saved" ? t("answerSaved") : t("answerSaveError")}
+            </p>
+          )}
+        </div>
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {!hasItems && (
-          <button type="button" onClick={() => setOpen((v) => !v)}
-            className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition-colors hover:border-primary">
-            {open ? t("hideContent") : t("showContent")}
-          </button>
-        )}
+        <button type="button" onClick={() => setOpen((v) => !v)}
+          className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition-colors hover:border-primary">
+          {open ? t("hideContent") : t("showContent")}
+        </button>
         <a href={pdfUrl} className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition-colors hover:border-primary">
           📄 {t("downloadPdf")}
         </a>
@@ -165,120 +210,13 @@ function AssignmentCard({ a, token, pdfBase }: { a: CabAssignment; token: string
         )}
       </div>
 
-      {!hasItems && open && (
-        <div className="mt-3 whitespace-pre-wrap rounded-xl border border-border bg-background/50 p-3 font-sans text-sm leading-relaxed">
-          {a.content}
-        </div>
-      )}
-
       {/* ВРЕМЕННО (2026-07-08, #64): <ChatThread> — чат по заданию — скрыт. */}
     </article>
   );
 }
 
-// Renders itemized questions grouped by task_label. Each question has an answer textarea that
-// autosaves (debounced) via saveAnswer. When not editable (submitted/accepted) fields are read-only;
-// the lock notice explains why — waiting for review vs finally accepted.
-function ItemsEditor({ items, token, editable, status }: {
-  items: CabItem[]; token: string; editable: boolean; status: string;
-}) {
-  const t = useTranslations("Cabinet");
-  const groups = groupByLabel(items);
-  const isAccepted = status === "accepted" || status === "reviewed";
-  const lockNotice = isAccepted ? t("answersAccepted") : t("answersLocked");
-
-  return (
-    <div className="mt-3 flex flex-col gap-4">
-      {!editable && (
-        <p className={`rounded-lg px-3 py-2 text-xs font-medium ${
-          isAccepted
-            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-            : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-        }`}>
-          {lockNotice}
-        </p>
-      )}
-      {groups.map((g) => (
-        <div key={g.label ?? "__none"} className="flex flex-col gap-3">
-          {g.label && (
-            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{g.label}</p>
-          )}
-          {g.items.map((item) => (
-            <ItemRow key={item.id} item={item} token={token} editable={editable} />
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ItemRow({ item, token, editable }: { item: CabItem; token: string; editable: boolean }) {
-  const t = useTranslations("Cabinet");
-  const [value, setValue] = useState(item.studentAnswer ?? "");
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Clear any pending debounce on unmount so a late save doesn't fire against a gone component.
-  useEffect(() => () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-  }, []);
-
-  function onChange(next: string) {
-    setValue(next);
-    if (!editable) return;
-    if (timerRef.current) clearTimeout(timerRef.current);
-    setSaveState("saving");
-    timerRef.current = setTimeout(async () => {
-      try {
-        const res = await saveAnswer(token, item.id, next);
-        setSaveState(res.ok ? "saved" : "error");
-      } catch {
-        setSaveState("error");
-      }
-    }, AUTOSAVE_DEBOUNCE_MS);
-  }
-
-  return (
-    <div className="rounded-xl border border-border bg-background/50 p-3">
-      <p className="whitespace-pre-wrap text-sm leading-relaxed">{item.questionText}</p>
-      <label className="mt-2 block">
-        <span className="mb-1 block text-xs font-semibold text-muted-foreground">{t("yourAnswer")}</span>
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          disabled={!editable}
-          rows={2}
-          maxLength={5000}
-          placeholder={t("answerPlaceholder")}
-          className="w-full resize-y rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none transition-colors focus:border-primary disabled:cursor-not-allowed disabled:opacity-60"
-        />
-      </label>
-      {editable && saveState !== "idle" && (
-        <p className={`mt-1 text-xs ${saveState === "error" ? "text-destructive" : "text-muted-foreground"}`}>
-          {saveState === "saving" ? t("saving") : saveState === "saved" ? t("answerSaved") : t("answerSaveError")}
-        </p>
-      )}
-      {item.tutorComment && (
-        <div className="mt-2 rounded-lg border border-emerald-500/25 bg-emerald-500/8 p-2.5">
-          <p className="mb-0.5 text-xs font-bold uppercase tracking-wider text-emerald-500">{t("tutorComment")}</p>
-          <p className="whitespace-pre-wrap text-sm">{item.tutorComment}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Group consecutive items sharing a task_label into labeled blocks, preserving idx order.
-function groupByLabel(items: CabItem[]): { label: string | null; items: CabItem[] }[] {
-  const groups: { label: string | null; items: CabItem[] }[] = [];
-  for (const item of items) {
-    const label = item.taskLabel;
-    const last = groups[groups.length - 1];
-    if (last && last.label === label) last.items.push(item);
-    else groups.push({ label, items: [item] });
-  }
-  return groups;
-}
+// Инлайн-ответы (#56) заменили ItemsEditor/ItemRow — поля живут прямо в пропусках текста
+// (компонент InlineAnswersDoc, общий с ревью репетитора). Старый код — в git-истории.
 
 function LessonRow({ l }: { l: CabLesson }) {
   const t = useTranslations("Cabinet");

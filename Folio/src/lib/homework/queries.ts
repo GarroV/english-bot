@@ -59,6 +59,8 @@ export interface AssignmentReview {
   status: string;
   studentName: string | null;
   templateTopic: string | null;
+  content: string; // текст задания — для инлайн-ответов (#56)
+  inlineAnswers: Record<string, string> | null; // ответы ученика в пропусках (ключ = номер/"free")
   items: ReviewItem[];
 }
 
@@ -77,7 +79,7 @@ export async function getAssignmentReview(id: string): Promise<AssignmentReview 
   const supabase = await createClient();
   const { data: asg, error: aErr } = await supabase
     .from("folio_homework_assignments")
-    .select("id, status, folio_students(name), folio_homework_templates(topic)")
+    .select("id, status, inline_answers, folio_students(name), folio_homework_templates(topic, content)")
     .eq("id", id)
     .maybeSingle();
   if (aErr) throw new Error(`getAssignmentReview failed: ${aErr.message}`);
@@ -93,8 +95,9 @@ export async function getAssignmentReview(id: string): Promise<AssignmentReview 
   const row = asg as unknown as {
     id: string;
     status: string;
+    inline_answers: Record<string, string> | null;
     folio_students: { name: string } | { name: string }[] | null;
-    folio_homework_templates: { topic: string } | { topic: string }[] | null;
+    folio_homework_templates: { topic: string; content: string } | { topic: string; content: string }[] | null;
   };
   const student = one(row.folio_students);
   const tpl = one(row.folio_homework_templates);
@@ -103,6 +106,8 @@ export async function getAssignmentReview(id: string): Promise<AssignmentReview 
     status: row.status,
     studentName: student?.name ?? null,
     templateTopic: tpl?.topic ?? null,
+    content: tpl?.content ?? "",
+    inlineAnswers: row.inline_answers ?? null,
     items: ((itemData as ReviewItemRow[]) ?? []).map((it) => ({
       id: it.id,
       idx: it.idx,

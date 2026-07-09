@@ -42,6 +42,51 @@ export async function markSubmitted(token: string, assignmentId: string): Promis
   return { ok: true };
 }
 
+// Инлайн-ответы в пропусках текста (#56): вся карта ответов сохраняется целиком (дебаунс на клиенте).
+// Безопасность зеркалит markSubmitted: token→student→своя сдача в редактируемом статусе, ничего с
+// клиента не доверяем; ключи — номера пропусков или "free", размеры жёстко ограничены.
+const INLINE_KEY_RE = /^(\d{1,3}|free)$/;
+const MAX_INLINE_KEYS = 300;
+
+export async function saveInlineAnswers(
+  token: string,
+  assignmentId: string,
+  answers: Record<string, string>,
+): Promise<MarkResult> {
+  if (!token || !assignmentId) return { ok: false, error: "bad input" };
+  if (typeof answers !== "object" || answers == null || Array.isArray(answers)) {
+    return { ok: false, error: "bad input" };
+  }
+  const entries = Object.entries(answers);
+  if (entries.length > MAX_INLINE_KEYS) return { ok: false, error: "too many answers" };
+  const clean: Record<string, string> = {};
+  for (const [k, v] of entries) {
+    if (!INLINE_KEY_RE.test(k) || typeof v !== "string") return { ok: false, error: "bad input" };
+    if (v.length > MAX_ANSWER_LEN) return { ok: false, error: "answer too long" };
+    if (v !== "") clean[k] = v; // пустые не храним — карта не распухает
+  }
+
+  const admin = createAdminClient();
+  const { data: student, error: sErr } = await admin
+    .from("folio_students")
+    .select("id")
+    .eq("cabinet_token", token)
+    .maybeSingle();
+  if (sErr) return { ok: false, error: sErr.message };
+  if (!student) return { ok: false, error: "invalid link" };
+
+  const { data, error } = await admin
+    .from("folio_homework_assignments")
+    .update({ inline_answers: clean, updated_at: new Date().toISOString() })
+    .eq("id", assignmentId)
+    .eq("student_id", student.id)
+    .in("status", [...STUDENT_EDITABLE_STATUSES])
+    .select("id");
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: "not editable" };
+  return { ok: true };
+}
+
 // Student saves an answer to one itemized question (live-doc Ф1b, review cycle in Ф2). Security mirrors
 // markSubmitted: service-role, scoped strictly by token→student→assignment→item. Never trusts a
 // student_id/assignment from the caller. Editing is allowed while the assignment is 'assigned' or
