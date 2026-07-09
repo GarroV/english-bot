@@ -200,6 +200,7 @@ export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
                   <th className="p-3 font-semibold">{labels.tutor}</th>
                   <th className="p-3 font-semibold">{labels.students}</th>
                   <th className="p-3 font-semibold">{labels.lessons}</th>
+                  <th className="p-3 font-semibold">{labels.statsGenerations}</th>
                   <th className="p-3 font-semibold">{labels.createdAt}</th>
                   <th className="p-3" />
                 </tr>
@@ -226,6 +227,11 @@ export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
                       </td>
                       <td className="p-3">{w.students}</td>
                       <td className="p-3">{w.lessons}</td>
+                      {/* «за месяц / всего»; расшифровка — в title и в раскрытой статистике */}
+                      <td className="p-3 tabular-nums"
+                        title={fillStat(labels.statsCountLine, { month: w.stats.monthGenerations, total: w.stats.totalGenerations })}>
+                        {w.stats.monthGenerations} / {w.stats.totalGenerations}
+                      </td>
                       <td className="p-3 text-muted-foreground">{formatDate(w.created_at)}</td>
                       {/* Пиктограммы менеджмента (как в карточках учеников): подпись — в aria/title. */}
                       <td className="p-3 text-right">
@@ -241,7 +247,7 @@ export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
                     </tr>
                     {statsFor === w.id && (
                       <tr className="border-b border-border bg-secondary/30 last:border-0">
-                        <td colSpan={6} className="p-4">
+                        <td colSpan={7} className="p-4">
                           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                             <StatBlock title={labels.statsLessonsMonth}
                               line={fillStat(labels.statsLessonsLine, {
