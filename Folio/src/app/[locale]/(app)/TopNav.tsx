@@ -32,11 +32,13 @@ export function TopNav({
 
   return (
     <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-sidebar-border bg-sidebar/90 px-4 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-sidebar/75">
-      <Link href="/dashboard" className="flex flex-none items-center gap-2 pr-1">
+      {/* Логотип отделён от пунктов меню воздухом и разделителем — чтобы не читался как ещё одна кнопка. */}
+      <Link href="/dashboard" className="flex flex-none items-center gap-2 pr-2">
         <span className="inline-block h-3.5 w-3.5 rounded-full bg-primary" aria-hidden />
         <span className="font-heading text-xl font-extrabold tracking-tight">Folio</span>
       </Link>
-      <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
+      <span aria-hidden className="h-5 w-px flex-none bg-border" />
+      <nav className="ml-1 flex flex-1 items-center gap-1 overflow-x-auto">
         {nav.map((item) => {
           const active = pathname === item.href;
           return (
