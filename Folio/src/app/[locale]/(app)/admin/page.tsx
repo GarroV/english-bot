@@ -2,7 +2,8 @@ import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { getSuperAdmin } from "@/lib/admin/guard";
-import { listSignupInvites, listWorkspacesOverview } from "@/lib/admin/queries";
+import { listSignupInvites, listWorkspacesOverview, listFeedback } from "@/lib/admin/queries";
+import { formatDate } from "@/lib/format/date";
 import { AdminPanel } from "./AdminPanel";
 
 export default async function AdminPage({
@@ -17,7 +18,9 @@ export default async function AdminPage({
     return null;
   }
 
-  const [invites, workspaces] = await Promise.all([listSignupInvites(), listWorkspacesOverview()]);
+  const [invites, workspaces, feedback] = await Promise.all([
+    listSignupInvites(), listWorkspacesOverview(), listFeedback(),
+  ]);
   // Origin for building invite links — taken from the request (no client window access).
   const h = await headers();
   const host = h.get("host") ?? "";
@@ -43,10 +46,39 @@ export default async function AdminPage({
     quotaConfirmUnlimited: t.raw("quotaConfirmUnlimited"), quotaSaved: t("quotaSaved"),
   };
 
+  // Категории отзывов переиспользуют лейблы диалога фидбека (🐞/💡/💬).
+  const tf = await getTranslations("Feedback");
+  const catLabel: Record<string, string> = {
+    bug: tf("cat_bug"), idea: tf("cat_idea"), other: tf("cat_other"),
+  };
+
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 p-8">
       <h1 className="text-4xl font-bold">{t("title")}</h1>
       <AdminPanel invites={invites} workspaces={workspaces} labels={labels} locale={locale} origin={origin} />
+
+      {/* Отзывы (#67): копия того, что уходит в Telegram — чтобы ничего не терялось в ленте. */}
+      <section className="flex flex-col gap-4">
+        <h2 className="font-heading text-2xl font-bold">{t("feedbackTitle")}</h2>
+        {feedback.length === 0 ? (
+          <p className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-sm">{t("feedbackEmpty")}</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {feedback.map((f) => (
+              <li key={f.id} className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  <span className="rounded-full bg-secondary px-2 py-0.5 font-semibold text-secondary-foreground">
+                    {catLabel[f.category] ?? f.category}
+                  </span>
+                  <span>{f.user_name ?? "—"}{f.workspace_name ? ` · ${f.workspace_name}` : ""}</span>
+                  <span className="ml-auto">{formatDate(f.created_at)}</span>
+                </div>
+                <p className="mt-2 whitespace-pre-wrap text-sm">{f.message}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </main>
   );
 }

@@ -319,7 +319,9 @@
     "quotaAddPrompt": "How many generations to add?",
     "quotaUnlimitedBtn": "Unlimited",
     "quotaConfirmUnlimited": "Remove the generation limit for “{name}”?",
-    "quotaSaved": "Quota updated"
+    "quotaSaved": "Quota updated",
+    "feedbackTitle": "Feedback",
+    "feedbackEmpty": "No feedback yet"
   },
   "Cabinet": {
     "greeting": "Hi, {name}!",
