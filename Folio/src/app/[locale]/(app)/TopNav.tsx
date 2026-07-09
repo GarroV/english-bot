@@ -6,6 +6,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { HeaderActions, type HeaderActionsLabels } from "./dashboard/HeaderActions";
 import type { QuickPaymentLabels } from "./billing/QuickPaymentDialog";
+import type { QuickLessonLabels } from "./schedule/QuickLessonDialog";
 
 const NAV = [
   { href: "/dashboard", key: "dashboard" },
@@ -18,12 +19,13 @@ const NAV = [
 // Hosts nav + global quick-create actions (lesson/payment) + theme, so pages don't need a second
 // header row. "Админка" shows only for super_admin (resolved server-side in the layout).
 export function TopNav({
-  isSuperAdmin, students, headerLabels, paymentLabels,
+  isSuperAdmin, students, headerLabels, paymentLabels, lessonLabels,
 }: {
   isSuperAdmin?: boolean;
   students: { id: string; name: string }[];
   headerLabels: HeaderActionsLabels;
   paymentLabels: QuickPaymentLabels;
+  lessonLabels: QuickLessonLabels;
 }) {
   const pathname = usePathname();
   const t = useTranslations("Nav");
@@ -56,7 +58,7 @@ export function TopNav({
           );
         })}
       </nav>
-      <HeaderActions students={students} labels={headerLabels} paymentLabels={paymentLabels} />
+      <HeaderActions students={students} labels={headerLabels} paymentLabels={paymentLabels} lessonLabels={lessonLabels} />
       <FeedbackDialog />
       <ThemeToggle labels={{ system: td("themeSystem"), light: td("themeLight"), dark: td("themeDark") }} />
     </header>
