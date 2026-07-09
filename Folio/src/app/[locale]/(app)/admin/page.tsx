@@ -27,11 +27,11 @@ export default async function AdminPage({
   const origin = host ? `${h.get("x-forwarded-proto") ?? "https"}://${host}` : "";
   const t = await getTranslations("Admin");
   const labels = {
-    invitesTitle: t("invitesTitle"), note: t("note"), ttlDays: t("ttlDays"), create: t("create"),
+    tutorsTitle: t("tutorsTitle"), pendingTitle: t("pendingTitle"),
+    note: t("note"), ttlDays: t("ttlDays"), create: t("create"),
     created: t("created"), copy: t("copy"), copied: t("copied"), link: t("link"),
-    statusPending: t("statusPending"), statusUsed: t("statusUsed"), expires: t("expires"),
-    usedBy: t("usedBy"), revoke: t("revoke"), revoked: t("revoked"), noInvites: t("noInvites"),
-    workspacesTitle: t("workspacesTitle"), wsName: t("wsName"), tutor: t("tutor"),
+    expires: t("expires"), revoke: t("revoke"), revoked: t("revoked"),
+    wsName: t("wsName"), tutor: t("tutor"),
     students: t("students"), lessons: t("lessons"), createdAt: t("createdAt"),
     noWorkspaces: t("noWorkspaces"), saveError: t("saveError"),
     accessRevoke: t("accessRevoke"), accessRestore: t("accessRestore"),

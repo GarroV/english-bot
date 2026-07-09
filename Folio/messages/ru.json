@@ -275,7 +275,6 @@
   },
   "Admin": {
     "title": "Админка",
-    "invitesTitle": "Инвайты репетиторов",
     "note": "Заметка (для кого)",
     "ttlDays": "Срок (дней)",
     "create": "Создать инвайт",
@@ -283,14 +282,9 @@
     "copy": "Копировать",
     "copied": "Скопировано",
     "link": "Ссылка",
-    "statusPending": "Ожидает",
-    "statusUsed": "Использован",
     "expires": "до",
-    "usedBy": "Использовал",
     "revoke": "Отозвать",
     "revoked": "Отозвано",
-    "noInvites": "Инвайтов пока нет",
-    "workspacesTitle": "Воркспейсы",
     "wsName": "Воркспейс",
     "tutor": "Репетитор",
     "students": "Ученики",
@@ -321,7 +315,9 @@
     "quotaConfirmUnlimited": "Снять лимит генераций у «{name}»?",
     "quotaSaved": "Квота обновлена",
     "feedbackTitle": "Отзывы",
-    "feedbackEmpty": "Отзывов пока нет"
+    "feedbackEmpty": "Отзывов пока нет",
+    "tutorsTitle": "Репетиторы",
+    "pendingTitle": "Ожидают регистрации"
   },
   "Cabinet": {
     "greeting": "Привет, {name}!",
