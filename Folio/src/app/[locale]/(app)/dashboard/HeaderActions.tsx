@@ -10,10 +10,11 @@ export interface HeaderActionsLabels {
   addPayment: string;
 }
 
-const pill = "inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-sm font-semibold transition-colors hover:border-primary";
+// Icon-only quick actions, matching the theme/feedback icon buttons in the same bar.
+// Text is intentionally dropped (owner request); the accessible name lives in aria-label + native title.
+const iconBtn = "inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-primary transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-ring";
 
 // Global quick-create actions, hosted in the top bar next to the theme toggle.
-// Labels hide on narrow screens to keep the bar compact (icon stays as the affordance).
 export function HeaderActions({
   students, labels, paymentLabels, lessonLabels,
 }: {
@@ -26,11 +27,11 @@ export function HeaderActions({
   const [lessonOpen, setLessonOpen] = useState(false);
   return (
     <div className="flex items-center gap-2">
-      <button type="button" onClick={() => setLessonOpen(true)} className={pill} title={labels.addLesson}>
-        <CalendarPlus className="h-4 w-4 text-primary" /><span className="hidden sm:inline">{labels.addLesson}</span>
+      <button type="button" onClick={() => setLessonOpen(true)} className={iconBtn} title={labels.addLesson} aria-label={labels.addLesson}>
+        <CalendarPlus className="h-4 w-4" />
       </button>
-      <button type="button" onClick={() => setPayOpen(true)} className={pill} title={labels.addPayment}>
-        <Wallet className="h-4 w-4 text-primary" /><span className="hidden sm:inline">{labels.addPayment}</span>
+      <button type="button" onClick={() => setPayOpen(true)} className={iconBtn} title={labels.addPayment} aria-label={labels.addPayment}>
+        <Wallet className="h-4 w-4" />
       </button>
       <QuickLessonDialog open={lessonOpen} onOpenChange={setLessonOpen} students={students} labels={lessonLabels} />
       <QuickPaymentDialog open={payOpen} onOpenChange={setPayOpen} students={students} labels={paymentLabels} />

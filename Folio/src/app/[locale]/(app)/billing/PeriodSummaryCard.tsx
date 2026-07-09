@@ -65,9 +65,10 @@ export function PeriodSummaryCard({ summary, awaiting, period, labels }: {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {stats.map(([label, value, cls]) => (
-          <div key={label} className="rounded-xl bg-background/60 px-4 py-3">
+          <div key={label} className="rounded-xl border border-border/60 bg-background/60 px-4 py-3.5">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-            <p className={`mt-0.5 text-xl font-bold tabular-nums ${cls}`}>{value}</p>
+            {/* KPI number in the app's heading style (matches dashboard MiniBlock) so the money reads as the hero. */}
+            <p className={`mt-1.5 font-heading text-3xl font-bold tabular-nums leading-none ${cls}`}>{value}</p>
           </div>
         ))}
       </div>
