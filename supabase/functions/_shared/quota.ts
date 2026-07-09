@@ -1,12 +1,21 @@
 // Квота генераций воркспейса (#75) — единый канон расчёта для бота и folio-generate.
-// granted — folio_workspaces.generation_quota (NULL = безлимит → возвращаем null);
-// used — количество module-вызовов в eb_llm_usage по обоим источникам:
-// бот пишет ref_id=telegram_id (владельца воркспейса), folio — ref_id=workspace_id.
+// С 2026-07-09 квота МЕСЯЧНАЯ: granted — folio_workspaces.generation_quota = лимит в месяц
+// (NULL = безлимит → возвращаем null); used — module-вызовы eb_llm_usage ЗА ТЕКУЩИЙ МЕСЯЦ
+// по Москве, по обоим источникам (бот ref_id=telegram_id владельца, folio ref_id=workspace_id).
+// «Обнуление» неиспользованного — автоматическое: 1-го числа окно месяца новое, счётчик с нуля.
 // Хранимых счётчиков нет — всё считается на чтении, гонки не критичны (мягкий лимит).
 // deno-lint-ignore-file no-explicit-any
 export interface GenerationBudget {
   granted: number;
   used: number;
+}
+
+const MSK_OFFSET_MS = 3 * 3_600_000; // МСК = UTC+3, без DST — как весь продукт
+
+// UTC-момент начала текущего месяца по Москве (граница окна квоты).
+export function mskMonthStartISO(nowMs = Date.now()): string {
+  const d = new Date(nowMs + MSK_OFFSET_MS);
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1) - MSK_OFFSET_MS).toISOString();
 }
 
 // `supabase` — service-role клиент вызывающей функции (любой @supabase/supabase-js v2).
@@ -40,6 +49,7 @@ export async function getWorkspaceGenerationBudget(
     .from("eb_llm_usage")
     .select("*", { count: "exact", head: true })
     .eq("action", "module")
+    .gte("created_at", mskMonthStartISO())
     .or(filter);
   if (cntErr) throw new Error(`quota usage count failed: ${cntErr.message}`);
   return { granted, used: count ?? 0 };

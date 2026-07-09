@@ -42,8 +42,10 @@ export default async function AdminPage({
     statsCountLine: t.raw("statsCountLine"), statsTemplates: t("statsTemplates"),
     statsLastActivity: t("statsLastActivity"), statsNever: t("statsNever"),
     quotaTitle: t("quotaTitle"), quotaUnlimited: t("quotaUnlimited"), quotaLeftLine: t.raw("quotaLeftLine"),
-    quotaAddBtn: t("quotaAddBtn"), quotaAddPrompt: t("quotaAddPrompt"), quotaUnlimitedBtn: t("quotaUnlimitedBtn"),
-    quotaConfirmUnlimited: t.raw("quotaConfirmUnlimited"), quotaSaved: t("quotaSaved"),
+    quotaConfigure: t("quotaConfigure"), quotaDialogTitle: t("quotaDialogTitle"),
+    quotaDialogHint: t.raw("quotaDialogHint"), quotaPerMonth: t("quotaPerMonth"),
+    quotaSave: t("quotaSave"), quotaUnlimitedBtn: t("quotaUnlimitedBtn"), quotaSaved: t("quotaSaved"),
+    cancel: t("cancel"),
   };
 
   // Категории отзывов переиспользуют лейблы диалога фидбека (🐞/💡/💬).

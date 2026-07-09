@@ -3,11 +3,14 @@
 import { Fragment, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
-import { Ban, Plus, RotateCcw } from "lucide-react";
+import { Ban, RotateCcw, SlidersHorizontal } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createSignupInvite, revokeSignupInvite, setTutorAccess, addGenerationQuota, clearGenerationQuota } from "@/lib/admin/actions";
+import { createSignupInvite, revokeSignupInvite, setTutorAccess, setMonthlyQuota, clearGenerationQuota } from "@/lib/admin/actions";
 import type { SignupInviteRow, WorkspaceOverview } from "@/lib/admin/queries";
 import { formatDate } from "@/lib/format/date";
 
@@ -23,8 +26,9 @@ interface Labels {
   statsGenerations: string; statsCountLine: string; statsTemplates: string;
   statsLastActivity: string; statsNever: string;
   quotaTitle: string; quotaUnlimited: string; quotaLeftLine: string;
-  quotaAddBtn: string; quotaAddPrompt: string; quotaUnlimitedBtn: string;
-  quotaConfirmUnlimited: string; quotaSaved: string;
+  quotaConfigure: string; quotaDialogTitle: string; quotaDialogHint: string;
+  quotaPerMonth: string; quotaSave: string; quotaUnlimitedBtn: string; quotaSaved: string;
+  cancel: string;
 }
 
 // Подстановка "{name}"-плейсхолдеров в raw-шаблоны next-intl на клиенте (как fill в StudentCards).
@@ -108,23 +112,23 @@ export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
     }
   }
 
-  // Выдача генераций (#75): prompt на количество; «Безлимит» снимает лимит (с подтверждением).
-  async function onQuota(w: WorkspaceOverview, action: "add" | "unlimited") {
-    let call: (() => Promise<{ ok: boolean; error?: string }>) | null = null;
-    if (action === "add") {
-      const raw = window.prompt(labels.quotaAddPrompt, "50");
-      if (raw == null) return;
-      const n = Math.round(Number(raw.trim()));
-      if (!Number.isFinite(n) || n < 1) { toast.error(labels.saveError); return; }
-      call = () => addGenerationQuota(w.id, n);
-    } else {
-      if (!window.confirm(labels.quotaConfirmUnlimited.replace("{name}", w.name))) return;
-      call = () => clearGenerationQuota(w.id);
-    }
+  // Месячный лимит генераций (#75): свой диалог (не браузерный prompt) с пресетами и «Безлимит».
+  const [quotaFor, setQuotaFor] = useState<WorkspaceOverview | null>(null);
+  const [quotaValue, setQuotaValue] = useState("150");
+
+  function openQuota(w: WorkspaceOverview) {
+    setQuotaFor(w);
+    setQuotaValue(w.stats.quotaGranted != null ? String(w.stats.quotaGranted) : "150");
+  }
+
+  async function saveQuota(unlimited: boolean) {
+    if (!quotaFor) return;
+    const n = Math.round(Number(quotaValue.trim()));
+    if (!unlimited && (!Number.isFinite(n) || n < 1)) { toast.error(labels.saveError); return; }
     setPending(true);
     try {
-      const res = await call();
-      if (res.ok) { toast.success(labels.quotaSaved); router.refresh(); }
+      const res = unlimited ? await clearGenerationQuota(quotaFor.id) : await setMonthlyQuota(quotaFor.id, n);
+      if (res.ok) { toast.success(labels.quotaSaved); setQuotaFor(null); router.refresh(); }
       else toast.error(`${labels.saveError}: ${res.error}`);
     } catch {
       toast.error(labels.saveError);
@@ -227,7 +231,7 @@ export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
                       </td>
                       <td className="p-3">{w.students}</td>
                       <td className="p-3">{w.lessons}</td>
-                      {/* Квота: «использовано / доступно» (∞ = безлимит) + «+» начислить прямо здесь. */}
+                      {/* Месячная квота: «использовано / лимит в месяц» (∞ = безлимит) + настройка. */}
                       <td className="p-3">
                         <span className="inline-flex items-center gap-1.5">
                           <span className="tabular-nums"
@@ -240,9 +244,9 @@ export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
                             {w.stats.quotaUsedModules} / {w.stats.quotaGranted == null ? "∞" : w.stats.quotaGranted}
                           </span>
                           <Button variant="outline" size="icon-xs" disabled={pending}
-                            aria-label={labels.quotaAddBtn} title={labels.quotaAddPrompt}
-                            onClick={() => onQuota(w, "add")}>
-                            <Plus />
+                            aria-label={labels.quotaConfigure} title={labels.quotaConfigure}
+                            onClick={() => openQuota(w)}>
+                            <SlidersHorizontal />
                           </Button>
                         </span>
                       </td>
@@ -273,27 +277,13 @@ export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
                               line={fillStat(labels.statsCountLine, { month: w.stats.monthTemplates, total: w.stats.totalTemplates })} />
                             <StatBlock title={labels.statsLastActivity}
                               line={w.stats.lastActivityAt ? formatDate(w.stats.lastActivityAt) : labels.statsNever} />
-                            <div className="rounded-xl bg-background/60 px-3.5 py-2.5">
-                              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{labels.quotaTitle}</p>
-                              <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                                <span className="text-sm font-medium tabular-nums">
-                                  {w.stats.quotaGranted == null
-                                    ? labels.quotaUnlimited
-                                    : fillStat(labels.quotaLeftLine, {
-                                        left: Math.max(0, w.stats.quotaGranted - w.stats.quotaUsedModules),
-                                        granted: w.stats.quotaGranted,
-                                      })}
-                                </span>
-                                <Button variant="outline" size="xs" disabled={pending} onClick={() => onQuota(w, "add")}>
-                                  {labels.quotaAddBtn}
-                                </Button>
-                                {w.stats.quotaGranted != null && (
-                                  <Button variant="ghost" size="xs" disabled={pending} onClick={() => onQuota(w, "unlimited")}>
-                                    {labels.quotaUnlimitedBtn}
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
+                            <StatBlock title={labels.quotaTitle}
+                              line={`${w.stats.quotaGranted == null
+                                ? labels.quotaUnlimited
+                                : fillStat(labels.quotaLeftLine, {
+                                    left: Math.max(0, w.stats.quotaGranted - w.stats.quotaUsedModules),
+                                    granted: w.stats.quotaGranted,
+                                  })} ${labels.quotaPerMonth}`} />
                           </div>
                         </td>
                       </tr>
@@ -305,6 +295,43 @@ export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
           </div>
         )}
       </section>
+
+      {/* Диалог месячного лимита генераций (#75) */}
+      <Dialog open={quotaFor !== null} onOpenChange={(o) => { if (!o) setQuotaFor(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {labels.quotaDialogTitle}
+              {quotaFor && <span className="ml-2 font-normal text-muted-foreground">{quotaFor.tutor_name ?? quotaFor.name}</span>}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              {quotaFor && fillStat(labels.quotaDialogHint, { used: quotaFor.stats.quotaUsedModules })}
+            </p>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {[50, 150, 300].map((n) => (
+                <button key={n} type="button" onClick={() => setQuotaValue(String(n))}
+                  className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+                    quotaValue === String(n)
+                      ? "border-transparent bg-accent font-semibold text-accent-foreground"
+                      : "border-border hover:border-primary"
+                  }`}>
+                  {n}
+                </button>
+              ))}
+              <Input inputMode="numeric" value={quotaValue} onChange={(e) => setQuotaValue(e.target.value)}
+                className="w-24" aria-label={labels.quotaDialogTitle} />
+              <span className="text-sm text-muted-foreground">{labels.quotaPerMonth}</span>
+            </div>
+          </div>
+          <DialogFooter className="flex-wrap">
+            <Button variant="ghost" disabled={pending} onClick={() => saveQuota(true)}>{labels.quotaUnlimitedBtn}</Button>
+            <Button variant="ghost" disabled={pending} onClick={() => setQuotaFor(null)}>{labels.cancel}</Button>
+            <Button disabled={pending} onClick={() => saveQuota(false)}>{labels.quotaSave}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

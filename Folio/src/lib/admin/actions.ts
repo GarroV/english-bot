@@ -59,38 +59,21 @@ export async function setTutorAccess(folioUserId: string, disabled: boolean): Pr
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Выдача генераций (#75, super-admin only): quota = coalesce(текущая, израсходовано module-вызовов) + add.
-// Т.е. первый грант поверх безлимита превращает его в лимит «израсходовано + add» (остаток ровно add).
-// Канон расчёта used — supabase/functions/_shared/quota.ts (бот и folio-generate); здесь его зеркало.
-export async function addGenerationQuota(workspaceId: string, add: number): Promise<AdminResult> {
+// Месячный лимит генераций (#75, super-admin only): выставляется абсолютным числом в месяц.
+// Использование считается за текущий месяц (МСК) — неиспользованное не переносится, окно само
+// обнуляется 1-го числа. Канон расчёта — supabase/functions/_shared/quota.ts (бот и folio-generate).
+export async function setMonthlyQuota(workspaceId: string, limit: number): Promise<AdminResult> {
   const sa = await getSuperAdmin();
   if (!sa) return { ok: false, error: "forbidden" };
   if (!UUID_RE.test(workspaceId)) return { ok: false, error: "bad id" };
-  const n = Math.round(Number(add));
+  const n = Math.round(Number(limit));
   if (!Number.isFinite(n) || n < 1 || n > 10000) return { ok: false, error: "bad amount" };
 
   const admin = createAdminClient();
-  const { data: ws, error } = await admin
-    .from("folio_workspaces").select("generation_quota, owner_id").eq("id", workspaceId).maybeSingle();
+  const { data, error } = await admin
+    .from("folio_workspaces").update({ generation_quota: n }).eq("id", workspaceId).select("id");
   if (error) return { ok: false, error: error.message };
-  if (!ws) return { ok: false, error: "not found" };
-
-  let base = ws.generation_quota == null ? null : Number(ws.generation_quota);
-  if (base == null) {
-    const owner = ws.owner_id
-      ? (await admin.from("folio_users").select("telegram_id").eq("id", ws.owner_id).maybeSingle()).data
-      : null;
-    const filter = owner?.telegram_id != null
-      ? `and(source.eq.bot,ref_id.eq.${owner.telegram_id}),and(source.eq.folio,ref_id.eq.${workspaceId})`
-      : `and(source.eq.folio,ref_id.eq.${workspaceId})`;
-    const { count } = await admin
-      .from("eb_llm_usage").select("*", { count: "exact", head: true }).eq("action", "module").or(filter);
-    base = count ?? 0;
-  }
-
-  const { error: updErr } = await admin
-    .from("folio_workspaces").update({ generation_quota: base + n }).eq("id", workspaceId);
-  if (updErr) return { ok: false, error: updErr.message };
+  if (!data || data.length === 0) return { ok: false, error: "not found" };
   return { ok: true };
 }
 
