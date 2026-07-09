@@ -134,9 +134,12 @@ export function GeneratePanel({
   }
 
   // Download the current (possibly hand-edited) draft as a PDF via the tutor-gated server route.
+  // Persist the draft to the library first, so downloading also saves it (best-effort — a save
+  // failure toasts inside ensureSaved but must not block the download the user asked for).
   async function onDownloadPdf() {
     setPending(true);
     try {
+      await ensureSaved();
       const res = await fetch("/api/homework/pdf", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content }),
       });
