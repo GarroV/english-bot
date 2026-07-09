@@ -23,7 +23,7 @@ export async function generateHomework(input: HomeworkInput): Promise<GenResult>
     return { ok: true, content };
   } catch (e) {
     if (e instanceof QuotaExceededError) {
-      return { ok: false, error: `лимит генераций исчерпан (${e.used} из ${e.granted}) — попросите администратора добавить генерации` };
+      return { ok: false, error: `месячный лимит генераций исчерпан (${e.used} из ${e.granted}); обновится 1-го числа — или попросите администратора поднять лимит` };
     }
     return { ok: false, error: e instanceof Error ? e.message : "generation failed" };
   }

@@ -309,15 +309,18 @@
     "quotaTitle": "Generation quota",
     "quotaUnlimited": "unlimited",
     "quotaLeftLine": "{left} of {granted} left",
-    "quotaAddBtn": "+ generations",
-    "quotaAddPrompt": "How many generations to add?",
     "quotaUnlimitedBtn": "Unlimited",
-    "quotaConfirmUnlimited": "Remove the generation limit for “{name}”?",
     "quotaSaved": "Quota updated",
     "feedbackTitle": "Feedback",
     "feedbackEmpty": "No feedback yet",
     "tutorsTitle": "Tutors",
-    "pendingTitle": "Awaiting signup"
+    "pendingTitle": "Awaiting signup",
+    "quotaConfigure": "Generation limit",
+    "quotaDialogTitle": "Monthly generation limit",
+    "quotaDialogHint": "Used this month: {used}. Unused generations do not roll over — the limit resets on the 1st.",
+    "quotaPerMonth": "per month",
+    "quotaSave": "Save",
+    "cancel": "Cancel"
   },
   "Cabinet": {
     "greeting": "Hi, {name}!",

@@ -309,15 +309,18 @@
     "quotaTitle": "Квота генераций",
     "quotaUnlimited": "безлимит",
     "quotaLeftLine": "осталось {left} из {granted}",
-    "quotaAddBtn": "+ генерации",
-    "quotaAddPrompt": "Сколько генераций добавить?",
     "quotaUnlimitedBtn": "Безлимит",
-    "quotaConfirmUnlimited": "Снять лимит генераций у «{name}»?",
     "quotaSaved": "Квота обновлена",
     "feedbackTitle": "Отзывы",
     "feedbackEmpty": "Отзывов пока нет",
     "tutorsTitle": "Репетиторы",
-    "pendingTitle": "Ожидают регистрации"
+    "pendingTitle": "Ожидают регистрации",
+    "quotaConfigure": "Лимит генераций",
+    "quotaDialogTitle": "Месячный лимит генераций",
+    "quotaDialogHint": "Использовано в этом месяце: {used}. Неиспользованные генерации не переносятся — лимит обновляется 1-го числа.",
+    "quotaPerMonth": "в месяц",
+    "quotaSave": "Сохранить",
+    "cancel": "Отмена"
   },
   "Cabinet": {
     "greeting": "Привет, {name}!",

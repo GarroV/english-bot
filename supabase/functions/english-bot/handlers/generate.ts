@@ -35,7 +35,7 @@ export async function generateAndSend(params: {
     await setSession(userId, "WAITING_REQUEST");
     await sendMessage(
       chatId,
-      `🚫 Лимит генераций исчерпан (использовано ${budget.used} из ${budget.granted}).\nПопроси администратора добавить генерации.`,
+      `🚫 Лимит генераций на этот месяц исчерпан (${budget.used} из ${budget.granted}).\nЛимит обновится 1-го числа. Нужно больше сейчас — напиши администратору.`,
     );
     return;
   }

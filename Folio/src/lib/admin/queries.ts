@@ -81,7 +81,8 @@ export interface WorkspaceStats {
   monthTemplates: number;
   totalTemplates: number;
   lastActivityAt: string | null; // max(прошедшее занятие, генерация, создание задания)
-  // Квота генераций (#75): granted NULL = безлимит; used — только module-вызовы (канон _shared/quota.ts).
+  // Месячная квота генераций (#75): granted NULL = безлимит; used — module-вызовы ТЕКУЩЕГО месяца
+  // по Москве (канон _shared/quota.ts; неиспользованное не переносится — окно само обнуляется 1-го).
   quotaGranted: number | null;
   quotaUsedModules: number;
 }
@@ -138,7 +139,7 @@ export async function listWorkspacesOverview(): Promise<WorkspaceOverview[]> {
         admin.from("folio_homework_templates").select("*", { count: "exact", head: true }).eq("workspace_id", w.id).gte("created_at", fromISO).lt("created_at", toISO).then((r) => r.count ?? 0),
         admin.from("folio_homework_templates").select("*", { count: "exact", head: true }).eq("workspace_id", w.id).then((r) => r.count ?? 0),
         admin.from("folio_homework_templates").select("created_at").eq("workspace_id", w.id).order("created_at", { ascending: false }).limit(1).maybeSingle().then((r) => r.data?.created_at ?? null),
-        admin.from("eb_llm_usage").select("*", { count: "exact", head: true }).eq("action", "module").or(usageOr).then((r) => r.count ?? 0),
+        admin.from("eb_llm_usage").select("*", { count: "exact", head: true }).eq("action", "module").gte("created_at", fromISO).lt("created_at", toISO).or(usageOr).then((r) => r.count ?? 0),
       ]);
 
       let done = 0, cancelled = 0, upcoming = 0;
