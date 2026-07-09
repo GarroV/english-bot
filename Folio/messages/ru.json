@@ -319,7 +319,9 @@
     "quotaAddPrompt": "Сколько генераций добавить?",
     "quotaUnlimitedBtn": "Безлимит",
     "quotaConfirmUnlimited": "Снять лимит генераций у «{name}»?",
-    "quotaSaved": "Квота обновлена"
+    "quotaSaved": "Квота обновлена",
+    "feedbackTitle": "Отзывы",
+    "feedbackEmpty": "Отзывов пока нет"
   },
   "Cabinet": {
     "greeting": "Привет, {name}!",
