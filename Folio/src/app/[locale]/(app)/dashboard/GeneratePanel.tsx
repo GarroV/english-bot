@@ -8,6 +8,7 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { generateHomework, saveTemplate, editHomework } from "@/lib/homework/actions";
 import { assignTemplate } from "@/lib/homework/assignments";
 import { MODULE_TYPES, LEVELS, AGE_GROUPS, type HomeworkInput } from "@/lib/homework/schema";
@@ -24,6 +25,8 @@ export interface GenerateFormLabels {
   generate: string; generating: string; saveTemplate: string; saved: string; saveError: string;
   typeReading: string; typeVocabulary: string; typeTranslationTexts: string;
   typeTranslationSentences: string; typeVerb: string; typeWarmup: string;
+  typeReadingDesc: string; typeVocabularyDesc: string; typeTranslationTextsDesc: string;
+  typeTranslationSentencesDesc: string; typeVerbDesc: string; typeWarmupDesc: string;
   ageTeen: string; ageYoung: string; ageAdult: string;
 }
 export interface GenerateDashLabels {
@@ -56,6 +59,15 @@ export function GeneratePanel({
     TRANSLATION_SENTENCES: form.typeTranslationSentences,
     VERB_SENTENCES: form.typeVerb,
     WARMUP_MODULE: form.typeWarmup,
+  };
+  // What template each type produces — shown as a hover tooltip on the type button.
+  const typeDescriptions: Record<ModuleT, string> = {
+    READING_MODULE: form.typeReadingDesc,
+    VOCABULARY_MODULE: form.typeVocabularyDesc,
+    TRANSLATION_TEXTS: form.typeTranslationTextsDesc,
+    TRANSLATION_SENTENCES: form.typeTranslationSentencesDesc,
+    VERB_SENTENCES: form.typeVerbDesc,
+    WARMUP_MODULE: form.typeWarmupDesc,
   };
   const ageLabels: Record<AgeT, string> = { teen: form.ageTeen, young_adult: form.ageYoung, adult: form.ageAdult };
 
@@ -150,7 +162,7 @@ export function GeneratePanel({
   }
 
   const chip = (active: boolean) =>
-    `cursor-pointer rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+    `cursor-pointer rounded-full border px-3 py-1 text-xs font-semibold transition-all outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 ${
       active ? "border-primary bg-primary/12 text-primary" : "border-border text-muted-foreground hover:border-primary/50"
     }`;
 
@@ -182,14 +194,30 @@ export function GeneratePanel({
         </button>
       </div>
 
-      {/* compact chips: type + level + age (+ verb) */}
-      <div className="flex flex-wrap gap-1.5">
-        {MODULE_TYPES.map((t) => (
-          <button key={t} type="button" className={chip(moduleType === t)} onClick={() => setModuleType(t)}>
-            {moduleType === t ? "✓ " : ""}{typeLabels[t]}
-          </button>
-        ))}
-      </div>
+      {/* compact chips: type + level + age (+ verb). Type chips carry a hover tooltip describing the template. */}
+      <TooltipProvider delay={500}>
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label={form.type}>
+          {MODULE_TYPES.map((t) => (
+            <Tooltip key={t}>
+              <TooltipTrigger
+                render={
+                  <button
+                    type="button"
+                    aria-pressed={moduleType === t}
+                    className={chip(moduleType === t)}
+                    onClick={() => setModuleType(t)}
+                  />
+                }
+              >
+                {moduleType === t ? "✓ " : ""}{typeLabels[t]}
+              </TooltipTrigger>
+              <TooltipContent>{typeDescriptions[t]}</TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
+      </TooltipProvider>
+      {/* Always-visible description of the selected type — reaches touch/keyboard/screen-reader users the hover tooltip can't. */}
+      <p className="text-xs text-muted-foreground">{typeDescriptions[moduleType]}</p>
       <div className="flex flex-wrap items-center gap-1.5">
         {LEVELS.map((l) => <button key={l} type="button" className={chip(level === l)} onClick={() => setLevel(l)}>{l}</button>)}
         <span className="mx-1 h-4 w-px bg-border" aria-hidden />
