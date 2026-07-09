@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { generateHomework, saveTemplate } from "@/lib/homework/actions";
 import { MODULE_TYPES, LEVELS, AGE_GROUPS, type HomeworkInput } from "@/lib/homework/schema";
 
@@ -15,6 +16,8 @@ interface Labels {
   saved: string; saveError: string;
   typeReading: string; typeVocabulary: string; typeTranslationTexts: string;
   typeTranslationSentences: string; typeVerb: string; typeWarmup: string;
+  typeReadingDesc: string; typeVocabularyDesc: string; typeTranslationTextsDesc: string;
+  typeTranslationSentencesDesc: string; typeVerbDesc: string; typeWarmupDesc: string;
   ageTeen: string; ageYoung: string; ageAdult: string;
 }
 
@@ -27,6 +30,15 @@ export function HomeworkGenerator({ labels }: { labels: Labels }) {
     TRANSLATION_SENTENCES: labels.typeTranslationSentences,
     VERB_SENTENCES: labels.typeVerb,
     WARMUP_MODULE: labels.typeWarmup,
+  };
+  // What template each type produces — shown as a hover tooltip on the type button.
+  const typeDescriptions: Record<(typeof MODULE_TYPES)[number], string> = {
+    READING_MODULE: labels.typeReadingDesc,
+    VOCABULARY_MODULE: labels.typeVocabularyDesc,
+    TRANSLATION_TEXTS: labels.typeTranslationTextsDesc,
+    TRANSLATION_SENTENCES: labels.typeTranslationSentencesDesc,
+    VERB_SENTENCES: labels.typeVerbDesc,
+    WARMUP_MODULE: labels.typeWarmupDesc,
   };
   const ages = [
     { v: "teen", label: labels.ageTeen },
@@ -50,6 +62,10 @@ export function HomeworkGenerator({ labels }: { labels: Labels }) {
   }
 
   const selectCls = "rounded-xl border border-border bg-card px-3 py-2 text-sm";
+  const chipCls = (active: boolean) =>
+    `cursor-pointer rounded-full border px-3 py-1 text-sm font-medium transition-all outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 ${
+      active ? "border-primary bg-primary/12 text-primary" : "border-border text-muted-foreground hover:border-primary/50"
+    }`;
   // Topic is optional for the warm-up module; required for the rest.
   const topicRequired = moduleType !== "WARMUP_MODULE";
 
@@ -85,14 +101,33 @@ export function HomeworkGenerator({ labels }: { labels: Labels }) {
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="flex flex-col gap-1.5">
+        <span id="hw-type-label" className="text-sm font-medium leading-none select-none">{labels.type}</span>
+        <TooltipProvider delay={500}>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-labelledby="hw-type-label">
+            {MODULE_TYPES.map((t) => (
+              <Tooltip key={t}>
+                <TooltipTrigger
+                  render={
+                    <button
+                      type="button"
+                      aria-pressed={moduleType === t}
+                      className={chipCls(moduleType === t)}
+                      onClick={() => setModuleType(t)}
+                    />
+                  }
+                >
+                  {moduleType === t ? "✓ " : ""}{typeLabels[t]}
+                </TooltipTrigger>
+                <TooltipContent>{typeDescriptions[t]}</TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        </TooltipProvider>
+        {/* Always-visible description of the selected type — reaches touch/keyboard/screen-reader users the hover tooltip can't. */}
+        <p className="text-xs text-muted-foreground">{typeDescriptions[moduleType]}</p>
+      </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="hw-type">{labels.type}</Label>
-          <select id="hw-type" className={selectCls} value={moduleType}
-            onChange={(e) => setModuleType(e.target.value as (typeof MODULE_TYPES)[number])}>
-            {MODULE_TYPES.map((t) => <option key={t} value={t}>{typeLabels[t]}</option>)}
-          </select>
-        </div>
         <div className="flex flex-col gap-1">
           <Label htmlFor="hw-topic">{labels.topic}</Label>
           <Input id="hw-topic" value={topic} onChange={(e) => setTopic(e.target.value)} />

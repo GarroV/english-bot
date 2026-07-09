@@ -56,6 +56,9 @@ export default async function DashboardPage() {
         typeReading: h("typeReading"), typeVocabulary: h("typeVocabulary"),
         typeTranslationTexts: h("typeTranslationTexts"), typeTranslationSentences: h("typeTranslationSentences"),
         typeVerb: h("typeVerb"), typeWarmup: h("typeWarmup"),
+        typeReadingDesc: h("typeReadingDesc"), typeVocabularyDesc: h("typeVocabularyDesc"),
+        typeTranslationTextsDesc: h("typeTranslationTextsDesc"), typeTranslationSentencesDesc: h("typeTranslationSentencesDesc"),
+        typeVerbDesc: h("typeVerbDesc"), typeWarmupDesc: h("typeWarmupDesc"),
         ageTeen: h("ageTeen"), ageYoung: h("ageYoung"), ageAdult: h("ageAdult"),
       }}
       genDash={{

@@ -43,6 +43,9 @@ export default async function HomeworkPage() {
     typeReading: t("typeReading"), typeVocabulary: t("typeVocabulary"),
     typeTranslationTexts: t("typeTranslationTexts"), typeTranslationSentences: t("typeTranslationSentences"),
     typeVerb: t("typeVerb"), typeWarmup: t("typeWarmup"),
+    typeReadingDesc: t("typeReadingDesc"), typeVocabularyDesc: t("typeVocabularyDesc"),
+    typeTranslationTextsDesc: t("typeTranslationTextsDesc"), typeTranslationSentencesDesc: t("typeTranslationSentencesDesc"),
+    typeVerbDesc: t("typeVerbDesc"), typeWarmupDesc: t("typeWarmupDesc"),
     ageTeen: t("ageTeen"), ageYoung: t("ageYoung"), ageAdult: t("ageAdult"),
   };
   const tplLabels = {
