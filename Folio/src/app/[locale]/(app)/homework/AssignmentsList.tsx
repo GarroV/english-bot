@@ -11,6 +11,7 @@ import {
   loadReview, commentOnItem, returnAssignment, acceptAssignment,
 } from "@/lib/homework/assignments";
 import type { AssignmentRow, AssignmentReview, ReviewItem } from "@/lib/homework/queries";
+import { InlineAnswersDoc } from "@/components/homework/InlineAnswersDoc";
 import { formatDate } from "@/lib/format/date";
 
 // ВРЕМЕННО (#64): чат по заданию скрыт и здесь — ChatThread/loadMessages/postTutorMessage
@@ -152,7 +153,16 @@ function ReviewDialog({ reviewId, onClose, labels }: {
                 {labels.acceptedReadonly}
               </p>
             )}
-            {review.items.length === 0 ? (
+            {/* Инлайн-ответы (#56): тот же текст задания, ответы ученика подсвечены в пропусках.
+                Legacy-сдачи без инлайн-ответов показывают старыйповопросный список. */}
+            {review.inlineAnswers != null ? (
+              <InlineAnswersDoc
+                content={review.content}
+                answers={review.inlineAnswers}
+                editable={false}
+                labels={{ freeLabel: labels.studentAnswer, freePlaceholder: "" }}
+              />
+            ) : review.items.length === 0 ? (
               <p className="text-sm text-muted-foreground">—</p>
             ) : (
               review.items.map((item) => (

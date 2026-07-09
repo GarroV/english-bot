@@ -27,6 +27,7 @@ interface AssignmentJoinRow {
   due_date: string | null;
   tutor_comment: string | null;
   submitted_at: string | null;
+  inline_answers: Record<string, string> | null;
   folio_homework_templates: TemplateJoin | TemplateJoin[] | null;
 }
 interface LessonJoin {
@@ -68,7 +69,7 @@ export async function getCabinet(token: string, nowISO: string): Promise<Cabinet
   const [aRes, lRes, wRes] = await Promise.all([
     admin
       .from("folio_homework_assignments")
-      .select("id, status, due_date, tutor_comment, submitted_at, folio_homework_templates(topic, level, module_type, content)")
+      .select("id, status, due_date, tutor_comment, submitted_at, inline_answers, folio_homework_templates(topic, level, module_type, content)")
       .eq("student_id", student.id)
       .order("assigned_at", { ascending: false }),
     admin
@@ -119,6 +120,7 @@ export async function getCabinet(token: string, nowISO: string): Promise<Cabinet
       dueDate: r.due_date,
       tutorComment: r.tutor_comment,
       submittedAt: r.submitted_at,
+      inlineAnswers: r.inline_answers ?? null,
       items: itemsByAssignment.get(r.id) ?? [],
     };
   });

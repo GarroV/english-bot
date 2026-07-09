@@ -22,7 +22,8 @@ export interface CabAssignment {
   dueDate: string | null;
   tutorComment: string | null;
   submittedAt: string | null;
-  items: CabItem[]; // itemized questions (empty → fall back to plain content)
+  inlineAnswers: Record<string, string> | null; // ответы в пропусках текста (#56); ключ = номер/"free"
+  items: CabItem[]; // legacy itemized questions (UI больше не рендерит — заменены инлайн-ответами)
 }
 
 export interface CabLesson {
