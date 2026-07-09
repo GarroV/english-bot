@@ -13,7 +13,7 @@
     "error": "Не удалось войти. Попробуйте ещё раз"
   },
   "Dashboard": {
-    "title": "Панель",
+    "title": "Главная",
     "role": "Роль",
     "todayLessons": "Занятия сегодня",
     "openSchedule": "Открыть расписание",
@@ -182,7 +182,7 @@
     "tplAiApply": "Применить"
   },
   "Nav": {
-    "dashboard": "Панель",
+    "dashboard": "Главная",
     "schedule": "Расписание",
     "students": "Ученики",
     "homework": "Домашки",
