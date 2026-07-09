@@ -13,7 +13,7 @@
     "error": "Could not sign in. Try again"
   },
   "Dashboard": {
-    "title": "Dashboard",
+    "title": "Home",
     "role": "Role",
     "todayLessons": "Today's lessons",
     "openSchedule": "Open schedule",
@@ -182,7 +182,7 @@
     "tplAiApply": "Apply"
   },
   "Nav": {
-    "dashboard": "Dashboard",
+    "dashboard": "Home",
     "schedule": "Schedule",
     "students": "Students",
     "homework": "Homework",
