@@ -354,5 +354,19 @@
     "chatSendError": "Failed to send",
     "chatTutor": "Tutor",
     "chatStudent": "You"
+  },
+  "Feedback": {
+    "open": "Leave feedback",
+    "title": "Feedback to the Folio owner",
+    "categoryLabel": "Category",
+    "cat_bug": "🐞 Bug",
+    "cat_idea": "💡 Idea",
+    "cat_other": "💬 Other",
+    "placeholder": "What broke, what is missing, what could be better…",
+    "send": "Send",
+    "cancel": "Cancel",
+    "thanks": "Thanks! Your feedback was sent to the owner",
+    "rateLimited": "Too frequent — wait a minute",
+    "error": "Could not send, try again later"
   }
 }

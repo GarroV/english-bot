@@ -3,6 +3,7 @@
 import { Link, usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { HeaderActions, type HeaderActionsLabels } from "./dashboard/HeaderActions";
 import type { QuickPaymentLabels } from "./billing/QuickPaymentDialog";
 
@@ -56,6 +57,7 @@ export function TopNav({
         })}
       </nav>
       <HeaderActions students={students} labels={headerLabels} paymentLabels={paymentLabels} />
+      <FeedbackDialog />
       <ThemeToggle labels={{ system: td("themeSystem"), light: td("themeLight"), dark: td("themeDark") }} />
     </header>
   );
