@@ -39,6 +39,38 @@ export async function listSignupInvites(): Promise<SignupInviteRow[]> {
   });
 }
 
+export interface FeedbackRow {
+  id: string;
+  created_at: string;
+  category: string;
+  message: string;
+  user_name: string | null;
+  workspace_name: string | null;
+}
+
+// Последние отзывы (#67) для секции «Отзывы» в админке — копия того, что уходит в Telegram.
+export async function listFeedback(limit = 50): Promise<FeedbackRow[]> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("folio_feedback")
+    .select("id, created_at, category, message, author:folio_users!folio_feedback_user_id_fkey(name), ws:folio_workspaces!folio_feedback_workspace_id_fkey(name)")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`listFeedback failed: ${error.message}`);
+  return (data ?? []).map((r) => {
+    const u = Array.isArray(r.author) ? r.author[0] : r.author;
+    const w = Array.isArray(r.ws) ? r.ws[0] : r.ws;
+    return {
+      id: r.id as string,
+      created_at: r.created_at as string,
+      category: r.category as string,
+      message: r.message as string,
+      user_name: (u?.name as string | undefined) ?? null,
+      workspace_name: (w?.name as string | undefined) ?? null,
+    };
+  });
+}
+
 // Статистика воркспейса для раскрываемой строки админки (#77): текущий месяц по Москве + тоталы.
 export interface WorkspaceStats {
   monthLessonsDone: number;
