@@ -53,7 +53,10 @@ export default async function HomeworkPage() {
     copy: t("copy"), copied: t("copied"), assign: t("assign"), assignTitle: t("assignTitle"),
     students: t("students"), dueDate: t("dueDate"), confirmAssign: t("confirmAssign"),
     cancel: t("cancel"), assigned: t("assigned"), pickStudents: t("pickStudents"),
-    saveError: t("saveError"), typeLabels,
+    saveError: t("saveError"),
+    edit: t("tplEdit"), editTitle: t("tplEditTitle"), editSave: t("tplEditSave"), editSaved: t("tplEditSaved"),
+    aiEditPlaceholder: t("tplAiEditPlaceholder"), aiApply: t("tplAiApply"),
+    typeLabels,
   };
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-8">

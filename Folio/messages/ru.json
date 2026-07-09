@@ -173,7 +173,13 @@
     "chatEmpty": "Пока нет сообщений",
     "chatSendError": "Не удалось отправить",
     "chatTutor": "Репетитор",
-    "chatStudent": "Ученик"
+    "chatStudent": "Ученик",
+    "tplEdit": "Редактировать",
+    "tplEditTitle": "Редактирование задания",
+    "tplEditSave": "Сохранить",
+    "tplEditSaved": "Шаблон обновлён",
+    "tplAiEditPlaceholder": "AI-правка: «замени Task 3 на диалог», «сделай проще»…",
+    "tplAiApply": "Применить"
   },
   "Nav": {
     "dashboard": "Панель",
@@ -360,5 +366,19 @@
     "chatSendError": "Не удалось отправить",
     "chatTutor": "Репетитор",
     "chatStudent": "Вы"
+  },
+  "Feedback": {
+    "open": "Оставить отзыв",
+    "title": "Отзыв владельцу Folio",
+    "categoryLabel": "Категория",
+    "cat_bug": "🐞 Баг",
+    "cat_idea": "💡 Идея",
+    "cat_other": "💬 Прочее",
+    "placeholder": "Что сломалось, чего не хватает, что сделать лучше…",
+    "send": "Отправить",
+    "cancel": "Отмена",
+    "thanks": "Спасибо! Отзыв отправлен владельцу",
+    "rateLimited": "Слишком часто — подождите минуту",
+    "error": "Не удалось отправить, попробуйте позже"
   }
 }

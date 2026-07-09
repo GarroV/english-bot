@@ -173,7 +173,13 @@
     "chatEmpty": "No messages yet",
     "chatSendError": "Failed to send",
     "chatTutor": "Tutor",
-    "chatStudent": "Student"
+    "chatStudent": "Student",
+    "tplEdit": "Edit",
+    "tplEditTitle": "Edit assignment",
+    "tplEditSave": "Save",
+    "tplEditSaved": "Template updated",
+    "tplAiEditPlaceholder": "AI edit: “replace Task 3 with a dialogue”, “make it simpler”…",
+    "tplAiApply": "Apply"
   },
   "Nav": {
     "dashboard": "Dashboard",
@@ -360,5 +366,19 @@
     "chatSendError": "Failed to send",
     "chatTutor": "Tutor",
     "chatStudent": "You"
+  },
+  "Feedback": {
+    "open": "Leave feedback",
+    "title": "Feedback to the Folio owner",
+    "categoryLabel": "Category",
+    "cat_bug": "🐞 Bug",
+    "cat_idea": "💡 Idea",
+    "cat_other": "💬 Other",
+    "placeholder": "What broke, what is missing, what could be better…",
+    "send": "Send",
+    "cancel": "Cancel",
+    "thanks": "Thanks! Your feedback was sent to the owner",
+    "rateLimited": "Too frequent — wait a minute",
+    "error": "Could not send, try again later"
   }
 }

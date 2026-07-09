@@ -40,6 +40,7 @@
 | Бот | `supabase functions deploy english-bot --no-verify-jwt --project-ref btlglelwxazdxfqdmcti` |
 | Движок для веба | `supabase functions deploy folio-generate --no-verify-jwt --project-ref btlglelwxazdxfqdmcti` |
 | PDF ученика | `supabase functions deploy folio-homework-pdf --no-verify-jwt --project-ref btlglelwxazdxfqdmcti` |
+| Фидбек | `supabase functions deploy folio-feedback --no-verify-jwt --project-ref btlglelwxazdxfqdmcti` |
 | Веб-Folio | из `Folio/`: `npm run cf:deploy` (OpenNext → Cloudflare) |
 | Миграции | `POST https://api.supabase.com/v1/projects/btlglelwxazdxfqdmcti/database/query` (заголовок `Authorization: Bearer $SUPABASE_ACCESS_TOKEN`) + `insert` записи в `supabase_migrations.schema_migrations` |
 

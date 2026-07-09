@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { assignTemplate } from "@/lib/homework/assignments";
+import { editHomework, updateTemplate } from "@/lib/homework/actions";
 import type { TemplateRow } from "@/lib/homework/queries";
 import type { StudentOption } from "@/lib/lessons/queries";
 import { formatDate } from "@/lib/format/date";
@@ -16,6 +17,8 @@ interface Labels {
   empty: string; templates: string; view: string; hide: string; copy: string; copied: string;
   assign: string; assignTitle: string; students: string; dueDate: string; confirmAssign: string;
   cancel: string; assigned: string; pickStudents: string; saveError: string;
+  edit: string; editTitle: string; editSave: string; editSaved: string;
+  aiEditPlaceholder: string; aiApply: string;
   typeLabels: Record<string, string>;
 }
 
@@ -30,6 +33,41 @@ export function TemplatesList({ templates, students, labels }: {
   const [picked, setPicked] = useState<string[]>([]);
   const [due, setDue] = useState("");
   const [pending, setPending] = useState(false);
+
+  // Редактор шаблона (#60): ручная правка контента + AI-правка (editHomework) + сохранение.
+  const [editFor, setEditFor] = useState<{ id: string; content: string } | null>(null);
+  const [aiEdit, setAiEdit] = useState("");
+  const [aiPending, setAiPending] = useState(false);
+
+  function startEdit(tpl: TemplateRow) { setEditFor({ id: tpl.id, content: tpl.content }); setAiEdit(""); }
+
+  async function applyAiEdit() {
+    if (!editFor || !aiEdit.trim()) return;
+    setAiPending(true);
+    try {
+      const res = await editHomework(editFor.content, aiEdit.trim());
+      if (res.ok) { setEditFor({ ...editFor, content: res.content }); setAiEdit(""); }
+      else toast.error(`${labels.saveError}: ${res.error}`);
+    } catch {
+      toast.error(labels.saveError);
+    } finally {
+      setAiPending(false);
+    }
+  }
+
+  async function saveEdit() {
+    if (!editFor || !editFor.content.trim()) return;
+    setPending(true);
+    try {
+      const res = await updateTemplate(editFor.id, editFor.content);
+      if (res.ok) { toast.success(labels.editSaved); setEditFor(null); router.refresh(); }
+      else toast.error(`${labels.saveError}: ${res.error}`);
+    } catch {
+      toast.error(labels.saveError);
+    } finally {
+      setPending(false);
+    }
+  }
 
   function startAssign(id: string) { setAssignId(id); setPicked([]); setDue(""); }
   function togglePicked(id: string) {
@@ -76,6 +114,7 @@ export function TemplatesList({ templates, students, labels }: {
                 <Button variant="outline" size="sm" onClick={() => setOpenId(openId === tpl.id ? null : tpl.id)}>
                   {openId === tpl.id ? labels.hide : labels.view}
                 </Button>
+                <Button variant="outline" size="sm" onClick={() => startEdit(tpl)}>{labels.edit}</Button>
                 <Button size="sm" onClick={() => startAssign(tpl.id)}>{labels.assign}</Button>
               </div>
             </div>
@@ -88,6 +127,38 @@ export function TemplatesList({ templates, students, labels }: {
           </li>
         ))}
       </ul>
+
+      {/* Редактор шаблона (#60) */}
+      <Dialog open={editFor !== null} onOpenChange={(o) => { if (!o) setEditFor(null); }}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader><DialogTitle>{labels.editTitle}</DialogTitle></DialogHeader>
+          <div className="flex flex-col gap-3 py-2">
+            <textarea
+              value={editFor?.content ?? ""}
+              onChange={(e) => editFor && setEditFor({ ...editFor, content: e.target.value })}
+              rows={16}
+              disabled={aiPending}
+              className="w-full resize-y rounded-xl border border-input bg-transparent px-3 py-2 font-sans text-sm leading-relaxed outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-60"
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                value={aiEdit}
+                onChange={(e) => setAiEdit(e.target.value)}
+                maxLength={1000}
+                placeholder={labels.aiEditPlaceholder}
+                className="min-w-0 flex-1 rounded-xl border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              />
+              <Button variant="outline" onClick={applyAiEdit} disabled={aiPending || !aiEdit.trim()}>
+                {aiPending ? "…" : labels.aiApply}
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditFor(null)} disabled={pending || aiPending}>{labels.cancel}</Button>
+            <Button onClick={saveEdit} disabled={pending || aiPending || !editFor?.content.trim()}>{labels.editSave}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={assignId !== null} onOpenChange={(o) => { if (!o) setAssignId(null); }}>
         <DialogContent>
