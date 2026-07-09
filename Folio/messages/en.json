@@ -275,7 +275,6 @@
   },
   "Admin": {
     "title": "Admin",
-    "invitesTitle": "Tutor invites",
     "note": "Note (for whom)",
     "ttlDays": "TTL (days)",
     "create": "Create invite",
@@ -283,14 +282,9 @@
     "copy": "Copy",
     "copied": "Copied",
     "link": "Link",
-    "statusPending": "Pending",
-    "statusUsed": "Used",
     "expires": "until",
-    "usedBy": "Used by",
     "revoke": "Revoke",
     "revoked": "Revoked",
-    "noInvites": "No invites yet",
-    "workspacesTitle": "Workspaces",
     "wsName": "Workspace",
     "tutor": "Tutor",
     "students": "Students",
@@ -321,7 +315,9 @@
     "quotaConfirmUnlimited": "Remove the generation limit for “{name}”?",
     "quotaSaved": "Quota updated",
     "feedbackTitle": "Feedback",
-    "feedbackEmpty": "No feedback yet"
+    "feedbackEmpty": "No feedback yet",
+    "tutorsTitle": "Tutors",
+    "pendingTitle": "Awaiting signup"
   },
   "Cabinet": {
     "greeting": "Hi, {name}!",

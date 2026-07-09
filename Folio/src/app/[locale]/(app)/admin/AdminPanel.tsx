@@ -3,6 +3,7 @@
 import { Fragment, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
+import { Ban, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,10 +12,10 @@ import type { SignupInviteRow, WorkspaceOverview } from "@/lib/admin/queries";
 import { formatDate } from "@/lib/format/date";
 
 interface Labels {
-  invitesTitle: string; note: string; ttlDays: string; create: string; created: string;
-  copy: string; copied: string; link: string; statusPending: string; statusUsed: string;
-  expires: string; usedBy: string; revoke: string; revoked: string; noInvites: string;
-  workspacesTitle: string; wsName: string; tutor: string; students: string; lessons: string;
+  tutorsTitle: string; pendingTitle: string; note: string; ttlDays: string; create: string; created: string;
+  copy: string; copied: string; link: string;
+  expires: string; revoke: string; revoked: string;
+  wsName: string; tutor: string; students: string; lessons: string;
   createdAt: string; noWorkspaces: string; saveError: string;
   accessRevoke: string; accessRestore: string; accessRevokedBadge: string;
   accessConfirmRevoke: string; accessRevokedToast: string; accessRestoredToast: string;
@@ -145,11 +146,14 @@ export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
     }
   }
 
+  // Использованный инвайт — это уже воркспейс в таблице ниже; отдельно показываем только ожидающие.
+  const pendingInvites = invites.filter((inv) => inv.status === "pending");
+
   return (
     <div className="flex flex-col gap-10">
-      {/* Invites */}
+      {/* Репетиторы: форма инвайта → ожидающие регистрации → таблица воркспейсов */}
       <section className="flex flex-col gap-4">
-        <h2 className="font-heading text-2xl font-bold">{labels.invitesTitle}</h2>
+        <h2 className="font-heading text-2xl font-bold">{labels.tutorsTitle}</h2>
         <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
           <div className="flex flex-1 flex-col gap-1" style={{ minWidth: 220 }}>
             <Label htmlFor="inv-note">{labels.note}</Label>
@@ -162,47 +166,29 @@ export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
           <Button onClick={onCreate} disabled={pending}>{labels.create}</Button>
         </div>
 
-        {invites.length === 0 ? (
-          <p className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-sm">{labels.noInvites}</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {invites.map((inv) => {
-              const isPending = inv.status === "pending";
-              return (
-                <li key={inv.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
+        {pendingInvites.length > 0 && (
+          <>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{labels.pendingTitle}</p>
+            <ul className="flex flex-col gap-2">
+              {pendingInvites.map((inv) => (
+                <li key={inv.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-card p-4 shadow-sm">
                   <div className="flex min-w-0 flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${isPending ? "bg-accent text-accent-foreground" : "bg-secondary text-muted-foreground"}`}>
-                        {isPending ? labels.statusPending : labels.statusUsed}
-                      </span>
-                      {inv.note && <span className="truncate text-sm font-medium">{inv.note}</span>}
-                    </div>
+                    {inv.note && <span className="truncate text-sm font-medium">{inv.note}</span>}
                     <code className="max-w-full truncate text-xs text-muted-foreground">{linkFor(inv.token)}</code>
-                    <span className="text-xs text-muted-foreground">
-                      {labels.expires} {formatDate(inv.expires_at)}
-                      {inv.used_by_name ? ` · ${labels.usedBy}: ${inv.used_by_name}` : ""}
-                    </span>
+                    <span className="text-xs text-muted-foreground">{labels.expires} {formatDate(inv.expires_at)}</span>
                   </div>
                   <div className="flex shrink-0 gap-2">
-                    {isPending && (
-                      <>
-                        <Button variant="outline" size="sm" onClick={() => copy(inv.token)}>
-                          {copied === inv.token ? labels.copied : labels.copy}
-                        </Button>
-                        <Button variant="ghost" size="sm" disabled={pending} onClick={() => onRevoke(inv.id)}>{labels.revoke}</Button>
-                      </>
-                    )}
+                    <Button variant="outline" size="sm" onClick={() => copy(inv.token)}>
+                      {copied === inv.token ? labels.copied : labels.copy}
+                    </Button>
+                    <Button variant="ghost" size="sm" disabled={pending} onClick={() => onRevoke(inv.id)}>{labels.revoke}</Button>
                   </div>
                 </li>
-              );
-            })}
-          </ul>
+              ))}
+            </ul>
+          </>
         )}
-      </section>
 
-      {/* Workspaces */}
-      <section className="flex flex-col gap-4">
-        <h2 className="font-heading text-2xl font-bold">{labels.workspacesTitle}</h2>
         {workspaces.length === 0 ? (
           <p className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-sm">{labels.noWorkspaces}</p>
         ) : (
@@ -241,11 +227,14 @@ export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
                       <td className="p-3">{w.students}</td>
                       <td className="p-3">{w.lessons}</td>
                       <td className="p-3 text-muted-foreground">{formatDate(w.created_at)}</td>
+                      {/* Пиктограммы менеджмента (как в карточках учеников): подпись — в aria/title. */}
                       <td className="p-3 text-right">
                         {w.owner_user_id && (
-                          <Button variant={w.tutor_disabled ? "outline" : "ghost"} size="sm" disabled={pending}
+                          <Button variant={w.tutor_disabled ? "outline" : "ghost"} size="icon-sm" disabled={pending}
+                            aria-label={w.tutor_disabled ? labels.accessRestore : labels.accessRevoke}
+                            title={w.tutor_disabled ? labels.accessRestore : labels.accessRevoke}
                             onClick={() => onAccessToggle(w)}>
-                            {w.tutor_disabled ? labels.accessRestore : labels.accessRevoke}
+                            {w.tutor_disabled ? <RotateCcw /> : <Ban />}
                           </Button>
                         )}
                       </td>
