@@ -3,7 +3,7 @@
 import { Fragment, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { toast } from "sonner";
-import { Ban, RotateCcw } from "lucide-react";
+import { Ban, Plus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -227,10 +227,24 @@ export function AdminPanel({ invites, workspaces, labels, locale, origin }: {
                       </td>
                       <td className="p-3">{w.students}</td>
                       <td className="p-3">{w.lessons}</td>
-                      {/* «за месяц / всего»; расшифровка — в title и в раскрытой статистике */}
-                      <td className="p-3 tabular-nums"
-                        title={fillStat(labels.statsCountLine, { month: w.stats.monthGenerations, total: w.stats.totalGenerations })}>
-                        {w.stats.monthGenerations} / {w.stats.totalGenerations}
+                      {/* Квота: «использовано / доступно» (∞ = безлимит) + «+» начислить прямо здесь. */}
+                      <td className="p-3">
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="tabular-nums"
+                            title={w.stats.quotaGranted == null
+                              ? labels.quotaUnlimited
+                              : fillStat(labels.quotaLeftLine, {
+                                  left: Math.max(0, w.stats.quotaGranted - w.stats.quotaUsedModules),
+                                  granted: w.stats.quotaGranted,
+                                })}>
+                            {w.stats.quotaUsedModules} / {w.stats.quotaGranted == null ? "∞" : w.stats.quotaGranted}
+                          </span>
+                          <Button variant="outline" size="icon-xs" disabled={pending}
+                            aria-label={labels.quotaAddBtn} title={labels.quotaAddPrompt}
+                            onClick={() => onQuota(w, "add")}>
+                            <Plus />
+                          </Button>
+                        </span>
                       </td>
                       <td className="p-3 text-muted-foreground">{formatDate(w.created_at)}</td>
                       {/* Пиктограммы менеджмента (как в карточках учеников): подпись — в aria/title. */}
