@@ -21,7 +21,9 @@ const CSP = [
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
-  "frame-ancestors 'none'",
+  // Живое демо Folio встраивается в окно портфолио garrov.github.io (iframe). Разрешаем
+  // фреймить только со своего сайта и с портфолио — остальным кликджекинг по-прежнему закрыт.
+  "frame-ancestors 'self' https://garrov.github.io",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
